@@ -6,9 +6,10 @@ import { Bell, Home, Crown, Plus, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import UserAvatar from '@/components/ui/UserAvatar';
 
 const Navbar = () => {
-  const { user, signOut } = useAuth();
+  const { user, userProfile, signOut } = useAuth();
   const unreadNotifications = 3; // This will be dynamic in the future
 
   const handleSignOut = async () => {
@@ -64,11 +65,15 @@ const Navbar = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full" aria-label="Profile">
-                    <img
-                      src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=memequeen"
-                      alt="Avatar"
-                      className="h-8 w-8 rounded-full"
-                    />
+                    {userProfile ? (
+                      <UserAvatar user={userProfile} size="sm" showUsername={false} linkToProfile={false} />
+                    ) : (
+                      <img
+                        src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=default"
+                        alt="Avatar"
+                        className="h-8 w-8 rounded-full"
+                      />
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -104,4 +109,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-

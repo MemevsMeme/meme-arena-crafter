@@ -1,42 +1,64 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MEME_TEMPLATES, CAPTION_STYLES } from '@/lib/constants';
-import { Image, Upload, Wand } from 'lucide-react';
+import { Image, Upload, Wand, Save, AlertCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import { createMeme } from '@/lib/database';
+import { generateCaption } from '@/lib/ai';
 
 interface MemeGeneratorProps {
   promptText?: string;
-  onSave?: (meme: { caption: string; imageUrl: string }) => void;
+  promptId?: string;
+  onSave?: (meme: { id: string; caption: string; imageUrl: string }) => void;
 }
 
-const MemeGenerator = ({ promptText = '', onSave }: MemeGeneratorProps) => {
+const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps) => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('template');
   const [selectedTemplate, setSelectedTemplate] = useState(MEME_TEMPLATES[0]);
   const [caption, setCaption] = useState('');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false);
   const [generatedCaptions, setGeneratedCaptions] = useState<string[]>([]);
   const [selectedStyle, setSelectedStyle] = useState(CAPTION_STYLES[0].id);
+  const [isCreatingMeme, setIsCreatingMeme] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const handleGenerateCaptions = () => {
+  // Generate a preview when caption or template/image changes
+  useEffect(() => {
+    if (caption && (selectedTemplate || uploadedImage)) {
+      setShowPreview(true);
+      renderMemeToCanvas();
+    } else {
+      setShowPreview(false);
+    }
+  }, [caption, selectedTemplate, uploadedImage]);
+
+  const handleGenerateCaptions = async () => {
+    if (!promptText) return;
+
     setIsGeneratingCaptions(true);
     
-    // Simulate API call with timeout
-    setTimeout(() => {
-      // Mock responses based on the prompt
-      const mockCaptions = [
-        `When ${promptText.toLowerCase()} but it actually works`,
-        `Nobody:\nAbsolutely nobody:\nMe: ${promptText}`,
-        `${promptText}? Story of my life.`
-      ];
-      
-      setGeneratedCaptions(mockCaptions);
+    try {
+      // In real implementation, this would call an AI service
+      const captions = await generateCaption(promptText, selectedStyle);
+      setGeneratedCaptions(captions);
+    } catch (error) {
+      console.error('Error generating captions:', error);
+      toast.error('Failed to generate captions');
+    } finally {
       setIsGeneratingCaptions(false);
-    }, 1500);
+    }
   };
   
   const handleSelectCaption = (text: string) => {
@@ -46,6 +68,7 @@ const MemeGenerator = ({ promptText = '', onSave }: MemeGeneratorProps) => {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
         setUploadedImage(e.target?.result as string);
@@ -54,12 +77,170 @@ const MemeGenerator = ({ promptText = '', onSave }: MemeGeneratorProps) => {
     }
   };
 
-  const handleSaveMeme = () => {
-    if (onSave) {
-      onSave({
-        caption,
-        imageUrl: activeTab === 'template' ? selectedTemplate.url : uploadedImage || '',
+  const renderMemeToCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Load image
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      // Set canvas dimensions to match image
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      // Draw image
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      // Add caption
+      const lines = caption.split('\n');
+      
+      if (activeTab === 'template' && selectedTemplate.textPositions) {
+        // Use predefined positions for templates
+        selectedTemplate.textPositions.forEach((pos, index) => {
+          if (index < lines.length) {
+            drawText(
+              ctx, 
+              lines[index], 
+              pos.x / 100 * canvas.width, 
+              pos.y / 100 * canvas.height, 
+              pos.fontSize, 
+              pos.maxWidth
+            );
+          }
+        });
+      } else {
+        // Default position for uploaded images - center bottom
+        const fontSize = Math.max(16, Math.min(canvas.width / 15, 36));
+        const lineHeight = fontSize * 1.2;
+        const totalHeight = lines.length * lineHeight;
+        
+        lines.forEach((line, index) => {
+          drawText(
+            ctx,
+            line,
+            canvas.width / 2,
+            canvas.height - totalHeight + index * lineHeight,
+            fontSize,
+            canvas.width * 0.8
+          );
+        });
+      }
+    };
+    
+    img.src = activeTab === 'template' ? selectedTemplate.url : (uploadedImage as string);
+  };
+  
+  // Helper function to draw text with stroke
+  const drawText = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    fontSize: number,
+    maxWidth: number
+  ) => {
+    ctx.font = `bold ${fontSize}px Impact, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Draw text stroke
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = fontSize / 8;
+    ctx.strokeText(text, x, y, maxWidth);
+    
+    // Draw text fill
+    ctx.fillStyle = 'white';
+    ctx.fillText(text, x, y, maxWidth);
+  };
+  
+  // Function to save the meme
+  const handleSaveMeme = async () => {
+    if (!user) {
+      toast.error('You must be logged in to create memes');
+      return;
+    }
+    
+    if (!caption || (activeTab === 'upload' && !uploadedImage)) {
+      toast.error('Please add both image and caption');
+      return;
+    }
+    
+    setIsCreatingMeme(true);
+    
+    try {
+      // Ensure canvas is rendered
+      renderMemeToCanvas();
+      
+      // Convert canvas to blob
+      const canvas = canvasRef.current;
+      if (!canvas) throw new Error('Canvas not available');
+      
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('Failed to create blob from canvas'));
+        }, 'image/png');
       });
+      
+      // Create file from blob
+      const fileName = `meme_${Date.now()}.png`;
+      const memeFile = new File([blob], fileName, { type: 'image/png' });
+      
+      // Upload to Supabase storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('memes')
+        .upload(`public/${user.id}/${fileName}`, memeFile);
+      
+      if (uploadError) throw uploadError;
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('memes')
+        .getPublicUrl(`public/${user.id}/${fileName}`);
+      
+      // Create meme record in database
+      const memeData = await createMeme({
+        prompt: promptText,
+        promptId: promptId,
+        imageUrl: publicUrl,
+        caption: caption,
+        creatorId: user.id,
+        votes: 0,
+        createdAt: new Date(),
+        tags: [],
+      });
+      
+      if (!memeData) throw new Error('Failed to create meme record');
+      
+      toast.success('Meme created successfully!');
+      
+      // Call the onSave callback if provided
+      if (onSave) {
+        onSave({
+          id: memeData.id,
+          caption: memeData.caption,
+          imageUrl: memeData.imageUrl
+        });
+      }
+      
+      // Reset form
+      setCaption('');
+      setUploadedImage(null);
+      setFile(null);
+      setGeneratedCaptions([]);
+      
+    } catch (error) {
+      console.error('Error creating meme:', error);
+      toast.error('Failed to create meme');
+    } finally {
+      setIsCreatingMeme(false);
     }
   };
 
@@ -72,7 +253,7 @@ const MemeGenerator = ({ promptText = '', onSave }: MemeGeneratorProps) => {
           placeholder="Enter a prompt or use today's challenge..."
           value={promptText}
           className="h-20"
-          readOnly
+          readOnly={!!promptText}
         />
       </div>
       
@@ -142,7 +323,7 @@ const MemeGenerator = ({ promptText = '', onSave }: MemeGeneratorProps) => {
             size="sm"
             className="flex items-center gap-1.5"
             onClick={handleGenerateCaptions}
-            disabled={isGeneratingCaptions}
+            disabled={isGeneratingCaptions || !promptText}
           >
             <Wand className="h-3.5 w-3.5" />
             Generate ideas
@@ -190,13 +371,36 @@ const MemeGenerator = ({ promptText = '', onSave }: MemeGeneratorProps) => {
         </div>
       </div>
       
+      {showPreview && (
+        <div className="mb-6">
+          <Label className="mb-2 block">Preview</Label>
+          <div className="max-h-80 overflow-hidden flex justify-center rounded-lg border">
+            <canvas ref={canvasRef} className="max-w-full max-h-80 object-contain" />
+          </div>
+        </div>
+      )}
+
+      {!user && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            You must be logged in to create memes
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Button 
         className="w-full create-button" 
         size="lg"
         onClick={handleSaveMeme}
-        disabled={!caption || (activeTab === 'upload' && !uploadedImage)}
+        disabled={!caption || (activeTab === 'upload' && !uploadedImage) || isCreatingMeme || !user}
       >
-        Create Meme
+        {isCreatingMeme ? 'Creating Meme...' : (
+          <>
+            <Save className="mr-2 h-4 w-4" />
+            Create Meme
+          </>
+        )}
       </Button>
     </div>
   );
