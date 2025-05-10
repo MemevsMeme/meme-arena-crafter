@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MEME_TEMPLATES, CAPTION_STYLES } from '@/lib/constants';
 import { Image as LucideImage, Upload, Wand, Save, AlertCircle, WandSparkles, Tag, Database } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { createMeme } from '@/lib/database';
 import { generateCaption, analyzeMemeImage } from '@/lib/ai';
 import { uploadFileToIPFS } from '@/lib/ipfs';
@@ -49,7 +50,11 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
 
   const handleGenerateCaptions = async () => {
     if (!promptText) {
-      toast.error('Please enter a prompt text first');
+      toast({
+        title: "Error",
+        description: "Please enter a prompt text first",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -61,11 +66,19 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       setGeneratedCaptions(captions);
       
       if (captions.length === 0) {
-        toast.error('Couldn\'t generate captions. Please try again.');
+        toast({
+          title: "Error",
+          description: "Couldn't generate captions. Please try again.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Error generating captions:', error);
-      toast.error('Failed to generate captions');
+      toast({
+        title: "Error",
+        description: "Failed to generate captions",
+        variant: "destructive"
+      });
     } finally {
       setIsGeneratingCaptions(false);
     }
@@ -77,7 +90,11 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       : uploadedImage;
     
     if (!imageUrl) {
-      toast.error('Please select or upload an image first');
+      toast({
+        title: "Error",
+        description: "Please select or upload an image first",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -87,12 +104,17 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       const tags = await analyzeMemeImage(imageUrl);
       setImageTags(tags);
       
-      toast.success('Image analyzed successfully', {
-        description: `Tags: ${tags.join(', ')}`
+      toast({
+        title: "Success",
+        description: `Image analyzed successfully. Tags: ${tags.join(', ')}`,
       });
     } catch (error) {
       console.error('Error analyzing image:', error);
-      toast.error('Failed to analyze image');
+      toast({
+        title: "Error",
+        description: "Failed to analyze image",
+        variant: "destructive"
+      });
     } finally {
       setIsAnalyzingImage(false);
     }
@@ -125,7 +147,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Load image
-    const img = new window.Image(); // Use window.Image instead of just Image
+    const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
       // Set canvas dimensions to match image
@@ -200,12 +222,20 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
   // Function to save the meme
   const handleSaveMeme = async () => {
     if (!user) {
-      toast.error('You must be logged in to create memes');
+      toast({
+        title: "Error",
+        description: "You must be logged in to create memes",
+        variant: "destructive"
+      });
       return;
     }
     
     if (!caption || (activeTab === 'upload' && !uploadedImage)) {
-      toast.error('Please add both image and caption');
+      toast({
+        title: "Error",
+        description: "Please add both image and caption",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -287,12 +317,14 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       console.log('Meme successfully saved to database:', memeData);
       
       if (ipfsResult.success) {
-        toast.success('Meme created successfully and stored on IPFS!', {
-          description: `Your meme is permanently available at: ${ipfsResult.gatewayUrl}`
+        toast({
+          title: "Success",
+          description: `Meme created successfully and stored on IPFS! Your meme is permanently available at: ${ipfsResult.gatewayUrl}`,
         });
       } else {
-        toast.success('Meme created successfully!', {
-          description: 'Note: IPFS backup failed, but meme was saved to our server.'
+        toast({
+          title: "Success",
+          description: "Meme created successfully! Note: IPFS backup failed, but meme was saved to our server.",
         });
       }
       
@@ -314,7 +346,11 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       
     } catch (error) {
       console.error('Error creating meme:', error);
-      toast.error('Failed to create meme: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast({
+        title: "Error",
+        description: "Failed to create meme: " + (error instanceof Error ? error.message : 'Unknown error'),
+        variant: "destructive"
+      });
     } finally {
       setIsCreatingMeme(false);
       setIsUploadingToIPFS(false);

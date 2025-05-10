@@ -106,81 +106,133 @@ export async function createProfile(profile: Partial<User>): Promise<User | null
 
 // Memes
 export async function getMemes(limit = 10, offset = 0): Promise<Meme[]> {
-  // Fix: Don't try to join with creator profile in this query
-  const { data, error } = await supabase
+  // First fetch memes
+  const { data: memesData, error: memesError } = await supabase
     .from('memes')
     .select('*')
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
   
-  if (error) {
-    console.error('Error fetching memes:', error);
+  if (memesError) {
+    console.error('Error fetching memes:', memesError);
     return [];
   }
   
-  // After fetching memes, fetch profiles for creators if needed
-  const memesList = await Promise.all(data.map(async (meme) => {
-    let creator;
-    if (meme.creator_id) {
-      const profile = await getProfile(meme.creator_id);
-      if (profile) {
-        creator = profile;
-      }
+  // Then fetch profiles for creators in a single batch
+  const creatorIds = [...new Set(memesData.map(meme => meme.creator_id))];
+  let creatorProfiles: Record<string, User> = {};
+  
+  if (creatorIds.length > 0) {
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', creatorIds);
+      
+    if (!profilesError && profilesData) {
+      creatorProfiles = profilesData.reduce((acc: Record<string, User>, profile) => {
+        acc[profile.id] = {
+          id: profile.id,
+          username: profile.username,
+          avatarUrl: profile.avatar_url || '',
+          memeStreak: profile.meme_streak,
+          wins: profile.wins,
+          losses: profile.losses,
+          level: profile.level,
+          xp: profile.xp,
+          createdAt: new Date(profile.created_at)
+        };
+        return acc;
+      }, {});
     }
-    
-    return {
-      id: meme.id,
-      prompt: meme.prompt,
-      prompt_id: meme.prompt_id,
-      imageUrl: meme.image_url,
-      ipfsCid: meme.ipfs_cid || '',
-      caption: meme.caption,
-      creatorId: meme.creator_id,
-      creator: creator,
-      votes: meme.votes,
-      createdAt: new Date(meme.created_at),
-      tags: meme.tags || []
-    };
-  }));
-  
-  return memesList;
-}
-
-export async function getMemesByUser(userId: string, limit = 10, offset = 0): Promise<Meme[]> {
-  // Fix: Don't try to join with creator profile in this query
-  const { data, error } = await supabase
-    .from('memes')
-    .select('*')
-    .eq('creator_id', userId)
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
-  
-  if (error) {
-    console.error('Error fetching memes by user:', error);
-    return [];
   }
   
-  // After fetching memes, fetch profile for creator
-  const userProfile = await getProfile(userId);
-  
-  return data.map(meme => ({
+  // Map the memes data with their creators
+  return memesData.map(meme => ({
     id: meme.id,
-    prompt: meme.prompt,
+    prompt: meme.prompt || '',
     prompt_id: meme.prompt_id,
     imageUrl: meme.image_url,
     ipfsCid: meme.ipfs_cid || '',
     caption: meme.caption,
     creatorId: meme.creator_id,
-    creator: userProfile || undefined,
+    creator: creatorProfiles[meme.creator_id],
     votes: meme.votes,
     createdAt: new Date(meme.created_at),
     tags: meme.tags || []
   }));
 }
 
-// Fix createMeme to ensure it properly maps and returns data
+export async function getMemesByUser(userId: string, limit = 10, offset = 0): Promise<Meme[]> {
+  // First fetch memes by user
+  const { data: memesData, error: memesError } = await supabase
+    .from('memes')
+    .select('*')
+    .eq('creator_id', userId)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+  
+  if (memesError) {
+    console.error('Error fetching memes by user:', memesError);
+    return [];
+  }
+  
+  // Then fetch the user profile once
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  
+  let creator: User | undefined = undefined;
+  
+  if (!profileError && profileData) {
+    creator = {
+      id: profileData.id,
+      username: profileData.username,
+      avatarUrl: profileData.avatar_url || '',
+      memeStreak: profileData.meme_streak,
+      wins: profileData.wins,
+      losses: profileData.losses,
+      level: profileData.level,
+      xp: profileData.xp,
+      createdAt: new Date(profileData.created_at)
+    };
+  }
+  
+  // Map the memes data with their creator
+  return memesData.map(meme => ({
+    id: meme.id,
+    prompt: meme.prompt || '',
+    prompt_id: meme.prompt_id,
+    imageUrl: meme.image_url,
+    ipfsCid: meme.ipfs_cid || '',
+    caption: meme.caption,
+    creatorId: meme.creator_id,
+    creator: creator,
+    votes: meme.votes,
+    createdAt: new Date(meme.created_at),
+    tags: meme.tags || []
+  }));
+}
+
 export async function createMeme(meme: Partial<Meme>): Promise<Meme | null> {
   console.log('Creating meme with data:', meme);
+  
+  // Validate required fields
+  if (!meme.imageUrl) {
+    console.error('Error creating meme: imageUrl is required');
+    return null;
+  }
+  
+  if (!meme.caption) {
+    console.error('Error creating meme: caption is required');
+    return null;
+  }
+  
+  if (!meme.creatorId) {
+    console.error('Error creating meme: creatorId is required');
+    return null;
+  }
   
   const dbMeme = {
     prompt: meme.prompt,

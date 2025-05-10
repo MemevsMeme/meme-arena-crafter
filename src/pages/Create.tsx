@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -7,7 +6,7 @@ import MemeGenerator from '@/components/meme/MemeGenerator';
 import { getActivePrompt } from '@/lib/database';
 import { Prompt } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 
 const Create = () => {
   const navigate = useNavigate();
@@ -23,7 +22,11 @@ const Create = () => {
         setActivePrompt(prompt);
       } catch (error) {
         console.error('Error fetching active prompt:', error);
-        toast.error('Failed to load today\'s challenge');
+        toast({
+          title: "Error",
+          description: "Failed to load today's challenge",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
@@ -33,11 +36,16 @@ const Create = () => {
   }, []);
 
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
-    toast.success('Meme created successfully!');
+    toast({
+      title: "Success",
+      description: "Meme created successfully!"
+    });
     
     // Navigate to the meme battle page or profile
     setTimeout(() => {
-      navigate(`/profile/${user?.id}`);
+      if (user) {
+        navigate(`/profile/${user.id}`);
+      }
     }, 1500);
   };
 
