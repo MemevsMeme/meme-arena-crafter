@@ -7,13 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MEME_TEMPLATES, CAPTION_STYLES } from '@/lib/constants';
-import { Image as LucideImage, Upload, Wand, Save, AlertCircle, WandSparkles, Tag, Database } from 'lucide-react';
+import { Image as LucideImage, Upload, Wand, Save, AlertCircle, WandSparkles, Tag, Database, Gif } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { createMeme } from '@/lib/database';
-import { generateCaption, analyzeMemeImage, generateMemeImage } from '@/lib/ai';
+import { generateCaption, analyzeMemeImage, generateMemeImage, isAnimatedGif } from '@/lib/ai';
 import { uploadFileToIPFS } from '@/lib/ipfs';
+import TextEditor, { TextPosition } from './TextEditor';
 
 interface MemeGeneratorProps {
   promptText?: string;
@@ -28,6 +29,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
   const [caption, setCaption] = useState('');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [isGif, setIsGif] = useState(false);
   const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false);
   const [generatedCaptions, setGeneratedCaptions] = useState<string[]>([]);
   const [selectedStyle, setSelectedStyle] = useState(CAPTION_STYLES[0].id);
@@ -39,16 +41,51 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
   const [isGeneratingAIImage, setIsGeneratingAIImage] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [textPositions, setTextPositions] = useState<TextPosition[]>([]);
 
   // Generate a preview when caption or template/image changes
   useEffect(() => {
-    if (caption && (selectedTemplate || uploadedImage || generatedImage)) {
+    if ((caption || textPositions.length > 0) && (selectedTemplate || uploadedImage || generatedImage)) {
       setShowPreview(true);
       renderMemeToCanvas();
     } else {
       setShowPreview(false);
     }
-  }, [caption, selectedTemplate, uploadedImage, generatedImage]);
+  }, [caption, selectedTemplate, uploadedImage, generatedImage, textPositions]);
+
+  // Initialize text positions from template
+  useEffect(() => {
+    if (activeTab === 'template' && selectedTemplate) {
+      // Convert template positions to text positions
+      const initialPositions = selectedTemplate.textPositions.map((pos, index) => ({
+        text: index === 0 ? caption : '',  // Only set caption for the first position
+        x: pos.x,
+        y: pos.y,
+        fontSize: pos.fontSize,
+        maxWidth: pos.maxWidth,
+        alignment: 'center' as const,
+        color: '#ffffff',
+      }));
+      
+      setTextPositions(initialPositions);
+    } else if ((activeTab === 'upload' || activeTab === 'ai-generated') && (uploadedImage || generatedImage)) {
+      // For custom uploads, start with one centered text element if none exist
+      if (textPositions.length === 0) {
+        setTextPositions([
+          {
+            text: caption,
+            x: 50,
+            y: 85,
+            fontSize: 24,
+            maxWidth: 300,
+            alignment: 'center',
+            color: '#ffffff',
+          }
+        ]);
+      }
+    }
+  }, [activeTab, selectedTemplate, uploadedImage, generatedImage]);
 
   const handleGenerateCaptions = async () => {
     if (!promptText) {
@@ -166,18 +203,58 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
   
   const handleSelectCaption = (text: string) => {
     setCaption(text);
+    
+    // Also update the first text position if in edit mode
+    if (isEditMode && textPositions.length > 0) {
+      const updatedPositions = [...textPositions];
+      updatedPositions[0] = { ...updatedPositions[0], text };
+      setTextPositions(updatedPositions);
+    }
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setFile(file);
+      
+      // Check if it's an animated GIF
+      if (file.type === 'image/gif') {
+        const animated = await isAnimatedGif(file);
+        setIsGif(animated);
+        console.log(`File is ${animated ? 'an animated' : 'a static'} GIF`);
+      } else {
+        setIsGif(false);
+      }
+      
       const reader = new FileReader();
       reader.onload = (e) => {
         setUploadedImage(e.target?.result as string);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleAddTextElement = () => {
+    const newPosition: TextPosition = {
+      text: '',
+      x: 50,
+      y: 50,
+      fontSize: 24,
+      maxWidth: 200,
+      alignment: 'center',
+      color: '#ffffff',
+    };
+    
+    setTextPositions([...textPositions, newPosition]);
+  };
+
+  const handleRemoveTextElement = (index: number) => {
+    const updated = textPositions.filter((_, i) => i !== index);
+    setTextPositions(updated);
+  };
+
+  const handleTextPositionsChange = (positions: TextPosition[]) => {
+    setTextPositions(positions);
   };
 
   const renderMemeToCanvas = () => {
@@ -201,38 +278,67 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       // Draw image
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       
-      // Add caption
-      const lines = caption.split('\n');
+      // If it's a GIF, we don't add text to the preview (will be rendered during viewing)
+      if (isGif) return;
       
-      if (activeTab === 'template' && selectedTemplate.textPositions) {
-        // Use predefined positions for templates
-        selectedTemplate.textPositions.forEach((pos, index) => {
-          if (index < lines.length) {
+      // In simple mode, use the caption text
+      if (!isEditMode) {
+        // Add caption
+        const lines = caption.split('\n');
+        
+        if (activeTab === 'template' && selectedTemplate.textPositions) {
+          // Use predefined positions for templates
+          selectedTemplate.textPositions.forEach((pos, index) => {
+            if (index < lines.length) {
+              drawText(
+                ctx, 
+                lines[index], 
+                pos.x / 100 * canvas.width, 
+                pos.y / 100 * canvas.height, 
+                pos.fontSize, 
+                pos.maxWidth,
+                'center', 
+                '#ffffff'
+              );
+            }
+          });
+        } else {
+          // Default position for uploaded/generated images - center bottom
+          const fontSize = Math.max(16, Math.min(canvas.width / 15, 36));
+          const lineHeight = fontSize * 1.2;
+          const totalHeight = lines.length * lineHeight;
+          
+          lines.forEach((line, index) => {
             drawText(
-              ctx, 
-              lines[index], 
-              pos.x / 100 * canvas.width, 
-              pos.y / 100 * canvas.height, 
-              pos.fontSize, 
-              pos.maxWidth
+              ctx,
+              line,
+              canvas.width / 2,
+              canvas.height - totalHeight + index * lineHeight,
+              fontSize,
+              canvas.width * 0.8,
+              'center',
+              '#ffffff'
+            );
+          });
+        }
+      }
+      // In edit mode, use the text positions
+      else {
+        textPositions.forEach((position) => {
+          if (position.text) {
+            drawText(
+              ctx,
+              position.text,
+              position.x / 100 * canvas.width,
+              position.y / 100 * canvas.height,
+              position.fontSize,
+              position.maxWidth,
+              position.alignment || 'center',
+              position.color || '#ffffff',
+              position.isBold,
+              position.isItalic
             );
           }
-        });
-      } else {
-        // Default position for uploaded/generated images - center bottom
-        const fontSize = Math.max(16, Math.min(canvas.width / 15, 36));
-        const lineHeight = fontSize * 1.2;
-        const totalHeight = lines.length * lineHeight;
-        
-        lines.forEach((line, index) => {
-          drawText(
-            ctx,
-            line,
-            canvas.width / 2,
-            canvas.height - totalHeight + index * lineHeight,
-            fontSize,
-            canvas.width * 0.8
-          );
         });
       }
     };
@@ -256,10 +362,19 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
     x: number,
     y: number,
     fontSize: number,
-    maxWidth: number
+    maxWidth: number,
+    alignment: 'left' | 'center' | 'right' = 'center',
+    color: string = '#ffffff',
+    isBold: boolean = false,
+    isItalic: boolean = false
   ) => {
-    ctx.font = `bold ${fontSize}px Impact, sans-serif`;
-    ctx.textAlign = 'center';
+    // Set font style
+    let fontStyle = '';
+    if (isBold) fontStyle += 'bold ';
+    if (isItalic) fontStyle += 'italic ';
+    
+    ctx.font = `${fontStyle}${fontSize}px Impact, sans-serif`;
+    ctx.textAlign = alignment;
     ctx.textBaseline = 'middle';
     
     // Draw text stroke
@@ -268,7 +383,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
     ctx.strokeText(text, x, y, maxWidth);
     
     // Draw text fill
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = color;
     ctx.fillText(text, x, y, maxWidth);
   };
   
@@ -298,10 +413,14 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       return;
     }
     
-    if (!caption || (!activeTab.includes('template') && !uploadedImage && !generatedImage)) {
+    // Check if we have either simple caption or text elements
+    const hasCaption = !!caption;
+    const hasTextElements = textPositions.some(pos => !!pos.text);
+    
+    if ((!hasCaption && !hasTextElements) || (!activeTab.includes('template') && !uploadedImage && !generatedImage)) {
       toast({
         title: "Error",
-        description: "Please add both image and caption",
+        description: "Please add both image and caption/text",
         variant: "destructive"
       });
       return;
@@ -313,23 +432,33 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       console.log('Starting meme creation process...');
       console.log('User ID:', user.id);
       
-      // Ensure canvas is rendered
-      renderMemeToCanvas();
+      let memeFile: File;
+      let fileName: string;
       
-      // Convert canvas to blob
-      const canvas = canvasRef.current;
-      if (!canvas) throw new Error('Canvas not available');
-      
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error('Failed to create blob from canvas'));
-        }, 'image/png');
-      });
-      
-      // Create file from blob
-      const fileName = `meme_${Date.now()}.png`;
-      const memeFile = new File([blob], fileName, { type: 'image/png' });
+      // For animated GIFs, we don't render to canvas, we use the original file
+      if (isGif && file) {
+        fileName = `meme_${Date.now()}.gif`;
+        memeFile = new File([file], fileName, { type: 'image/gif' });
+      } else {
+        // For static images, render the meme on canvas
+        // Ensure canvas is rendered
+        renderMemeToCanvas();
+        
+        // Convert canvas to blob
+        const canvas = canvasRef.current;
+        if (!canvas) throw new Error('Canvas not available');
+        
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error('Failed to create blob from canvas'));
+          }, 'image/png');
+        });
+        
+        // Create file from blob
+        fileName = `meme_${Date.now()}.png`;
+        memeFile = new File([blob], fileName, { type: 'image/png' });
+      }
       
       console.log('Uploading to Supabase storage...');
       
@@ -350,7 +479,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
         .upload(`public/${user.id}/${fileName}`, memeFile, {
           cacheControl: '3600',
           upsert: false,
-          contentType: 'image/png'
+          contentType: isGif ? 'image/gif' : 'image/png'
         });
       
       if (uploadError) {
@@ -369,13 +498,22 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       
       // Also upload to IPFS for permanent storage
       setIsUploadingToIPFS(true);
-      const memeTitle = caption.substring(0, 30) + '...';
+      // Use the first text position or caption for the title
+      const memeTitle = isEditMode && textPositions.length > 0 && textPositions[0].text
+        ? textPositions[0].text.substring(0, 30) + '...'
+        : caption.substring(0, 30) + '...';
+        
       const ipfsResult = await uploadFileToIPFS(memeFile, `Meme: ${memeTitle}`);
       setIsUploadingToIPFS(false);
       
       const ipfsCid = ipfsResult.success ? ipfsResult.ipfsHash : undefined;
       
       console.log('IPFS upload result:', ipfsResult);
+      
+      // Get the final caption text (combine all text positions if in edit mode)
+      const finalCaption = isEditMode
+        ? textPositions.map(pos => pos.text).filter(Boolean).join('\n')
+        : caption;
       
       // Create meme record in database with absolute URL
       console.log('Saving meme to database with creator_id:', user.id);
@@ -384,7 +522,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
         prompt_id: promptId, 
         imageUrl: publicUrl,
         ipfsCid: ipfsCid,
-        caption: caption,
+        caption: finalCaption,
         creatorId: user.id,
         votes: 0,
         createdAt: new Date(),
@@ -424,9 +562,12 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       setCaption('');
       setUploadedImage(null);
       setFile(null);
+      setIsGif(false);
       setGeneratedImage(null);
       setGeneratedCaptions([]);
       setImageTags([]);
+      setTextPositions([]);
+      setIsEditMode(false);
       
     } catch (error) {
       console.error('Error creating meme:', error);
@@ -494,7 +635,9 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
         
         <TabsContent value="upload" className="py-4">
           <div className="mb-4">
-            <Label htmlFor="image-upload">Upload Image</Label>
+            <Label htmlFor="image-upload" className="flex items-center gap-2">
+              Upload Image <Gif className="h-4 w-4 text-brand-purple" /> <span className="text-xs text-muted-foreground">(GIFs supported)</span>
+            </Label>
             <Input
               id="image-upload"
               type="file"
@@ -511,6 +654,12 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
                 alt="Uploaded"
                 className="w-full h-full object-contain"
               />
+              {isGif && (
+                <div className="mt-2 p-2 bg-muted/50 rounded text-xs text-center">
+                  <Gif className="h-3 w-3 inline-block mr-1" />
+                  Animated GIF detected. Text will appear during viewing.
+                </div>
+              )}
             </div>
           )}
         </TabsContent>
@@ -568,6 +717,16 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
           <Tag className="h-3.5 w-3.5" />
           {isAnalyzingImage ? 'Analyzing...' : 'Analyze Image'}
         </Button>
+
+        <Button
+          variant={isEditMode ? "default" : "outline"}
+          size="sm"
+          className={`flex items-center gap-1.5 ${isEditMode ? "bg-brand-purple" : ""}`}
+          onClick={() => setIsEditMode(!isEditMode)}
+        >
+          <LucideImage className="h-3.5 w-3.5" />
+          {isEditMode ? 'Simple Mode' : 'Advanced Editor'}
+        </Button>
       </div>
       
       {imageTags.length > 0 && (
@@ -583,34 +742,47 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
         </div>
       )}
       
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <Label htmlFor="caption">Caption</Label>
-        </div>
-        
-        {generatedCaptions.length > 0 && (
-          <div className="grid grid-cols-1 gap-2 mb-3">
-            {generatedCaptions.map((captionText, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                className="justify-start h-auto py-2 whitespace-pre-line text-left"
-                onClick={() => handleSelectCaption(captionText)}
-              >
-                {captionText}
-              </Button>
-            ))}
+      {!isEditMode ? (
+        // Simple caption mode
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <Label htmlFor="caption">Caption</Label>
           </div>
-        )}
-        
-        <Textarea
-          id="caption"
-          placeholder="Enter caption for your meme..."
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          className="h-24"
-        />
-      </div>
+          
+          {generatedCaptions.length > 0 && (
+            <div className="grid grid-cols-1 gap-2 mb-3">
+              {generatedCaptions.map((captionText, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="justify-start h-auto py-2 whitespace-pre-line text-left"
+                  onClick={() => handleSelectCaption(captionText)}
+                >
+                  {captionText}
+                </Button>
+              ))}
+            </div>
+          )}
+          
+          <Textarea
+            id="caption"
+            placeholder="Enter caption for your meme..."
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            className="h-24"
+          />
+        </div>
+      ) : (
+        // Advanced editor mode
+        <div className="mb-6">
+          <TextEditor 
+            textPositions={textPositions} 
+            onChange={handleTextPositionsChange} 
+            onRemoveText={handleRemoveTextElement}
+            onAddText={handleAddTextElement}
+          />
+        </div>
+      )}
       
       <div className="mb-6">
         <Label className="mb-2 block">Caption Style</Label>
@@ -635,6 +807,12 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
           <div className="max-h-80 overflow-hidden flex justify-center rounded-lg border">
             <canvas ref={canvasRef} className="max-w-full max-h-80 object-contain" />
           </div>
+          {isGif && (
+            <p className="text-xs text-center mt-1 text-muted-foreground">
+              <Gif className="h-3 w-3 inline mr-1" />
+              For animated GIFs, preview shows first frame only
+            </p>
+          )}
         </div>
       )}
 
@@ -651,7 +829,13 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
         className="w-full create-button" 
         size="lg"
         onClick={handleSaveMeme}
-        disabled={!caption || (activeTab === 'upload' && !uploadedImage && !generatedImage) || isCreatingMeme || !user}
+        disabled={
+          (!caption && textPositions.every(pos => !pos.text)) || 
+          (activeTab === 'upload' && !uploadedImage) || 
+          (activeTab === 'ai-generated' && !generatedImage) || 
+          isCreatingMeme || 
+          !user
+        }
       >
         {isCreatingMeme ? (
           isUploadingToIPFS ? 'Storing on IPFS...' : 'Creating Meme...'

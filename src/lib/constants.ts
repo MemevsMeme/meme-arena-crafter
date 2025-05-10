@@ -1,4 +1,3 @@
-
 export const APP_NAME = 'MemeVsMeme';
 
 export const MEME_TEMPLATES = [

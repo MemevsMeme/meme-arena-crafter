@@ -101,6 +101,56 @@ export const analyzeMemeImage = async (imageUrl: string): Promise<string[]> => {
   }
 };
 
+// Add support for checking if a file is an animated GIF
+export const isAnimatedGif = (file: File): Promise<boolean> => {
+  return new Promise((resolve) => {
+    // Create a new FileReader
+    const reader = new FileReader();
+    
+    reader.onload = (event) => {
+      // Convert to array buffer
+      const buffer = event.target?.result;
+      if (buffer && buffer instanceof ArrayBuffer) {
+        // Check for GIF header (GIF89a or GIF87a)
+        const header = new Uint8Array(buffer, 0, 6);
+        const isGif = header[0] === 0x47 && header[1] === 0x49 && header[2] === 0x46; // "GIF"
+        
+        if (!isGif) {
+          resolve(false);
+          return;
+        }
+        
+        // Check for animation by looking for Graphics Control Extension
+        // An animated GIF contains multiple frames and usually has this extension
+        try {
+          const view = new Uint8Array(buffer);
+          // Look for Graphics Control Extension (0x21, 0xF9)
+          for (let i = 0; i < view.length - 1; i++) {
+            if (view[i] === 0x21 && view[i + 1] === 0xF9) {
+              resolve(true);
+              return;
+            }
+          }
+          resolve(false);
+        } catch (e) {
+          console.error('Error analyzing GIF:', e);
+          resolve(false);
+        }
+      } else {
+        resolve(false);
+      }
+    };
+    
+    reader.onerror = () => {
+      console.error('Error reading file');
+      resolve(false);
+    };
+    
+    // Read the first few kilobytes - enough to detect animation
+    reader.readAsArrayBuffer(file.slice(0, 30000));
+  });
+};
+
 // Rate the quality of a meme based on caption and image
 export const rateMeme = async (imageUrl: string, caption: string): Promise<number> => {
   console.log(`Rating meme with caption: "${caption}"`);
