@@ -25,34 +25,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
-    const session = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-
+    // Set up the auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
       setUser(session?.user || null);
+      
+      // Use setTimeout to prevent deadlocks with Supabase auth
       if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    };
-
-    session();
-
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user || null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
+        setTimeout(() => {
+          fetchProfile(session.user.id);
+        }, 0);
       } else {
         setUserProfile(null);
         setLoading(false);
       }
     });
+
+    // Then check for an existing session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user || null);
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+        setLoading(false);
+      }
+    };
+
+    getInitialSession();
+
+    // Cleanup the subscription when the component unmounts
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchProfile = async (userId: string) => {
-    const profile = await getProfile(userId);
-    setUserProfile(profile);
-    setLoading(false);
+    try {
+      const profile = await getProfile(userId);
+      setUserProfile(profile);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signIn = async (email: string, password: string) => {
@@ -105,11 +126,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             createdAt: new Date(),
           };
 
-          const profile = await createProfile(newProfile);
-          if (profile) {
-            setUserProfile(profile);
-            toast.success('Profile created successfully!');
-          } else {
+          try {
+            const profile = await createProfile(newProfile);
+            if (profile) {
+              setUserProfile(profile);
+              toast.success('Profile created successfully!');
+            } else {
+              toast.error('Failed to create profile');
+            }
+          } catch (profileError) {
+            console.error('Profile creation error:', profileError);
             toast.error('Failed to create profile');
           }
         }

@@ -16,12 +16,14 @@ import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import { useAuth } from "./contexts/AuthContext";
 
+// Create a new QueryClient instance
 const queryClient = new QueryClient();
 
-// Protected route component
+// Protected route component that requires authentication
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  // We'll use the useAuth hook inside the component
+  // to ensure it's only used within the AuthProvider context
   const { user, loading } = useAuth();
   
   if (loading) {
@@ -41,6 +43,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   return <>{children}</>;
 };
+
+// Import useAuth after the ProtectedRoute component is defined
+import { useAuth } from "./contexts/AuthContext";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

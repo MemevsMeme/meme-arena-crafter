@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -17,26 +17,53 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState<{
+    email?: string;
+    password?: string;
+    username?: string;
+  }>({});
 
   // Redirect if already logged in
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       navigate('/');
     }
   }, [user, navigate]);
 
+  const validateForm = (): boolean => {
+    const errors: typeof formErrors = {};
+    
+    if (!email) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = 'Email is invalid';
+    }
+    
+    if (!password) {
+      errors.password = 'Password is required';
+    } else if (password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
+    }
+    
+    if (!username) {
+      errors.username = 'Username is required';
+    } else if (username.length < 3) {
+      errors.username = 'Username must be at least 3 characters';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    if (password.length < 8) {
-      toast.error('Password is too short', {
-        description: 'Password must be at least 8 characters long.',
-      });
-      setIsLoading(false);
+    
+    if (!validateForm()) {
       return;
     }
-
+    
+    setIsLoading(true);
+    
     try {
       console.log('Starting signup process');
       const result = await signUp(email, password, username);
@@ -65,7 +92,7 @@ const Register = () => {
         });
         navigate('/login');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Unexpected signup error:', error);
       toast.error('An unexpected error occurred', {
         description: 'Please try again later.',
@@ -96,6 +123,9 @@ const Register = () => {
                   onChange={(e) => setUsername(e.target.value)}
                   required
                 />
+                {formErrors.username && (
+                  <p className="text-xs text-red-500">{formErrors.username}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -107,6 +137,9 @@ const Register = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
+                {formErrors.email && (
+                  <p className="text-xs text-red-500">{formErrors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
@@ -118,6 +151,9 @@ const Register = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                {formErrors.password && (
+                  <p className="text-xs text-red-500">{formErrors.password}</p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Password must be at least 8 characters.
                 </p>
