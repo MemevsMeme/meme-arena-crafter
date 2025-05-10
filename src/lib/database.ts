@@ -1,6 +1,5 @@
-
 import { supabase } from './supabase';
-import { User, Meme, Prompt, Battle, Vote } from './types';
+import { User, Meme, Prompt, Battle, Vote, Database } from './types';
 
 // User profiles
 export async function getProfile(userId: string): Promise<User | null> {
@@ -15,13 +14,33 @@ export async function getProfile(userId: string): Promise<User | null> {
     return null;
   }
   
-  return data as User;
+  return {
+    id: data.id,
+    username: data.username,
+    avatarUrl: data.avatar_url || '',
+    memeStreak: data.meme_streak,
+    wins: data.wins,
+    losses: data.losses,
+    level: data.level,
+    xp: data.xp,
+    createdAt: new Date(data.created_at)
+  };
 }
 
 export async function updateProfile(userId: string, updates: Partial<User>): Promise<User | null> {
+  // Convert from our app model to database model
+  const dbUpdates: any = {};
+  if (updates.username !== undefined) dbUpdates.username = updates.username;
+  if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl;
+  if (updates.memeStreak !== undefined) dbUpdates.meme_streak = updates.memeStreak;
+  if (updates.wins !== undefined) dbUpdates.wins = updates.wins;
+  if (updates.losses !== undefined) dbUpdates.losses = updates.losses;
+  if (updates.level !== undefined) dbUpdates.level = updates.level;
+  if (updates.xp !== undefined) dbUpdates.xp = updates.xp;
+  
   const { data, error } = await supabase
     .from('profiles')
-    .update(updates)
+    .update(dbUpdates)
     .eq('id', userId)
     .select()
     .single();
@@ -31,13 +50,34 @@ export async function updateProfile(userId: string, updates: Partial<User>): Pro
     return null;
   }
   
-  return data as User;
+  return {
+    id: data.id,
+    username: data.username,
+    avatarUrl: data.avatar_url || '',
+    memeStreak: data.meme_streak,
+    wins: data.wins,
+    losses: data.losses,
+    level: data.level,
+    xp: data.xp,
+    createdAt: new Date(data.created_at)
+  };
 }
 
 export async function createProfile(profile: Partial<User>): Promise<User | null> {
+  const dbProfile: any = {
+    id: profile.id,
+    username: profile.username,
+    avatar_url: profile.avatarUrl,
+    meme_streak: profile.memeStreak || 0,
+    wins: profile.wins || 0,
+    losses: profile.losses || 0,
+    level: profile.level || 1,
+    xp: profile.xp || 0
+  };
+  
   const { data, error } = await supabase
     .from('profiles')
-    .insert([profile])
+    .insert([dbProfile])
     .select()
     .single();
   
@@ -46,7 +86,17 @@ export async function createProfile(profile: Partial<User>): Promise<User | null
     return null;
   }
   
-  return data as User;
+  return {
+    id: data.id,
+    username: data.username,
+    avatarUrl: data.avatar_url || '',
+    memeStreak: data.meme_streak,
+    wins: data.wins,
+    losses: data.losses,
+    level: data.level,
+    xp: data.xp,
+    createdAt: new Date(data.created_at)
+  };
 }
 
 // Memes
@@ -65,7 +115,29 @@ export async function getMemes(limit = 10, offset = 0): Promise<Meme[]> {
     return [];
   }
   
-  return data as Meme[];
+  return data.map((meme: any) => ({
+    id: meme.id,
+    prompt: meme.prompt,
+    prompt_id: meme.prompt_id,
+    imageUrl: meme.image_url,
+    ipfsCid: meme.ipfs_cid || '',
+    caption: meme.caption,
+    creatorId: meme.creator_id,
+    creator: meme.creator ? {
+      id: meme.creator.id,
+      username: meme.creator.username,
+      avatarUrl: meme.creator.avatar_url || '',
+      memeStreak: meme.creator.meme_streak,
+      wins: meme.creator.wins,
+      losses: meme.creator.losses,
+      level: meme.creator.level,
+      xp: meme.creator.xp,
+      createdAt: new Date(meme.creator.created_at)
+    } : undefined,
+    votes: meme.votes,
+    createdAt: new Date(meme.created_at),
+    tags: meme.tags || []
+  }));
 }
 
 export async function getMemesByUser(userId: string, limit = 10, offset = 0): Promise<Meme[]> {
@@ -88,9 +160,21 @@ export async function getMemesByUser(userId: string, limit = 10, offset = 0): Pr
 }
 
 export async function createMeme(meme: Partial<Meme>): Promise<Meme | null> {
+  const dbMeme: any = {
+    prompt: meme.prompt,
+    prompt_id: meme.prompt_id,
+    image_url: meme.imageUrl,
+    ipfs_cid: meme.ipfsCid,
+    caption: meme.caption,
+    creator_id: meme.creatorId,
+    votes: meme.votes || 0,
+    created_at: meme.createdAt ? meme.createdAt.toISOString() : new Date().toISOString(),
+    tags: meme.tags || []
+  };
+  
   const { data, error } = await supabase
     .from('memes')
-    .insert([meme])
+    .insert([dbMeme])
     .select()
     .single();
   
@@ -99,7 +183,18 @@ export async function createMeme(meme: Partial<Meme>): Promise<Meme | null> {
     return null;
   }
   
-  return data as Meme;
+  return {
+    id: data.id,
+    prompt: data.prompt,
+    prompt_id: data.prompt_id,
+    imageUrl: data.image_url,
+    ipfsCid: data.ipfs_cid || '',
+    caption: data.caption,
+    creatorId: data.creator_id,
+    votes: data.votes,
+    createdAt: new Date(data.created_at),
+    tags: data.tags || []
+  };
 }
 
 // Prompts
@@ -225,4 +320,46 @@ export async function getVoteCountForBattle(battleId: string): Promise<number> {
   }
   
   return count || 0;
+}
+
+// Convert database battle to app model
+function mapBattleFromDb(battle: any): Battle {
+  return {
+    id: battle.id,
+    promptId: battle.prompt_id || '',
+    prompt: battle.prompt ? {
+      id: battle.prompt.id,
+      text: battle.prompt.text,
+      theme: battle.prompt.theme || '',
+      tags: battle.prompt.tags || [],
+      active: battle.prompt.active,
+      startDate: new Date(battle.prompt.start_date),
+      endDate: new Date(battle.prompt.end_date)
+    } : undefined,
+    memeOneId: battle.meme_one_id,
+    memeTwoId: battle.meme_two_id,
+    memeOne: battle.meme_one ? mapMemeFromDb(battle.meme_one) : undefined,
+    memeTwo: battle.meme_two ? mapMemeFromDb(battle.meme_two) : undefined,
+    winnerId: battle.winner_id || undefined,
+    voteCount: battle.vote_count,
+    startTime: new Date(battle.start_time),
+    endTime: new Date(battle.end_time),
+    status: battle.status as 'active' | 'completed' | 'cancelled'
+  };
+}
+
+// Convert database meme to app model
+function mapMemeFromDb(meme: any): Meme {
+  return {
+    id: meme.id,
+    prompt: meme.prompt || '',
+    prompt_id: meme.prompt_id,
+    imageUrl: meme.image_url,
+    ipfsCid: meme.ipfs_cid || '',
+    caption: meme.caption,
+    creatorId: meme.creator_id,
+    votes: meme.votes,
+    createdAt: new Date(meme.created_at),
+    tags: meme.tags || []
+  };
 }

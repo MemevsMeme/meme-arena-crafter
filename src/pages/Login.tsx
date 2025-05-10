@@ -34,9 +34,21 @@ const Login = () => {
       
       if (error) {
         console.error('Login error:', error);
-        toast.error('Login failed', {
-          description: error.message,
-        });
+        
+        // Improved error messages
+        if (error.message.includes('Email not confirmed')) {
+          toast.error('Email not confirmed', {
+            description: 'Please check your email to confirm your account.',
+          });
+        } else if (error.message.includes('Invalid login credentials')) {
+          toast.error('Invalid credentials', {
+            description: 'Please check your email and password and try again.',
+          });
+        } else {
+          toast.error('Login failed', {
+            description: error.message,
+          });
+        }
       } else {
         console.log('Login successful');
         toast.success('Welcome back!', {
