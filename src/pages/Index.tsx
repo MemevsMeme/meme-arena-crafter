@@ -16,8 +16,19 @@ const Index = () => {
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
   
   // Use the mockup data temporarily, will be replaced with real data queries
-  const todaysMemes = MOCK_MEMES.slice(0, 3);
-  const activeBattles = MOCK_BATTLES as Battle[];
+  const todaysMemes = MOCK_MEMES.slice(0, 3).map(meme => ({
+    ...meme,
+    ipfsCid: meme.ipfsCid || '',
+    creatorId: meme.creator?.id || '',
+    tags: meme.tags || []
+  })) as Meme[];
+  
+  // Convert MOCK_BATTLES to proper Battle type with required startTime
+  const activeBattles = MOCK_BATTLES.map(battle => ({
+    ...battle,
+    startTime: new Date(battle.startTime || Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  })) as Battle[];
+  
   const recentBattles = activeBattles.slice(0, 3);
 
   // Setup query for active prompt

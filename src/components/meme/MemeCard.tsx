@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { Heart, MessageSquare, Share, Award } from 'lucide-react';
 import { Meme } from '@/lib/types';
+import MemeIpfsLink from '@/components/ui/MemeIpfsLink';
+import { toast } from 'sonner';
 
 interface MemeCardProps {
   meme: Meme;
@@ -48,8 +50,23 @@ const MemeCard = ({
       return;
     }
     
-    // Just mock share functionality
-    alert('Share URL copied to clipboard!');
+    // Share functionality
+    if (navigator.share) {
+      navigator.share({
+        title: `Meme by ${meme.creator?.username || 'unknown'}`,
+        text: meme.caption,
+        url: window.location.href,
+      })
+      .catch(err => {
+        console.error('Error sharing:', err);
+        toast.success('Share URL copied to clipboard!');
+      });
+    } else {
+      // Fallback for browsers that don't support the Web Share API
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => toast.success('Share URL copied to clipboard!'))
+        .catch(err => console.error('Could not copy URL:', err));
+    }
   };
 
   const handleImageError = () => {
@@ -127,9 +144,13 @@ const MemeCard = ({
             </Link>
           </div>
           
-          <Button variant="ghost" size="sm" onClick={handleShare}>
-            <Share className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center">
+            {meme.ipfsCid && <MemeIpfsLink ipfsCid={meme.ipfsCid} />}
+            
+            <Button variant="ghost" size="sm" onClick={handleShare}>
+              <Share className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
     </div>

@@ -55,8 +55,8 @@ const Battle = () => {
   const memeTwo = MOCK_MEMES.find(m => m.id === battle.memeTwoId) || MOCK_MEMES[1];
   const prompt = MOCK_PROMPTS.find(p => p.id === battle.promptId);
   
-  const creatorOne = MOCK_USERS.find(u => u.id === memeOne.creatorId);
-  const creatorTwo = MOCK_USERS.find(u => u.id === memeTwo.creatorId);
+  const creatorOne = MOCK_USERS.find(u => u.id === memeOne.creator?.id);
+  const creatorTwo = MOCK_USERS.find(u => u.id === memeTwo.creator?.id);
   
   // Mock vote count
   const [votes, setVotes] = useState({
@@ -148,7 +148,15 @@ const Battle = () => {
             </div>
             
             <div className={`battle-card ${voteSubmitted === 'one' ? 'border-brand-orange' : ''}`}>
-              <MemeCard meme={memeOne} showActions={false} />
+              <MemeCard 
+                meme={{
+                  ...memeOne,
+                  ipfsCid: memeOne.ipfsCid || '',
+                  creatorId: memeOne.creator?.id || '',
+                  tags: memeOne.tags || []
+                }} 
+                showActions={false} 
+              />
               
               <div className="p-4 bg-background">
                 {!voteSubmitted ? (
@@ -178,7 +186,15 @@ const Battle = () => {
             </div>
             
             <div className={`battle-card ${voteSubmitted === 'two' ? 'border-brand-orange' : ''}`}>
-              <MemeCard meme={memeTwo} showActions={false} />
+              <MemeCard 
+                meme={{
+                  ...memeTwo,
+                  ipfsCid: memeTwo.ipfsCid || '',
+                  creatorId: memeTwo.creator?.id || '',
+                  tags: memeTwo.tags || []
+                }} 
+                showActions={false} 
+              />
               
               <div className="p-4 bg-background">
                 {!voteSubmitted ? (
