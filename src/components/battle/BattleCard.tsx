@@ -9,13 +9,19 @@ import { MOCK_MEMES, MOCK_PROMPTS } from '@/lib/constants';
 interface BattleCardProps {
   battle: Battle;
   compact?: boolean;
+  memeOne?: Meme;
+  memeTwo?: Meme;
 }
 
-const BattleCard = ({ battle, compact = false }: BattleCardProps) => {
-  // For the MVP, we'll use mock data
-  const memeOne = MOCK_MEMES.find(m => m.id === battle.memeOneId) || MOCK_MEMES[0];
-  const memeTwo = MOCK_MEMES.find(m => m.id === battle.memeTwoId) || MOCK_MEMES[1];
-  const prompt = battle.prompt || MOCK_PROMPTS.find(p => p.id === battle.promptId);
+const BattleCard = ({ battle, compact = false, memeOne, memeTwo }: BattleCardProps) => {
+  // For the MVP, we'll use mock data if real data isn't provided
+  const memeOneData = memeOne || MOCK_MEMES.find(m => m.id === battle.memeOneId) || MOCK_MEMES[0];
+  const memeTwoData = memeTwo || MOCK_MEMES.find(m => m.id === battle.memeTwoId) || MOCK_MEMES[1];
+  
+  // Find prompt data - use battle.prompt if it exists, otherwise look up by ID, or use a default
+  const promptData = battle.prompt || 
+                    (battle.promptId ? MOCK_PROMPTS.find(p => p.id === battle.promptId) : null) || 
+                    { text: "Today's meme challenge" };
   
   const timeRemaining = new Date(battle.endTime).getTime() - Date.now();
   const isActive = battle.status === 'active' && timeRemaining > 0;
@@ -38,7 +44,7 @@ const BattleCard = ({ battle, compact = false }: BattleCardProps) => {
               {battle.voteCount} votes
             </div>
             <img
-              src={memeOne.imageUrl}
+              src={memeOneData.imageUrl}
               alt="Meme One"
               className="w-full h-32 object-cover"
             />
@@ -52,7 +58,7 @@ const BattleCard = ({ battle, compact = false }: BattleCardProps) => {
               {battle.voteCount} votes
             </div>
             <img
-              src={memeTwo.imageUrl}
+              src={memeTwoData.imageUrl}
               alt="Meme Two"
               className="w-full h-32 object-cover"
             />
@@ -72,20 +78,20 @@ const BattleCard = ({ battle, compact = false }: BattleCardProps) => {
       </div>
       
       <p className="text-sm mb-4 text-muted-foreground">
-        {prompt?.text || "Today's prompt challenge"}
+        {promptData?.text || "Today's prompt challenge"}
       </p>
       
       <div className="flex flex-col md:flex-row gap-4 mb-4">
         <div className="flex-1">
           <div className="aspect-square rounded-lg overflow-hidden mb-2">
             <img
-              src={memeOne.imageUrl}
+              src={memeOneData.imageUrl}
               alt="Meme One"
               className="w-full h-full object-cover"
             />
           </div>
           <p className="text-sm font-medium text-center">
-            {memeOne.caption.split('\n')[0]}
+            {memeOneData.caption?.split('\n')[0] || ''}
           </p>
         </div>
         
@@ -98,13 +104,13 @@ const BattleCard = ({ battle, compact = false }: BattleCardProps) => {
         <div className="flex-1">
           <div className="aspect-square rounded-lg overflow-hidden mb-2">
             <img
-              src={memeTwo.imageUrl}
+              src={memeTwoData.imageUrl}
               alt="Meme Two"
               className="w-full h-full object-cover"
             />
           </div>
           <p className="text-sm font-medium text-center">
-            {memeTwo.caption.split('\n')[0]}
+            {memeTwoData.caption?.split('\n')[0] || ''}
           </p>
         </div>
       </div>

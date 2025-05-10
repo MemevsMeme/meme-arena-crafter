@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import MemeCard from '@/components/meme/MemeCard';
@@ -10,13 +11,46 @@ import { MOCK_BATTLES, MOCK_MEMES, MOCK_USERS, MOCK_PROMPTS } from '@/lib/consta
 import UserAvatar from '@/components/ui/UserAvatar';
 import { ArrowLeft, Share, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 const Battle = () => {
   const { id } = useParams<{ id: string }>();
   const [voteSubmitted, setVoteSubmitted] = useState<'one' | 'two' | null>(null);
   
+  // Query battle data
+  const { data: battleData, isLoading: battleLoading } = useQuery({
+    queryKey: ['battle', id],
+    queryFn: async () => {
+      if (!id) return null;
+      
+      try {
+        // Fallback to mock data for now
+        return MOCK_BATTLES.find(b => b.id === id) || MOCK_BATTLES[0];
+        
+        // Real implementation would be:
+        /*
+        const { data, error } = await supabase
+          .from('battles')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching battle:', error);
+          return null;
+        }
+        
+        return data;
+        */
+      } catch (error) {
+        console.error('Failed to fetch battle:', error);
+        return null;
+      }
+    },
+  });
+  
   // For MVP, we'll use mock data
-  const battle = MOCK_BATTLES.find(b => b.id === id) || MOCK_BATTLES[0];
+  const battle = battleData || MOCK_BATTLES[0];
   const memeOne = MOCK_MEMES.find(m => m.id === battle.memeOneId) || MOCK_MEMES[0];
   const memeTwo = MOCK_MEMES.find(m => m.id === battle.memeTwoId) || MOCK_MEMES[1];
   const prompt = MOCK_PROMPTS.find(p => p.id === battle.promptId);

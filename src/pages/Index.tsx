@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import PromptOfTheDay from '@/components/meme/PromptOfTheDay';
@@ -8,14 +9,42 @@ import BattleCard from '@/components/battle/BattleCard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MOCK_MEMES, MOCK_BATTLES, MOCK_PROMPTS } from '@/lib/constants';
-import { Battle } from '@/lib/types';
+import { Battle, Meme, Prompt } from '@/lib/types';
+import { supabase } from '@/lib/supabase';
 
 const Index = () => {
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
   
+  // Use the mockup data temporarily, will be replaced with real data queries
   const todaysMemes = MOCK_MEMES.slice(0, 3);
   const activeBattles = MOCK_BATTLES as Battle[];
   const recentBattles = activeBattles.slice(0, 3);
+
+  // Setup query for active prompt
+  const { data: activePrompt, isLoading: promptLoading } = useQuery({
+    queryKey: ['activePrompt'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('prompts')
+          .select()
+          .eq('active', true)
+          .order('start_date', { ascending: false })
+          .limit(1)
+          .single();
+          
+        if (error) {
+          console.error('Error fetching active prompt:', error);
+          return null;
+        }
+        
+        return data as Prompt;
+      } catch (error) {
+        console.error('Failed to fetch active prompt:', error);
+        return null;
+      }
+    },
+  });
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -27,7 +56,7 @@ const Index = () => {
           <div className="lg:col-span-1 flex flex-col gap-6">
             <section>
               <h2 className="text-2xl font-heading mb-3">Today's Challenge</h2>
-              <PromptOfTheDay prompt={MOCK_PROMPTS[0]} />
+              <PromptOfTheDay prompt={activePrompt} isLoading={promptLoading} />
               
               <div className="mt-4">
                 <h3 className="font-heading text-lg mb-2">Previous Prompts</h3>

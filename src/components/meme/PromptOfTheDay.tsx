@@ -12,9 +12,11 @@ interface PromptOfTheDayProps {
 }
 
 const PromptOfTheDay = ({ 
-  prompt = MOCK_PROMPTS[0], 
+  prompt,
   isLoading = false 
 }: PromptOfTheDayProps) => {
+  const defaultPrompt = MOCK_PROMPTS[0];
+
   if (isLoading) {
     return (
       <div className="prompt-card animate-pulse bg-muted">
@@ -32,7 +34,10 @@ const PromptOfTheDay = ({
     );
   }
 
-  if (!prompt) {
+  // If no prompt is provided, use a default placeholder
+  const promptToShow = prompt || defaultPrompt;
+
+  if (!promptToShow) {
     return (
       <div className="prompt-card bg-muted">
         <h3 className="text-lg font-medium mb-1">No Active Prompt</h3>
@@ -44,10 +49,10 @@ const PromptOfTheDay = ({
   return (
     <div className="prompt-card animate-float">
       <h3 className="text-lg font-medium mb-1">Today's Meme Challenge</h3>
-      <p className="text-2xl font-bold mb-4">{prompt.text}</p>
+      <p className="text-2xl font-bold mb-4">{promptToShow.text}</p>
       <div className="flex justify-between items-center">
         <div className="flex gap-1 flex-wrap">
-          {prompt.tags.map((tag) => (
+          {promptToShow.tags && promptToShow.tags.map((tag) => (
             <span key={tag} className="px-2 py-0.5 bg-white/20 rounded-full text-xs">
               #{tag}
             </span>

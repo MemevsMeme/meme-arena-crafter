@@ -1,17 +1,51 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MOCK_USERS } from '@/lib/constants';
 import { Award, Crown, Star, TrendingUp } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { User } from '@/lib/types';
 
 const Leaderboard = () => {
+  // Query to fetch real user data (temporarily using mock data)
+  const { data: usersData, isLoading } = useQuery({
+    queryKey: ['leaderboardUsers'],
+    queryFn: async () => {
+      try {
+        // For now, return mock data
+        return MOCK_USERS;
+        
+        // Real implementation would be:
+        /*
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('xp', { ascending: false })
+          .limit(20);
+          
+        if (error) {
+          console.error('Error fetching users:', error);
+          return [];
+        }
+        
+        return data;
+        */
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+        return [];
+      }
+    },
+  });
+  
   // Create a copy of mock users and sort by various metrics
-  const topCreators = [...MOCK_USERS].sort((a, b) => b.xp - a.xp);
-  const topWinners = [...MOCK_USERS].sort((a, b) => (b.wins / (b.wins + b.losses)) - (a.wins / (a.wins + a.losses)));
-  const topStreaks = [...MOCK_USERS].sort((a, b) => b.memeStreak - a.memeStreak);
+  const users = usersData || [];
+  const topCreators = [...users].sort((a, b) => b.xp - a.xp);
+  const topWinners = [...users].sort((a, b) => (b.wins / (b.wins + b.losses)) - (a.wins / (a.wins + a.losses)));
+  const topStreaks = [...users].sort((a, b) => b.memeStreak - a.memeStreak);
   
   return (
     <div className="flex flex-col min-h-screen">
@@ -62,7 +96,7 @@ const Leaderboard = () => {
 
 interface LeaderboardSectionProps {
   title: string;
-  users: typeof MOCK_USERS;
+  users: Array<any>; // Using 'any' temporarily until we transition away from mock data
   metric: 'xp' | 'wins' | 'streak';
 }
 
