@@ -19,7 +19,7 @@ const Battle = () => {
   const battle = MOCK_BATTLES.find(b => b.id === id) || MOCK_BATTLES[0];
   const memeOne = MOCK_MEMES.find(m => m.id === battle.memeOneId) || MOCK_MEMES[0];
   const memeTwo = MOCK_MEMES.find(m => m.id === battle.memeTwoId) || MOCK_MEMES[1];
-  const prompt = battle.prompt || MOCK_PROMPTS.find(p => p.id === battle.promptId);
+  const prompt = MOCK_PROMPTS.find(p => p.id === battle.promptId);
   
   const creatorOne = MOCK_USERS.find(u => u.id === memeOne.creatorId);
   const creatorTwo = MOCK_USERS.find(u => u.id === memeTwo.creatorId);
