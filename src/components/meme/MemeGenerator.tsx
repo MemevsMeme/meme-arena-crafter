@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MEME_TEMPLATES, CAPTION_STYLES } from '@/lib/constants';
-import { Image as LucideImage, Upload, Wand, Save, AlertCircle, WandSparkles, Tag, Database, Gif } from 'lucide-react';
+import { Image as LucideImage, Upload, Wand, Save, AlertCircle, WandSparkles, Tag, Database, Gift } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -636,7 +635,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
         <TabsContent value="upload" className="py-4">
           <div className="mb-4">
             <Label htmlFor="image-upload" className="flex items-center gap-2">
-              Upload Image <Gif className="h-4 w-4 text-brand-purple" /> <span className="text-xs text-muted-foreground">(GIFs supported)</span>
+              Upload Image <Gift className="h-4 w-4 text-brand-purple" /> <span className="text-xs text-muted-foreground">(GIFs supported)</span>
             </Label>
             <Input
               id="image-upload"
@@ -656,7 +655,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
               />
               {isGif && (
                 <div className="mt-2 p-2 bg-muted/50 rounded text-xs text-center">
-                  <Gif className="h-3 w-3 inline-block mr-1" />
+                  <Gift className="h-3 w-3 inline-block mr-1" />
                   Animated GIF detected. Text will appear during viewing.
                 </div>
               )}
@@ -809,7 +808,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
           </div>
           {isGif && (
             <p className="text-xs text-center mt-1 text-muted-foreground">
-              <Gif className="h-3 w-3 inline mr-1" />
+              <Gift className="h-3 w-3 inline mr-1" />
               For animated GIFs, preview shows first frame only
             </p>
           )}
