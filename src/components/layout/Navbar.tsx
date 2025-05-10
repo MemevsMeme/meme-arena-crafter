@@ -2,12 +2,19 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Bell, Home, Crown, Plus, User } from 'lucide-react';
+import { Bell, Home, Crown, Plus, User, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 const Navbar = () => {
-  // Mock authentication state for now
-  const isAuthenticated = true; 
-  const unreadNotifications = 3;
+  const { user, signOut } = useAuth();
+  const unreadNotifications = 3; // This will be dynamic in the future
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success('Logged out successfully');
+  };
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
@@ -15,7 +22,7 @@ const Navbar = () => {
         <Link to="/" className="flex items-center gap-2">
           <div className="rounded-lg">
             <img 
-              src="/lovable-uploads/4e6ace2e-5f8b-4a08-8561-c01c62c163d4.png" 
+              src="/lovable-uploads/88a9df58-1bce-4ab2-b65e-ec70cfcc63ca.png" 
               alt="MemeVsMeme Logo" 
               className="h-8 w-8"
             />
@@ -43,7 +50,7 @@ const Navbar = () => {
             </Button>
           </Link>
 
-          {isAuthenticated ? (
+          {user ? (
             <>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
@@ -54,15 +61,27 @@ const Navbar = () => {
                 )}
               </Button>
               
-              <Link to="/profile/1">
-                <Button variant="ghost" size="icon" className="rounded-full" aria-label="Profile">
-                  <img
-                    src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=memequeen"
-                    alt="Avatar"
-                    className="h-8 w-8 rounded-full"
-                  />
-                </Button>
-              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full" aria-label="Profile">
+                    <img
+                      src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=memequeen"
+                      alt="Avatar"
+                      className="h-8 w-8 rounded-full"
+                    />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to={`/profile/${user.id}`} className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" /> Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" /> Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <>
@@ -85,3 +104,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
