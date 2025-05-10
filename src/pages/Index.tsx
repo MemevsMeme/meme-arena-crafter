@@ -8,12 +8,13 @@ import BattleCard from '@/components/battle/BattleCard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MOCK_MEMES, MOCK_BATTLES, MOCK_PROMPTS } from '@/lib/constants';
+import { Battle } from '@/lib/types';
 
 const Index = () => {
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
   
   const todaysMemes = MOCK_MEMES.slice(0, 3);
-  const activeBattles = MOCK_BATTLES;
+  const activeBattles = MOCK_BATTLES as Battle[];
   const recentBattles = activeBattles.slice(0, 3);
 
   return (

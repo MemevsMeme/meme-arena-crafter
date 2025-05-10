@@ -6,7 +6,7 @@ import Footer from '@/components/layout/Footer';
 import MemeCard from '@/components/meme/MemeCard';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { MOCK_BATTLES, MOCK_MEMES, MOCK_USERS } from '@/lib/constants';
+import { MOCK_BATTLES, MOCK_MEMES, MOCK_USERS, MOCK_PROMPTS } from '@/lib/constants';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { ArrowLeft, Share, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ const Battle = () => {
   const battle = MOCK_BATTLES.find(b => b.id === id) || MOCK_BATTLES[0];
   const memeOne = MOCK_MEMES.find(m => m.id === battle.memeOneId) || MOCK_MEMES[0];
   const memeTwo = MOCK_MEMES.find(m => m.id === battle.memeTwoId) || MOCK_MEMES[1];
+  const prompt = battle.prompt || MOCK_PROMPTS.find(p => p.id === battle.promptId);
   
   const creatorOne = MOCK_USERS.find(u => u.id === memeOne.creatorId);
   const creatorTwo = MOCK_USERS.find(u => u.id === memeTwo.creatorId);
@@ -87,7 +88,7 @@ const Battle = () => {
         
         <div className="bg-background border rounded-xl p-4 mb-6">
           <h1 className="text-2xl font-heading mb-2">Meme Battle</h1>
-          <p className="text-muted-foreground mb-4">{battle.prompt?.text || "Today's prompt challenge"}</p>
+          <p className="text-muted-foreground mb-4">{prompt?.text || "Today's prompt challenge"}</p>
           
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-1.5">
@@ -171,37 +172,40 @@ const Battle = () => {
           <h2 className="text-xl font-heading mb-4">Related Battles</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {MOCK_BATTLES.slice(0, 2).map(battle => (
-              <div key={battle.id} className="bg-background rounded-lg overflow-hidden border">
-                <div className="p-3 border-b">
-                  <p className="font-medium">{battle.prompt?.text || "Meme Battle"}</p>
-                </div>
-                <div className="flex">
-                  <div className="flex-1">
-                    <img 
-                      src={MOCK_MEMES[0].imageUrl} 
-                      alt="Meme" 
-                      className="w-full h-32 object-cover"
-                    />
+            {MOCK_BATTLES.slice(0, 2).map(battle => {
+              const battlePrompt = MOCK_PROMPTS.find(p => p.id === battle.promptId);
+              return (
+                <div key={battle.id} className="bg-background rounded-lg overflow-hidden border">
+                  <div className="p-3 border-b">
+                    <p className="font-medium">{battlePrompt?.text || "Meme Battle"}</p>
                   </div>
-                  <div className="p-2 bg-muted flex items-center">
-                    <span className="font-bold">VS</span>
+                  <div className="flex">
+                    <div className="flex-1">
+                      <img 
+                        src={MOCK_MEMES[0].imageUrl} 
+                        alt="Meme" 
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
+                    <div className="p-2 bg-muted flex items-center">
+                      <span className="font-bold">VS</span>
+                    </div>
+                    <div className="flex-1">
+                      <img 
+                        src={MOCK_MEMES[1].imageUrl} 
+                        alt="Meme" 
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <img 
-                      src={MOCK_MEMES[1].imageUrl} 
-                      alt="Meme" 
-                      className="w-full h-32 object-cover"
-                    />
+                  <div className="p-3 bg-background">
+                    <Link to={`/battle/${battle.id}`}>
+                      <Button variant="outline" className="w-full">View Battle</Button>
+                    </Link>
                   </div>
                 </div>
-                <div className="p-3 bg-background">
-                  <Link to={`/battle/${battle.id}`}>
-                    <Button variant="outline" className="w-full">View Battle</Button>
-                  </Link>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </main>

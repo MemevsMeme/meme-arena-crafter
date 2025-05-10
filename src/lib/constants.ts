@@ -1,5 +1,5 @@
 
-export const APP_NAME = 'MemeCrafter';
+export const APP_NAME = 'MemeVsMeme';
 
 export const MEME_TEMPLATES = [
   {
@@ -140,6 +140,6 @@ export const MOCK_BATTLES = [
     voteCount: 42,
     startTime: new Date(Date.now() - 3600000),
     endTime: new Date(Date.now() + 3600000),
-    status: 'active',
+    status: 'active' as 'active' | 'completed' | 'cancelled',
   },
 ];

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { APP_NAME } from '@/lib/constants';
 
 const Footer = () => {
   return (
@@ -9,21 +10,21 @@ const Footer = () => {
         <div className="flex flex-col sm:flex-row justify-between items-center">
           <div className="flex items-center mb-4 sm:mb-0">
             <div className="bg-gradient-to-r from-brand-purple to-brand-orange rounded-lg p-1.5 mr-2">
-              <img src="/placeholder.svg" alt="Logo" className="h-5 w-5 invert" />
+              <img src="/lovable-uploads/88a9df58-1bce-4ab2-b65e-ec70cfcc63ca.png" alt="Logo" className="h-5 w-5" />
             </div>
-            <span className="font-heading text-lg">MemeCrafter</span>
+            <span className="font-heading text-lg">{APP_NAME}</span>
           </div>
 
           <div className="flex flex-wrap justify-center space-x-4 text-sm text-muted-foreground">
             <Link to="/about" className="hover:text-foreground">About</Link>
             <Link to="/terms" className="hover:text-foreground">Terms</Link>
             <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
-            <a href="mailto:support@memecrafter.com" className="hover:text-foreground">Contact</a>
+            <a href="mailto:support@memevsmeme.com" className="hover:text-foreground">Contact</a>
           </div>
         </div>
         
         <div className="mt-4 pt-4 border-t border-border/40 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} MemeCrafter. All rights reserved. 
+          © {new Date().getFullYear()} {APP_NAME}. All rights reserved. 
         </div>
       </div>
     </footer>

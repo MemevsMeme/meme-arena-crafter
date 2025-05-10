@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { Battle, Meme } from '@/lib/types';
-import { MOCK_MEMES } from '@/lib/constants';
+import { MOCK_MEMES, MOCK_PROMPTS } from '@/lib/constants';
 
 interface BattleCardProps {
   battle: Battle;
@@ -15,6 +15,7 @@ const BattleCard = ({ battle, compact = false }: BattleCardProps) => {
   // For the MVP, we'll use mock data
   const memeOne = MOCK_MEMES.find(m => m.id === battle.memeOneId) || MOCK_MEMES[0];
   const memeTwo = MOCK_MEMES.find(m => m.id === battle.memeTwoId) || MOCK_MEMES[1];
+  const prompt = battle.prompt || MOCK_PROMPTS.find(p => p.id === battle.promptId);
   
   const timeRemaining = new Date(battle.endTime).getTime() - Date.now();
   const isActive = battle.status === 'active' && timeRemaining > 0;
@@ -71,7 +72,7 @@ const BattleCard = ({ battle, compact = false }: BattleCardProps) => {
       </div>
       
       <p className="text-sm mb-4 text-muted-foreground">
-        {battle.prompt?.text || "Today's prompt challenge"}
+        {prompt?.text || "Today's prompt challenge"}
       </p>
       
       <div className="flex flex-col md:flex-row gap-4 mb-4">
