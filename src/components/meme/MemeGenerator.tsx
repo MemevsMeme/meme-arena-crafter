@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,12 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MEME_TEMPLATES, CAPTION_STYLES } from '@/lib/constants';
-import { Image as LucideImage, Upload, Wand, Save, AlertCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { Image as LucideImage, Upload, Wand, Save, AlertCircle, MagicWand, Tag } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { createMeme } from '@/lib/database';
-import { generateCaption } from '@/lib/ai';
+import { generateCaption, analyzeMemeImage } from '@/lib/ai';
 
 interface MemeGeneratorProps {
   promptText?: string;
@@ -31,6 +32,8 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
   const [selectedStyle, setSelectedStyle] = useState(CAPTION_STYLES[0].id);
   const [isCreatingMeme, setIsCreatingMeme] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+  const [imageTags, setImageTags] = useState<string[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Generate a preview when caption or template/image changes
@@ -44,19 +47,53 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
   }, [caption, selectedTemplate, uploadedImage]);
 
   const handleGenerateCaptions = async () => {
-    if (!promptText) return;
+    if (!promptText) {
+      toast.error('Please enter a prompt text first');
+      return;
+    }
 
     setIsGeneratingCaptions(true);
     
     try {
-      // In real implementation, this would call an AI service
+      // Use the Gemini API to generate captions
       const captions = await generateCaption(promptText, selectedStyle);
       setGeneratedCaptions(captions);
+      
+      if (captions.length === 0) {
+        toast.error('Couldn\'t generate captions. Please try again.');
+      }
     } catch (error) {
       console.error('Error generating captions:', error);
       toast.error('Failed to generate captions');
     } finally {
       setIsGeneratingCaptions(false);
+    }
+  };
+  
+  const handleAnalyzeImage = async () => {
+    const imageUrl = activeTab === 'template' 
+      ? selectedTemplate?.url 
+      : uploadedImage;
+    
+    if (!imageUrl) {
+      toast.error('Please select or upload an image first');
+      return;
+    }
+    
+    setIsAnalyzingImage(true);
+    
+    try {
+      const tags = await analyzeMemeImage(imageUrl);
+      setImageTags(tags);
+      
+      toast.success('Image analyzed successfully', {
+        description: `Tags: ${tags.join(', ')}`
+      });
+    } catch (error) {
+      console.error('Error analyzing image:', error);
+      toast.error('Failed to analyze image');
+    } finally {
+      setIsAnalyzingImage(false);
     }
   };
   
@@ -207,13 +244,14 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       // Create meme record in database
       const memeData = await createMeme({
         prompt: promptText,
-        prompt_id: promptId, // Use prompt_id instead of promptId to match the database schema
+        prompt_id: promptId, 
         imageUrl: publicUrl,
         caption: caption,
         creatorId: user.id,
         votes: 0,
         createdAt: new Date(),
-        tags: [],
+        // Use AI-generated tags if available, otherwise use default tags
+        tags: imageTags.length > 0 ? imageTags : ['funny', 'meme'],
       });
       
       if (!memeData) throw new Error('Failed to create meme record');
@@ -234,6 +272,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       setUploadedImage(null);
       setFile(null);
       setGeneratedCaptions([]);
+      setImageTags([]);
       
     } catch (error) {
       console.error('Error creating meme:', error);
@@ -314,19 +353,46 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
         </TabsContent>
       </Tabs>
       
+      <div className="flex flex-wrap gap-2 mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-1.5"
+          onClick={handleGenerateCaptions}
+          disabled={isGeneratingCaptions || !promptText}
+        >
+          <MagicWand className="h-3.5 w-3.5" />
+          {isGeneratingCaptions ? 'Generating...' : 'Generate Caption Ideas'}
+        </Button>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-1.5"
+          onClick={handleAnalyzeImage}
+          disabled={isAnalyzingImage || (!selectedTemplate && !uploadedImage)}
+        >
+          <Tag className="h-3.5 w-3.5" />
+          {isAnalyzingImage ? 'Analyzing...' : 'Analyze Image'}
+        </Button>
+      </div>
+      
+      {imageTags.length > 0 && (
+        <div className="mb-4 p-3 bg-muted/50 rounded-md">
+          <Label className="text-xs text-muted-foreground">AI-Generated Tags:</Label>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {imageTags.map((tag, idx) => (
+              <span key={idx} className="px-2 py-1 bg-background text-xs rounded-md border">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
           <Label htmlFor="caption">Caption</Label>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1.5"
-            onClick={handleGenerateCaptions}
-            disabled={isGeneratingCaptions || !promptText}
-          >
-            <Wand className="h-3.5 w-3.5" />
-            Generate ideas
-          </Button>
         </div>
         
         {generatedCaptions.length > 0 && (
