@@ -9,8 +9,12 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="flex flex-col sm:flex-row justify-between items-center">
           <div className="flex items-center mb-4 sm:mb-0">
-            <div className="bg-gradient-to-r from-brand-purple to-brand-orange rounded-lg p-1.5 mr-2">
-              <img src="/lovable-uploads/88a9df58-1bce-4ab2-b65e-ec70cfcc63ca.png" alt="Logo" className="h-5 w-5" />
+            <div className="rounded-lg mr-2">
+              <img 
+                src="/lovable-uploads/4e6ace2e-5f8b-4a08-8561-c01c62c163d4.png" 
+                alt="MemeVsMeme Logo" 
+                className="h-6 w-6" 
+              />
             </div>
             <span className="font-heading text-lg">{APP_NAME}</span>
           </div>

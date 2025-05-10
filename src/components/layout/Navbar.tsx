@@ -13,10 +13,14 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="bg-gradient-to-r from-brand-purple to-brand-orange rounded-lg p-1.5">
-            <img src="/placeholder.svg" alt="Logo" className="h-6 w-6 invert" />
+          <div className="rounded-lg">
+            <img 
+              src="/lovable-uploads/4e6ace2e-5f8b-4a08-8561-c01c62c163d4.png" 
+              alt="MemeVsMeme Logo" 
+              className="h-8 w-8"
+            />
           </div>
-          <span className="text-xl font-heading hidden sm:inline-block">MemeCrafter</span>
+          <span className="text-xl font-heading hidden sm:inline-block">MemeVsMeme</span>
         </Link>
 
         <div className="flex items-center gap-1 sm:gap-2">
