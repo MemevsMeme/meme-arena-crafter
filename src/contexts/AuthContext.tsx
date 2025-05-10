@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
@@ -28,14 +27,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up the auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
-      setUser(session?.user || null);
       
       // Use setTimeout to prevent deadlocks with Supabase auth
       if (session?.user) {
+        // Just update the user state synchronously
+        setUser(session.user);
+        
+        // Use setTimeout to defer profile fetching
         setTimeout(() => {
           fetchProfile(session.user.id);
         }, 0);
       } else {
+        setUser(null);
         setUserProfile(null);
         setLoading(false);
       }
@@ -45,8 +48,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const getInitialSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user || null);
         if (session?.user) {
+          setUser(session.user);
           await fetchProfile(session.user.id);
         } else {
           setLoading(false);
@@ -67,10 +70,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user ID:', userId);
       const profile = await getProfile(userId);
-      setUserProfile(profile);
+      console.log('Profile fetched:', profile);
+      
+      // If profile is not found, create a new one
+      if (!profile) {
+        console.log('No profile found, attempting to create one');
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user) {
+          const newProfile: Partial<UserType> = {
+            id: userData.user.id,
+            username: `user_${userData.user.id.substring(0, 8)}`,
+            avatarUrl: `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${userData.user.id}`,
+            memeStreak: 0,
+            wins: 0,
+            losses: 0,
+            level: 1,
+            xp: 0,
+          };
+          
+          const createdProfile = await createProfile(newProfile);
+          if (createdProfile) {
+            console.log('Profile created successfully:', createdProfile);
+            setUserProfile(createdProfile);
+          } else {
+            console.error('Failed to create profile');
+          }
+        }
+      } else {
+        setUserProfile(profile);
+      }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error in fetchProfile:', error);
     } finally {
       setLoading(false);
     }

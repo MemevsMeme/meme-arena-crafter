@@ -14,6 +14,11 @@ export async function getProfile(userId: string): Promise<User | null> {
     return null;
   }
   
+  if (!data) {
+    console.error('No profile found for user ID:', userId);
+    return null;
+  }
+  
   return {
     id: data.id,
     username: data.username,
@@ -193,7 +198,7 @@ export async function createMeme(meme: Partial<Meme>): Promise<Meme | null> {
     creatorId: data.creator_id,
     votes: data.votes,
     createdAt: new Date(data.created_at),
-    tags: data.tags || []
+    tags: meme.tags || []
   };
 }
 

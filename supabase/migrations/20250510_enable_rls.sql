@@ -13,6 +13,9 @@ CREATE POLICY "Public profiles are viewable by everyone"
 CREATE POLICY "Users can update their own profile" 
   ON profiles FOR UPDATE USING (auth.uid() = id);
 
+CREATE POLICY "Users can insert their own profile" 
+  ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
 -- Memes policies
 CREATE POLICY "Memes are viewable by everyone" 
   ON memes FOR SELECT USING (true);
