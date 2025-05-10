@@ -15,20 +15,9 @@ import { supabase } from '@/lib/supabase';
 const Index = () => {
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
   
-  // Use the mockup data temporarily, will be replaced with real data queries
-  const todaysMemes = MOCK_MEMES.slice(0, 3).map(meme => ({
-    ...meme,
-    ipfsCid: meme.ipfsCid || '',
-    creatorId: meme.creator?.id || '',
-    tags: meme.tags || []
-  })) as Meme[];
-  
-  // Convert MOCK_BATTLES to proper Battle type with required startTime
-  const activeBattles = MOCK_BATTLES.map(battle => ({
-    ...battle,
-    startTime: new Date(battle.startTime || Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  })) as Battle[];
-  
+  // Use the mockup data directly, already properly formatted in constants.ts
+  const todaysMemes = MOCK_MEMES;
+  const activeBattles = MOCK_BATTLES;
   const recentBattles = activeBattles.slice(0, 3);
 
   // Setup query for active prompt
@@ -49,7 +38,7 @@ const Index = () => {
           return null;
         }
         
-        return data as Prompt;
+        return data as unknown as Prompt;
       } catch (error) {
         console.error('Failed to fetch active prompt:', error);
         return null;
@@ -67,7 +56,7 @@ const Index = () => {
           <div className="lg:col-span-1 flex flex-col gap-6">
             <section>
               <h2 className="text-2xl font-heading mb-3">Today's Challenge</h2>
-              <PromptOfTheDay prompt={activePrompt} isLoading={promptLoading} />
+              <PromptOfTheDay prompt={activePrompt || MOCK_PROMPTS[0]} isLoading={promptLoading} />
               
               <div className="mt-4">
                 <h3 className="font-heading text-lg mb-2">Previous Prompts</h3>
@@ -98,7 +87,11 @@ const Index = () => {
               
               <div className="space-y-3">
                 {recentBattles.map(battle => (
-                  <BattleCard key={battle.id} battle={battle} compact />
+                  <BattleCard key={battle.id} battle={{
+                    ...battle,
+                    startTime: battle.startTime.toISOString(),
+                    endTime: battle.endTime.toISOString(),
+                  } as Battle} compact />
                 ))}
                 
                 {recentBattles.length === 0 && (

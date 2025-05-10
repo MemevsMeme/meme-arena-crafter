@@ -51,12 +51,13 @@ const Battle = () => {
   
   // For MVP, we'll use mock data
   const battle = battleData || MOCK_BATTLES[0];
-  const memeOne = MOCK_MEMES.find(m => m.id === battle.memeOneId) || MOCK_MEMES[0];
-  const memeTwo = MOCK_MEMES.find(m => m.id === battle.memeTwoId) || MOCK_MEMES[1];
+  const memeOne = MOCK_MEMES.find(m => m.id === battle.memeOneId);
+  const memeTwo = MOCK_MEMES.find(m => m.id === battle.memeTwoId);
   const prompt = MOCK_PROMPTS.find(p => p.id === battle.promptId);
   
-  const creatorOne = MOCK_USERS.find(u => u.id === memeOne.creator?.id);
-  const creatorTwo = MOCK_USERS.find(u => u.id === memeTwo.creator?.id);
+  // Get the creators from the memes
+  const creatorOne = memeOne?.creator;
+  const creatorTwo = memeTwo?.creator;
   
   // Mock vote count
   const [votes, setVotes] = useState({
@@ -68,7 +69,7 @@ const Battle = () => {
   const percentOne = totalVotes > 0 ? Math.round((votes.one / totalVotes) * 100) : 50;
   const percentTwo = totalVotes > 0 ? 100 - percentOne : 50;
   
-  const timeRemaining = new Date(battle.endTime).getTime() - Date.now();
+  const timeRemaining = battle.endTime.getTime() - Date.now();
   const isActive = battle.status === 'active' && timeRemaining > 0;
   
   const handleVote = (meme: 'one' | 'two') => {
@@ -95,6 +96,23 @@ const Battle = () => {
       description: 'Share with friends to get more votes!'
     });
   };
+
+  if (!memeOne || !memeTwo) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="container mx-auto px-4 py-6 flex-grow">
+          <div className="text-center p-10">
+            <p>Battle not found or memes are missing.</p>
+            <Link to="/" className="mt-4 inline-block">
+              <Button>Back to Home</Button>
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -148,15 +166,7 @@ const Battle = () => {
             </div>
             
             <div className={`battle-card ${voteSubmitted === 'one' ? 'border-brand-orange' : ''}`}>
-              <MemeCard 
-                meme={{
-                  ...memeOne,
-                  ipfsCid: memeOne.ipfsCid || '',
-                  creatorId: memeOne.creator?.id || '',
-                  tags: memeOne.tags || []
-                }} 
-                showActions={false} 
-              />
+              <MemeCard meme={memeOne} showActions={false} />
               
               <div className="p-4 bg-background">
                 {!voteSubmitted ? (
@@ -186,15 +196,7 @@ const Battle = () => {
             </div>
             
             <div className={`battle-card ${voteSubmitted === 'two' ? 'border-brand-orange' : ''}`}>
-              <MemeCard 
-                meme={{
-                  ...memeTwo,
-                  ipfsCid: memeTwo.ipfsCid || '',
-                  creatorId: memeTwo.creator?.id || '',
-                  tags: memeTwo.tags || []
-                }} 
-                showActions={false} 
-              />
+              <MemeCard meme={memeTwo} showActions={false} />
               
               <div className="p-4 bg-background">
                 {!voteSubmitted ? (

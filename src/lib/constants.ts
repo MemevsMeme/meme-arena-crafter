@@ -59,29 +59,7 @@ export const CAPTION_STYLES = [
   { id: 'sarcastic', name: 'Sarcastic' },
 ];
 
-// Add back mock data temporarily to fix build errors
-// These will be removed once components are properly updated
-export const MOCK_MEMES = [
-  {
-    id: '1',
-    imageUrl: '/templates/drake.jpg',
-    caption: 'When you use AI\nWhen you write code yourself',
-    prompt: 'Create a meme about programming',
-    creator: { id: '1', username: 'mememaster', level: 5, avatarUrl: '' },
-    votes: 42,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    imageUrl: '/templates/distracted-boyfriend.jpg',
-    caption: 'Me\nNew JS Framework\nMy Current Project',
-    prompt: 'Create a meme about web development',
-    creator: { id: '2', username: 'webdev', level: 3, avatarUrl: '' },
-    votes: 28,
-    createdAt: new Date().toISOString(),
-  },
-];
-
+// Updated mock data with complete properties matching types
 export const MOCK_USERS = [
   {
     id: '1',
@@ -92,6 +70,7 @@ export const MOCK_USERS = [
     wins: 15,
     losses: 5,
     memeStreak: 7,
+    createdAt: new Date().toISOString(),
   },
   {
     id: '2',
@@ -102,6 +81,7 @@ export const MOCK_USERS = [
     wins: 8,
     losses: 10,
     memeStreak: 3,
+    createdAt: new Date().toISOString(),
   },
   {
     id: '3',
@@ -112,9 +92,39 @@ export const MOCK_USERS = [
     wins: 12,
     losses: 8,
     memeStreak: 5,
+    createdAt: new Date().toISOString(),
   },
 ];
 
+// Updated to match Meme type
+export const MOCK_MEMES = [
+  {
+    id: '1',
+    imageUrl: '/templates/drake.jpg',
+    caption: 'When you use AI\nWhen you write code yourself',
+    prompt: 'Create a meme about programming',
+    creatorId: '1',
+    creator: MOCK_USERS[0],
+    votes: 42,
+    createdAt: new Date().toISOString(),
+    ipfsCid: '',
+    tags: ['programming', 'ai'],
+  },
+  {
+    id: '2',
+    imageUrl: '/templates/distracted-boyfriend.jpg',
+    caption: 'Me\nNew JS Framework\nMy Current Project',
+    prompt: 'Create a meme about web development',
+    creatorId: '2',
+    creator: MOCK_USERS[1],
+    votes: 28,
+    createdAt: new Date().toISOString(),
+    ipfsCid: '',
+    tags: ['javascript', 'webdev'],
+  },
+];
+
+// Updated to match Battle type with Date objects for startTime and endTime
 export const MOCK_BATTLES = [
   {
     id: '1',
@@ -123,16 +133,18 @@ export const MOCK_BATTLES = [
     promptId: '1',
     status: 'active',
     voteCount: 85,
-    endTime: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+    startTime: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    endTime: new Date(Date.now() + 12 * 60 * 60 * 1000),
   },
   {
     id: '2',
     memeOneId: '2',
     memeTwoId: '1',
     promptId: '2',
-    status: 'ended',
+    status: 'completed',
     voteCount: 120,
-    endTime: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    startTime: new Date(Date.now() - 48 * 60 * 60 * 1000),
+    endTime: new Date(Date.now() - 5 * 60 * 60 * 1000),
   },
 ];
 
@@ -141,15 +153,27 @@ export const MOCK_PROMPTS = [
     id: '1',
     text: 'Create a meme about how AI is changing our lives',
     tags: ['ai', 'technology', 'future'],
+    theme: 'technology',
+    active: true,
+    startDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    endDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
   },
   {
     id: '2',
     text: 'Make a meme about trying to explain your job to your grandparents',
     tags: ['work', 'family', 'tech'],
+    theme: 'family',
+    active: false,
+    startDate: new Date(Date.now() - 48 * 60 * 60 * 1000),
+    endDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
   },
   {
     id: '3',
     text: 'Create a meme about workout motivation versus reality',
     tags: ['fitness', 'humor', 'relatable'],
+    theme: 'lifestyle',
+    active: false,
+    startDate: new Date(Date.now() - 72 * 60 * 60 * 1000),
+    endDate: new Date(Date.now() - 48 * 60 * 60 * 1000),
   },
 ];
