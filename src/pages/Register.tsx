@@ -72,17 +72,17 @@ const Register = () => {
         console.error('Signup error:', result.error);
         
         // Improved error messages
-        if (result.error.message.includes('User already registered')) {
+        if (result.error.includes('User already registered')) {
           toast.error('User already exists', {
             description: 'This email is already registered. Please log in instead.',
           });
-        } else if (result.error.message.includes('username')) {
+        } else if (result.error.includes('username')) {
           toast.error('Username not available', {
             description: 'Please choose a different username.',
           });
         } else {
           toast.error('Registration failed', {
-            description: result.error.message,
+            description: result.error,
           });
         }
       } else {

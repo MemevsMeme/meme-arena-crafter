@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Session, User as AuthUser } from '@supabase/supabase-js';
 import { User } from '@/lib/types';
-import { getProfile, createProfile } from '@/lib/database';
+import { getProfile, updateProfile, createProfile } from '@/lib/database';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -12,9 +12,10 @@ interface AuthContextType {
   loading: boolean;
   error: Error | null;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (email: string, password: string, userData?: Partial<User>) => Promise<{ success: boolean; error?: string }>;
+  signUp: (email: string, password: string, username: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateUserProfile: (updates: Partial<User>) => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,6 +67,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const refreshProfile = async () => {
     if (user) {
       await fetchUserProfile(user.id);
+    }
+  };
+
+  // Update user profile
+  const updateUserProfile = async (updates: Partial<User>): Promise<User | null> => {
+    if (!user) return null;
+    
+    try {
+      const updatedProfile = await updateProfile(user.id, updates);
+      if (updatedProfile) {
+        setUserProfile(updatedProfile);
+      }
+      return updatedProfile;
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      return null;
     }
   };
 
@@ -124,15 +141,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const signUp = async (email: string, password: string, userData?: Partial<User>) => {
+  const signUp = async (email: string, password: string, username: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            username: userData?.username,
-            avatar_url: userData?.avatarUrl
+            username: username,
+            avatar_url: `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${email}`
           }
         }
       });
@@ -165,7 +182,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signIn,
     signUp,
     signOut,
-    refreshProfile
+    refreshProfile,
+    updateUserProfile
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

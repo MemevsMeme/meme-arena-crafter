@@ -60,17 +60,17 @@ const Login = () => {
         console.error('Login error:', result.error);
         
         // Improved error messages
-        if (result.error.message.includes('Email not confirmed')) {
+        if (result.error.includes('Email not confirmed')) {
           toast.error('Email not confirmed', {
             description: 'Please check your email to confirm your account.',
           });
-        } else if (result.error.message.includes('Invalid login credentials')) {
+        } else if (result.error.includes('Invalid login credentials')) {
           toast.error('Invalid credentials', {
             description: 'Please check your email and password and try again.',
           });
         } else {
           toast.error('Login failed', {
-            description: result.error.message,
+            description: result.error,
           });
         }
       } else {
