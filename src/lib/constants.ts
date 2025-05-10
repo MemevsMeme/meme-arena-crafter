@@ -59,7 +59,7 @@ export const CAPTION_STYLES = [
   { id: 'sarcastic', name: 'Sarcastic' },
 ];
 
-// Mock data for development
+// Updated mock data with real IPFS CIDs
 export const MOCK_PROMPTS = [
   {
     id: '1',
@@ -106,12 +106,13 @@ export const MOCK_USERS = [
   },
 ];
 
+// Updated with real IPFS CIDs that work with our Pinata gateway
 export const MOCK_MEMES = [
   {
     id: '1',
     prompt: 'When your code works on the first try',
-    imageUrl: '/templates/drake.jpg',
-    ipfsCid: 'mockCid1',
+    imageUrl: 'https://purple-accessible-wolverine-380.mypinata.cloud/ipfs/QmRLXj5cZrgmsFuycsSSNctXVCiF2KgVyH82d67qmH8vVG',
+    ipfsCid: 'QmRLXj5cZrgmsFuycsSSNctXVCiF2KgVyH82d67qmH8vVG',
     caption: 'Debugging for hours\nAdding console.log and it works instantly',
     creatorId: '1',
     votes: 24,
@@ -121,13 +122,24 @@ export const MOCK_MEMES = [
   {
     id: '2',
     prompt: 'Me explaining why I need yet another streaming service',
-    imageUrl: '/templates/distracted-boyfriend.jpg',
-    ipfsCid: 'mockCid2',
+    imageUrl: 'https://purple-accessible-wolverine-380.mypinata.cloud/ipfs/QmYcGtLeQou8CweAMJ9gE14HLejyz3MGeJnuzQXWthiQZB',
+    ipfsCid: 'QmYcGtLeQou8CweAMJ9gE14HLejyz3MGeJnuzQXWthiQZB',
     caption: 'My bank account\nMe\nNew streaming service with one show I want to watch',
     creatorId: '2',
     votes: 18,
     createdAt: new Date(Date.now() - 7200000),
     tags: ['money', 'streaming'],
+  },
+  {
+    id: '3',
+    prompt: 'That moment in a meeting when',
+    imageUrl: 'https://purple-accessible-wolverine-380.mypinata.cloud/ipfs/QmTmiXaf9cAf1TdVTyvQ67tKev4SgPBcF81ropCPLMGM73',
+    ipfsCid: 'QmTmiXaf9cAf1TdVTyvQ67tKev4SgPBcF81ropCPLMGM73',
+    caption: 'When the meeting could have been an email',
+    creatorId: '1',
+    votes: 32,
+    createdAt: new Date(Date.now() - 10800000),
+    tags: ['work', 'meetings'],
   },
 ];
 

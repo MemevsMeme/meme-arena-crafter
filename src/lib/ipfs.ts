@@ -111,5 +111,19 @@ export async function pinUrlToIPFS(sourceUrl: string, name?: string): Promise<{
  */
 export function getIpfsUrl(ipfsHash: string): string {
   if (!ipfsHash) return '';
-  return `https://purple-accessible-wolverine-380.mypinata.cloud/ipfs/${ipfsHash}`;
+  
+  // Clean the CID if it has a protocol prefix or trailing path
+  let cleanedCid = ipfsHash;
+  
+  // Remove ipfs:// protocol prefix if present
+  if (cleanedCid.startsWith('ipfs://')) {
+    cleanedCid = cleanedCid.substring(7);
+  }
+  
+  // Remove any trailing paths or query parameters
+  if (cleanedCid.includes('/') || cleanedCid.includes('?')) {
+    cleanedCid = cleanedCid.split('/')[0].split('?')[0];
+  }
+  
+  return `https://purple-accessible-wolverine-380.mypinata.cloud/ipfs/${cleanedCid}`;
 }
