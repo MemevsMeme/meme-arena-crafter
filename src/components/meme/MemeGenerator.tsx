@@ -208,7 +208,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       // Create meme record in database
       const memeData = await createMeme({
         prompt: promptText,
-        promptId: promptId,
+        prompt_id: promptId, // Use prompt_id instead of promptId to match the database schema
         imageUrl: publicUrl,
         caption: caption,
         creatorId: user.id,

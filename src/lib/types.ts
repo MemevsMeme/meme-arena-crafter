@@ -14,6 +14,7 @@ export interface User {
 export interface Meme {
   id: string;
   prompt: string;
+  prompt_id?: string; // Changed from promptId to prompt_id to match database schema
   imageUrl: string;
   ipfsCid: string;
   caption: string;
