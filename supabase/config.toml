@@ -1,5 +1,39 @@
 
 project_id = "ezunpjcxnrfnpcsibtyb"
 
-[functions.gemini-ai]
-verify_jwt = false
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+
+[db]
+port = 54322
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:5173"
+
+[analytics]
+enabled = true
+
+[experimental]
+uploads_size_limit = "50mb"
+
+[[functions]]
+verify_jwt = true
+name = "pinata-upload"

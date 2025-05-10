@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,12 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MEME_TEMPLATES, CAPTION_STYLES } from '@/lib/constants';
-import { Image as LucideImage, Upload, Wand, Save, AlertCircle, WandSparkles, Tag } from 'lucide-react';
+import { Image as LucideImage, Upload, Wand, Save, AlertCircle, WandSparkles, Tag, Database } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { createMeme } from '@/lib/database';
 import { generateCaption, analyzeMemeImage } from '@/lib/ai';
+import { uploadFileToIPFS } from '@/lib/ipfs';
 
 interface MemeGeneratorProps {
   promptText?: string;
@@ -33,6 +35,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
   const [showPreview, setShowPreview] = useState(false);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [imageTags, setImageTags] = useState<string[]>([]);
+  const [isUploadingToIPFS, setIsUploadingToIPFS] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Generate a preview when caption or template/image changes
@@ -240,11 +243,20 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
         .from('memes')
         .getPublicUrl(`public/${user.id}/${fileName}`);
       
+      // Also upload to IPFS for permanent storage
+      setIsUploadingToIPFS(true);
+      const memeTitle = caption.substring(0, 30) + '...';
+      const ipfsResult = await uploadFileToIPFS(memeFile, `Meme: ${memeTitle}`);
+      setIsUploadingToIPFS(false);
+      
+      const ipfsCid = ipfsResult.success ? ipfsResult.ipfsHash : undefined;
+      
       // Create meme record in database
       const memeData = await createMeme({
         prompt: promptText,
         prompt_id: promptId, 
         imageUrl: publicUrl,
+        ipfsCid: ipfsCid,
         caption: caption,
         creatorId: user.id,
         votes: 0,
@@ -255,7 +267,15 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       
       if (!memeData) throw new Error('Failed to create meme record');
       
-      toast.success('Meme created successfully!');
+      if (ipfsResult.success) {
+        toast.success('Meme created successfully and stored on IPFS!', {
+          description: `Your meme is permanently available at: ${ipfsResult.gatewayUrl}`
+        });
+      } else {
+        toast.success('Meme created successfully!', {
+          description: 'Note: IPFS backup failed, but meme was saved to our server.'
+        });
+      }
       
       // Call the onSave callback if provided
       if (onSave) {
@@ -278,6 +298,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       toast.error('Failed to create meme');
     } finally {
       setIsCreatingMeme(false);
+      setIsUploadingToIPFS(false);
     }
   };
 
@@ -459,10 +480,12 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
         onClick={handleSaveMeme}
         disabled={!caption || (activeTab === 'upload' && !uploadedImage) || isCreatingMeme || !user}
       >
-        {isCreatingMeme ? 'Creating Meme...' : (
+        {isCreatingMeme ? (
+          isUploadingToIPFS ? 'Storing on IPFS...' : 'Creating Meme...'
+        ) : (
           <>
-            <Save className="mr-2 h-4 w-4" />
-            Create Meme
+            <Database className="mr-2 h-4 w-4" />
+            Create Meme with IPFS Backup
           </>
         )}
       </Button>
