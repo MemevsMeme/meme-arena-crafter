@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -213,6 +212,9 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
     setIsCreatingMeme(true);
     
     try {
+      console.log('Starting meme creation process...');
+      console.log('User ID:', user.id);
+      
       // Ensure canvas is rendered
       renderMemeToCanvas();
       
@@ -231,17 +233,26 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       const fileName = `meme_${Date.now()}.png`;
       const memeFile = new File([blob], fileName, { type: 'image/png' });
       
+      console.log('Uploading to Supabase storage...');
+      
       // Upload to Supabase storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('memes')
         .upload(`public/${user.id}/${fileName}`, memeFile);
       
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw uploadError;
+      }
+      
+      console.log('Storage upload successful:', uploadData);
       
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('memes')
         .getPublicUrl(`public/${user.id}/${fileName}`);
+      
+      console.log('Meme public URL:', publicUrl);
       
       // Also upload to IPFS for permanent storage
       setIsUploadingToIPFS(true);
@@ -251,7 +262,10 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       
       const ipfsCid = ipfsResult.success ? ipfsResult.ipfsHash : undefined;
       
+      console.log('IPFS upload result:', ipfsResult);
+      
       // Create meme record in database
+      console.log('Saving meme to database with creator_id:', user.id);
       const memeData = await createMeme({
         prompt: promptText,
         prompt_id: promptId, 
@@ -265,7 +279,12 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
         tags: imageTags.length > 0 ? imageTags : ['funny', 'meme'],
       });
       
-      if (!memeData) throw new Error('Failed to create meme record');
+      if (!memeData) {
+        console.error('Failed to create meme record in database');
+        throw new Error('Failed to create meme record');
+      }
+      
+      console.log('Meme successfully saved to database:', memeData);
       
       if (ipfsResult.success) {
         toast.success('Meme created successfully and stored on IPFS!', {
@@ -295,7 +314,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       
     } catch (error) {
       console.error('Error creating meme:', error);
-      toast.error('Failed to create meme');
+      toast.error('Failed to create meme: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setIsCreatingMeme(false);
       setIsUploadingToIPFS(false);

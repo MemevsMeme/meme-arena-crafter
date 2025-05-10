@@ -106,12 +106,10 @@ export async function createProfile(profile: Partial<User>): Promise<User | null
 
 // Memes
 export async function getMemes(limit = 10, offset = 0): Promise<Meme[]> {
+  // Fix: Don't try to join with creator profile in this query
   const { data, error } = await supabase
     .from('memes')
-    .select(`
-      *,
-      creator:profiles(*)
-    `)
+    .select('*')
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
   
@@ -120,7 +118,52 @@ export async function getMemes(limit = 10, offset = 0): Promise<Meme[]> {
     return [];
   }
   
-  return data.map((meme: any) => ({
+  // After fetching memes, fetch profiles for creators if needed
+  const memesList = await Promise.all(data.map(async (meme) => {
+    let creator;
+    if (meme.creator_id) {
+      const profile = await getProfile(meme.creator_id);
+      if (profile) {
+        creator = profile;
+      }
+    }
+    
+    return {
+      id: meme.id,
+      prompt: meme.prompt,
+      prompt_id: meme.prompt_id,
+      imageUrl: meme.image_url,
+      ipfsCid: meme.ipfs_cid || '',
+      caption: meme.caption,
+      creatorId: meme.creator_id,
+      creator: creator,
+      votes: meme.votes,
+      createdAt: new Date(meme.created_at),
+      tags: meme.tags || []
+    };
+  }));
+  
+  return memesList;
+}
+
+export async function getMemesByUser(userId: string, limit = 10, offset = 0): Promise<Meme[]> {
+  // Fix: Don't try to join with creator profile in this query
+  const { data, error } = await supabase
+    .from('memes')
+    .select('*')
+    .eq('creator_id', userId)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+  
+  if (error) {
+    console.error('Error fetching memes by user:', error);
+    return [];
+  }
+  
+  // After fetching memes, fetch profile for creator
+  const userProfile = await getProfile(userId);
+  
+  return data.map(meme => ({
     id: meme.id,
     prompt: meme.prompt,
     prompt_id: meme.prompt_id,
@@ -128,44 +171,18 @@ export async function getMemes(limit = 10, offset = 0): Promise<Meme[]> {
     ipfsCid: meme.ipfs_cid || '',
     caption: meme.caption,
     creatorId: meme.creator_id,
-    creator: meme.creator ? {
-      id: meme.creator.id,
-      username: meme.creator.username,
-      avatarUrl: meme.creator.avatar_url || '',
-      memeStreak: meme.creator.meme_streak,
-      wins: meme.creator.wins,
-      losses: meme.creator.losses,
-      level: meme.creator.level,
-      xp: meme.creator.xp,
-      createdAt: new Date(meme.creator.created_at)
-    } : undefined,
+    creator: userProfile || undefined,
     votes: meme.votes,
     createdAt: new Date(meme.created_at),
     tags: meme.tags || []
   }));
 }
 
-export async function getMemesByUser(userId: string, limit = 10, offset = 0): Promise<Meme[]> {
-  const { data, error } = await supabase
-    .from('memes')
-    .select(`
-      *,
-      creator:profiles(*)
-    `)
-    .eq('creator_id', userId)
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
-  
-  if (error) {
-    console.error('Error fetching memes:', error);
-    return [];
-  }
-  
-  return data as Meme[];
-}
-
+// Fix createMeme to ensure it properly maps and returns data
 export async function createMeme(meme: Partial<Meme>): Promise<Meme | null> {
-  const dbMeme: any = {
+  console.log('Creating meme with data:', meme);
+  
+  const dbMeme = {
     prompt: meme.prompt,
     prompt_id: meme.prompt_id,
     image_url: meme.imageUrl,
@@ -176,6 +193,8 @@ export async function createMeme(meme: Partial<Meme>): Promise<Meme | null> {
     created_at: meme.createdAt ? meme.createdAt.toISOString() : new Date().toISOString(),
     tags: meme.tags || []
   };
+  
+  console.log('Sending to database:', dbMeme);
   
   const { data, error } = await supabase
     .from('memes')
@@ -188,6 +207,13 @@ export async function createMeme(meme: Partial<Meme>): Promise<Meme | null> {
     return null;
   }
   
+  if (!data) {
+    console.error('No data returned when creating meme');
+    return null;
+  }
+  
+  console.log('Meme created successfully:', data);
+  
   return {
     id: data.id,
     prompt: data.prompt,
@@ -198,7 +224,7 @@ export async function createMeme(meme: Partial<Meme>): Promise<Meme | null> {
     creatorId: data.creator_id,
     votes: data.votes,
     createdAt: new Date(data.created_at),
-    tags: meme.tags || []
+    tags: data.tags || []
   };
 }
 
