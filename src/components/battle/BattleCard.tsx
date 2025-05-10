@@ -23,7 +23,7 @@ const BattleCard = ({ battle, compact = false, memeOne, memeTwo }: BattleCardPro
                     (battle.promptId ? MOCK_PROMPTS.find(p => p.id === battle.promptId) : null) || 
                     { text: "Today's meme challenge" };
   
-  const timeRemaining = new Date(battle.endTime).getTime() - Date.now();
+  const timeRemaining = battle.endTime.getTime() - Date.now();
   const isActive = battle.status === 'active' && timeRemaining > 0;
   
   const formatTimeRemaining = () => {

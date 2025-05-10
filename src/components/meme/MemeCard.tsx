@@ -74,6 +74,11 @@ const MemeCard = ({
     setImageError(true);
   };
 
+  // Format the created date for display
+  const formattedDate = meme.createdAt instanceof Date 
+    ? meme.createdAt.toLocaleDateString()
+    : new Date(meme.createdAt).toLocaleDateString();
+
   return (
     <div className={`meme-card shadow-md ${inBattle ? 'border-4' : 'border'} ${isWinner ? 'border-brand-orange' : 'border-border'}`}>
       {isWinner && (
@@ -92,7 +97,7 @@ const MemeCard = ({
           )}
           
           <div className="text-xs text-muted-foreground">
-            {new Date(meme.createdAt).toLocaleDateString()}
+            {formattedDate}
           </div>
         </div>
         

@@ -12,6 +12,7 @@ import UserAvatar from '@/components/ui/UserAvatar';
 import { ArrowLeft, Share, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { Battle as BattleType, Meme as MemeType } from '@/lib/types';
 
 const Battle = () => {
   const { id } = useParams<{ id: string }>();
@@ -166,7 +167,7 @@ const Battle = () => {
             </div>
             
             <div className={`battle-card ${voteSubmitted === 'one' ? 'border-brand-orange' : ''}`}>
-              <MemeCard meme={memeOne} showActions={false} />
+              <MemeCard meme={memeOne as MemeType} showActions={false} />
               
               <div className="p-4 bg-background">
                 {!voteSubmitted ? (
@@ -196,7 +197,7 @@ const Battle = () => {
             </div>
             
             <div className={`battle-card ${voteSubmitted === 'two' ? 'border-brand-orange' : ''}`}>
-              <MemeCard meme={memeTwo} showActions={false} />
+              <MemeCard meme={memeTwo as MemeType} showActions={false} />
               
               <div className="p-4 bg-background">
                 {!voteSubmitted ? (

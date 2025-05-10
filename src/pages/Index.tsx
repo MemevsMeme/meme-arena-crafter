@@ -15,9 +15,9 @@ import { supabase } from '@/lib/supabase';
 const Index = () => {
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
   
-  // Use the mockup data directly, already properly formatted in constants.ts
-  const todaysMemes = MOCK_MEMES;
-  const activeBattles = MOCK_BATTLES;
+  // Use the mock data directly, properly typed
+  const todaysMemes = MOCK_MEMES as Meme[];
+  const activeBattles = MOCK_BATTLES as Battle[];
   const recentBattles = activeBattles.slice(0, 3);
 
   // Setup query for active prompt
@@ -87,11 +87,7 @@ const Index = () => {
               
               <div className="space-y-3">
                 {recentBattles.map(battle => (
-                  <BattleCard key={battle.id} battle={{
-                    ...battle,
-                    startTime: battle.startTime.toISOString(),
-                    endTime: battle.endTime.toISOString(),
-                  } as Battle} compact />
+                  <BattleCard key={battle.id} battle={battle} compact />
                 ))}
                 
                 {recentBattles.length === 0 && (

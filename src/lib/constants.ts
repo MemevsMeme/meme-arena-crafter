@@ -59,7 +59,7 @@ export const CAPTION_STYLES = [
   { id: 'sarcastic', name: 'Sarcastic' },
 ];
 
-// Updated mock data with complete properties matching types
+// Updated mock data with complete properties matching types - converting string dates to Date objects
 export const MOCK_USERS = [
   {
     id: '1',
@@ -70,7 +70,7 @@ export const MOCK_USERS = [
     wins: 15,
     losses: 5,
     memeStreak: 7,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
   },
   {
     id: '2',
@@ -81,7 +81,7 @@ export const MOCK_USERS = [
     wins: 8,
     losses: 10,
     memeStreak: 3,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
   },
   {
     id: '3',
@@ -92,11 +92,11 @@ export const MOCK_USERS = [
     wins: 12,
     losses: 8,
     memeStreak: 5,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
   },
 ];
 
-// Updated to match Meme type
+// Updated to match Meme type with Date objects
 export const MOCK_MEMES = [
   {
     id: '1',
@@ -106,7 +106,7 @@ export const MOCK_MEMES = [
     creatorId: '1',
     creator: MOCK_USERS[0],
     votes: 42,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
     ipfsCid: '',
     tags: ['programming', 'ai'],
   },
@@ -118,7 +118,7 @@ export const MOCK_MEMES = [
     creatorId: '2',
     creator: MOCK_USERS[1],
     votes: 28,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
     ipfsCid: '',
     tags: ['javascript', 'webdev'],
   },
