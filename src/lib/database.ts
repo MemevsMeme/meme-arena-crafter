@@ -3,6 +3,8 @@ import { User, Meme, Prompt, Battle, Vote, Database } from './types';
 
 // User profiles
 export async function getProfile(userId: string): Promise<User | null> {
+  console.log('Getting profile for user ID:', userId);
+  
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -106,6 +108,8 @@ export async function createProfile(profile: Partial<User>): Promise<User | null
 
 // Memes
 export async function getMemes(limit = 10, offset = 0): Promise<Meme[]> {
+  console.log(`Fetching memes with limit ${limit} and offset ${offset}`);
+  
   // First fetch memes
   const { data: memesData, error: memesError } = await supabase
     .from('memes')
@@ -117,18 +121,24 @@ export async function getMemes(limit = 10, offset = 0): Promise<Meme[]> {
     console.error('Error fetching memes:', memesError);
     return [];
   }
+
+  console.log(`Found ${memesData?.length || 0} memes`);
   
   // Then fetch profiles for creators in a single batch
   const creatorIds = [...new Set(memesData.map(meme => meme.creator_id))];
   let creatorProfiles: Record<string, User> = {};
   
   if (creatorIds.length > 0) {
+    console.log('Fetching profiles for creator IDs:', creatorIds);
+    
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
       .in('id', creatorIds);
       
     if (!profilesError && profilesData) {
+      console.log(`Found ${profilesData.length} creator profiles`);
+      
       creatorProfiles = profilesData.reduce((acc: Record<string, User>, profile) => {
         acc[profile.id] = {
           id: profile.id,
@@ -143,6 +153,8 @@ export async function getMemes(limit = 10, offset = 0): Promise<Meme[]> {
         };
         return acc;
       }, {});
+    } else if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
     }
   }
   
@@ -163,6 +175,8 @@ export async function getMemes(limit = 10, offset = 0): Promise<Meme[]> {
 }
 
 export async function getMemesByUser(userId: string, limit = 10, offset = 0): Promise<Meme[]> {
+  console.log(`Fetching memes by user ${userId} with limit ${limit} and offset ${offset}`);
+  
   // First fetch memes by user
   const { data: memesData, error: memesError } = await supabase
     .from('memes')
@@ -176,16 +190,22 @@ export async function getMemesByUser(userId: string, limit = 10, offset = 0): Pr
     return [];
   }
   
+  console.log(`Found ${memesData?.length || 0} memes for user ${userId}`);
+  
   // Then fetch the user profile once
+  let creator: User | undefined = undefined;
+  
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', userId)
     .single();
   
-  let creator: User | undefined = undefined;
-  
-  if (!profileError && profileData) {
+  if (profileError) {
+    console.error('Error fetching profile for memes:', profileError);
+  } else if (profileData) {
+    console.log('Found profile for creator:', profileData.username);
+    
     creator = {
       id: profileData.id,
       username: profileData.username,

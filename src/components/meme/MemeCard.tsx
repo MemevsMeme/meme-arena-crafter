@@ -4,8 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { Heart, MessageSquare, Share, Award } from 'lucide-react';
-import { Meme, User } from '@/lib/types';
-import { MOCK_USERS } from '@/lib/constants';
+import { Meme } from '@/lib/types';
 
 interface MemeCardProps {
   meme: Meme;
@@ -25,10 +24,7 @@ const MemeCard = ({
   onShare
 }: MemeCardProps) => {
   const [isVoted, setIsVoted] = useState(false);
-  const [voteCount, setVoteCount] = useState(meme.votes);
-  
-  // Find creator from mock data
-  const creator: User = MOCK_USERS.find(user => user.id === meme.creatorId) || MOCK_USERS[0];
+  const [voteCount, setVoteCount] = useState(meme.votes || 0);
 
   const handleVote = () => {
     if (onVote) {
@@ -68,7 +64,9 @@ const MemeCard = ({
       
       <div className="p-3 bg-background">
         <div className="flex justify-between items-center">
-          <UserAvatar user={creator} showUsername showLevel />
+          {meme.creator && (
+            <UserAvatar user={meme.creator} showUsername showLevel />
+          )}
           
           <div className="text-xs text-muted-foreground">
             {new Date(meme.createdAt).toLocaleDateString()}
@@ -111,7 +109,7 @@ const MemeCard = ({
             <Link to={`/meme/${meme.id}`}>
               <Button variant="ghost" size="sm" className="flex items-center gap-1">
                 <MessageSquare className="h-4 w-4" />
-                <span>{Math.floor(Math.random() * 10)}</span>
+                <span>0</span>
               </Button>
             </Link>
           </div>

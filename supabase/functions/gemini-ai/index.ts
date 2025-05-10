@@ -28,14 +28,29 @@ serve(async (req) => {
   try {
     const GEMINI_API_KEY = Deno.env.get('GEM_API');
     if (!GEMINI_API_KEY) {
+      console.error('Gemini API key is not configured');
       throw new Error('Gemini API key not configured');
     }
 
-    const requestData = await req.json() as GeminiRequest;
+    console.log('Starting Gemini AI request processing...');
+    
+    // Log the request body for debugging
+    const requestText = await req.text();
+    console.log('Request body:', requestText);
+    
+    let requestData;
+    try {
+      requestData = JSON.parse(requestText) as GeminiRequest;
+    } catch (e) {
+      console.error('Error parsing JSON request:', e);
+      throw new Error('Invalid JSON request');
+    }
     
     if (requestData.type === 'text') {
       // Handle text generation (captions)
       const { prompt, style = 'funny' } = requestData;
+      
+      console.log(`Generating captions for prompt: "${prompt}" with style: ${style}`);
       
       // Format the prompt based on style
       let formattedPrompt = prompt;
@@ -56,7 +71,7 @@ serve(async (req) => {
           formattedPrompt = `Generate 3 caption ideas for a meme with the concept: "${prompt}". Format as a JSON array of strings.`;
       }
 
-      console.log(`Generating captions for prompt: "${prompt}" with style: ${style}`);
+      console.log(`Sending to Gemini API with formatted prompt: "${formattedPrompt}"`);
       
       const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
@@ -91,6 +106,7 @@ serve(async (req) => {
       try {
         // Try to extract captions from the response
         const textContent = data.candidates[0].content.parts[0].text;
+        console.log('Raw text content:', textContent);
         
         // First try to parse as JSON if the model returned JSON
         try {
@@ -98,6 +114,7 @@ serve(async (req) => {
             const jsonMatch = textContent.match(/\[.*?\]/s);
             if (jsonMatch) {
               captions = JSON.parse(jsonMatch[0]);
+              console.log('Successfully parsed JSON:', captions);
             }
           }
         } catch (e) {
@@ -115,11 +132,13 @@ serve(async (req) => {
             })
             .filter(line => line)
             .slice(0, 3);
+          console.log('Extracted captions from text:', captions);
         }
         
         // If we still don't have captions, use the whole text
         if (!captions.length) {
           captions = [textContent.trim()];
+          console.log('Using full text as caption');
         }
       } catch (e) {
         console.error('Error parsing Gemini response:', e);
@@ -141,6 +160,7 @@ serve(async (req) => {
       // Fetch the image and convert to base64
       const imageResponse = await fetch(imageUrl);
       if (!imageResponse.ok) {
+        console.error(`Failed to fetch image: ${imageResponse.status}`);
         throw new Error(`Failed to fetch image: ${imageResponse.status}`);
       }
       
@@ -149,6 +169,8 @@ serve(async (req) => {
       const base64Image = btoa(
         String.fromCharCode(...new Uint8Array(imageArrayBuffer))
       );
+      
+      console.log('Image converted to base64 for processing');
       
       const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro-vision:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
@@ -185,12 +207,13 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      console.log('Gemini API response:', JSON.stringify(data));
+      console.log('Gemini API response for image analysis:', JSON.stringify(data));
       
       let tags: string[] = [];
       try {
         // Try to extract tags from the response
         const textContent = data.candidates[0].content.parts[0].text;
+        console.log('Raw text content for image analysis:', textContent);
         
         // Try to parse as JSON if the model returned JSON
         try {
@@ -198,10 +221,11 @@ serve(async (req) => {
             const jsonMatch = textContent.match(/\[.*?\]/s);
             if (jsonMatch) {
               tags = JSON.parse(jsonMatch[0]);
+              console.log('Successfully parsed JSON tags:', tags);
             }
           }
         } catch (e) {
-          console.log('Could not parse as JSON, falling back to text processing');
+          console.log('Could not parse tags as JSON, falling back to text processing');
         }
         
         // If JSON parsing failed, try line-by-line extraction
@@ -212,14 +236,16 @@ serve(async (req) => {
             .map(line => line.trim().replace(/^["'\-•]|["']$/g, ''))
             .filter(Boolean)
             .slice(0, 5);
+          console.log('Extracted tags from text:', tags);
         }
         
         // If we still don't have tags, use default
         if (!tags.length) {
           tags = ['funny', 'meme', 'viral'];
+          console.log('Using default tags');
         }
       } catch (e) {
-        console.error('Error parsing Gemini response:', e);
+        console.error('Error parsing Gemini response for image analysis:', e);
         tags = ['funny', 'meme', 'viral'];
       }
 
