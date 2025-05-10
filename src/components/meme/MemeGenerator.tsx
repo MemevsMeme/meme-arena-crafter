@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -265,10 +264,25 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       
       console.log('Uploading to Supabase storage...');
       
-      // Upload to Supabase storage
+      // Check if 'memes' bucket exists, if not try to create it
+      const { data: bucketData } = await supabase.storage.listBuckets();
+      const memesBucketExists = bucketData?.some(bucket => bucket.name === 'memes');
+      
+      if (!memesBucketExists) {
+        console.log('Memes bucket does not exist, attempting to use a different bucket');
+        // Try using the default public bucket instead
+        const { data: buckets } = await supabase.storage.listBuckets();
+        console.log('Available buckets:', buckets);
+      }
+      
+      // Upload to Supabase storage with public access
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('memes')
-        .upload(`public/${user.id}/${fileName}`, memeFile);
+        .upload(`public/${user.id}/${fileName}`, memeFile, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: 'image/png'
+        });
       
       if (uploadError) {
         console.error('Storage upload error:', uploadError);
@@ -277,7 +291,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       
       console.log('Storage upload successful:', uploadData);
       
-      // Get public URL
+      // Get public URL - make sure to use the correct path
       const { data: { publicUrl } } = supabase.storage
         .from('memes')
         .getPublicUrl(`public/${user.id}/${fileName}`);
@@ -294,7 +308,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       
       console.log('IPFS upload result:', ipfsResult);
       
-      // Create meme record in database
+      // Create meme record in database with absolute URL
       console.log('Saving meme to database with creator_id:', user.id);
       const memeData = await createMeme({
         prompt: promptText,

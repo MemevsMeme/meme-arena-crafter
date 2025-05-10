@@ -25,6 +25,7 @@ const MemeCard = ({
 }: MemeCardProps) => {
   const [isVoted, setIsVoted] = useState(false);
   const [voteCount, setVoteCount] = useState(meme.votes || 0);
+  const [imageError, setImageError] = useState(false);
 
   const handleVote = () => {
     if (onVote) {
@@ -49,6 +50,11 @@ const MemeCard = ({
     
     // Just mock share functionality
     alert('Share URL copied to clipboard!');
+  };
+
+  const handleImageError = () => {
+    console.error(`Failed to load image: ${meme.imageUrl}`);
+    setImageError(true);
   };
 
   return (
@@ -80,11 +86,18 @@ const MemeCard = ({
       
       <Link to={`/meme/${meme.id}`}>
         <div className="relative bg-muted aspect-square overflow-hidden">
-          <img
-            src={meme.imageUrl}
-            alt={meme.caption}
-            className="w-full h-full object-cover"
-          />
+          {imageError ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <p className="text-muted-foreground">Image unavailable</p>
+            </div>
+          ) : (
+            <img
+              src={meme.imageUrl}
+              alt={meme.caption}
+              className="w-full h-full object-cover"
+              onError={handleImageError}
+            />
+          )}
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
             <p className="text-white font-medium text-center whitespace-pre-line">
               {meme.caption}

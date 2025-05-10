@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -13,6 +14,7 @@ const Create = () => {
   const { user } = useAuth();
   const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
   const [loading, setLoading] = useState(true);
+  const [createdMeme, setCreatedMeme] = useState<{ id: string; caption: string; imageUrl: string } | null>(null);
 
   useEffect(() => {
     const fetchActivePrompt = async () => {
@@ -36,17 +38,20 @@ const Create = () => {
   }, []);
 
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
+    console.log('Meme created successfully:', meme);
+    setCreatedMeme(meme);
+    
     toast({
       title: "Success",
       description: "Meme created successfully!"
     });
     
-    // Navigate to the meme battle page or profile
+    // Navigate to the meme battle page or profile after a short delay
     setTimeout(() => {
       if (user) {
         navigate(`/profile/${user.id}`);
       }
-    }, 1500);
+    }, 2000);
   };
 
   if (!user) {
@@ -78,6 +83,22 @@ const Create = () => {
       
       <main className="container mx-auto px-4 py-8 flex-grow">
         <h1 className="text-3xl font-heading mb-6">Create a Meme</h1>
+        
+        {createdMeme && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+            <h2 className="text-xl font-heading text-green-800 mb-2">Meme Created!</h2>
+            <p className="mb-2">Your meme has been successfully created and saved.</p>
+            <div className="flex justify-between items-center">
+              <span>You will be redirected to your profile...</span>
+              <button 
+                className="bg-brand-purple text-white px-4 py-1 rounded-md text-sm"
+                onClick={() => navigate(`/profile/${user.id}`)}
+              >
+                Go to Profile
+              </button>
+            </div>
+          </div>
+        )}
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
