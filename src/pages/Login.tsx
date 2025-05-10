@@ -29,19 +29,23 @@ const Login = () => {
     setIsLoading(true);
 
     try {
+      console.log('Starting login process');
       const { error } = await signIn(email, password);
       
       if (error) {
+        console.error('Login error:', error);
         toast.error('Login failed', {
           description: error.message,
         });
       } else {
+        console.log('Login successful');
         toast.success('Welcome back!', {
           description: 'You have successfully logged in.',
         });
         navigate('/');
       }
     } catch (error) {
+      console.error('Unexpected login error:', error);
       toast.error('An unexpected error occurred', {
         description: 'Please try again later.',
       });

@@ -24,23 +24,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [supabaseConnected, setSupabaseConnected] = useState(true);
-
-  // Check if we're in demo mode
-  useEffect(() => {
-    const isDemoMode = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
-    if (isDemoMode) {
-      setSupabaseConnected(false);
-      setLoading(false);
-      toast.error(
-        "Supabase connection not configured", 
-        { 
-          description: "Connect to Supabase in your Lovable project to enable authentication.",
-          duration: 6000,
-        }
-      );
-    }
-  }, []);
 
   // Fetch user profile when user changes
   useEffect(() => {
@@ -57,19 +40,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    if (supabaseConnected) {
-      fetchProfile();
-    }
-  }, [user, supabaseConnected]);
+    fetchProfile();
+  }, [user]);
 
   useEffect(() => {
-    if (!supabaseConnected) return;
-
     const setData = async () => {
       try {
+        console.log('Checking for existing session');
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
-          console.error(error);
+          console.error("Error getting session:", error);
+        } else {
+          console.log('Session found:', session ? 'Yes' : 'No');
         }
         
         setSession(session);
@@ -82,11 +64,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     // Set up auth state listener
-    let subscription: { data: { subscription: { unsubscribe: () => void } } };
-    
     try {
-      subscription = supabase.auth.onAuthStateChange(
+      console.log('Setting up auth state listener');
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
         (_event, session) => {
+          console.log('Auth state changed:', _event);
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
@@ -96,22 +78,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setData();
 
       return () => {
-        subscription?.data?.subscription?.unsubscribe();
+        subscription.unsubscribe();
       };
     } catch (error) {
       console.error("Error setting up auth listener:", error);
       setLoading(false);
       return () => {};
     }
-  }, [supabaseConnected]);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
-    if (!supabaseConnected) {
-      toast.error("Authentication unavailable", { description: "Supabase is not connected." });
-      return { error: { message: "Supabase not connected" } };
-    }
-
     try {
+      console.log('SignIn: Attempting to sign in with email');
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       return { error };
     } catch (error) {
@@ -121,12 +99,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string, username: string) => {
-    if (!supabaseConnected) {
-      toast.error("Authentication unavailable", { description: "Supabase is not connected." });
-      return { error: { message: "Supabase not connected" } };
-    }
-
     try {
+      console.log('SignUp: Attempting to create new account');
       const { error, data } = await supabase.auth.signUp({
         email,
         password,
@@ -163,15 +137,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    if (supabaseConnected) {
-      await supabase.auth.signOut();
-    } else {
-      toast.error("Authentication unavailable", { description: "Supabase is not connected." });
-    }
+    await supabase.auth.signOut();
   };
 
   const updateUserProfile = async (updates: Partial<UserProfile>) => {
-    if (!user || !supabaseConnected) return null;
+    if (!user) return null;
     
     try {
       const updatedProfile = await updateProfile(user.id, updates);

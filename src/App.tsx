@@ -25,7 +25,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-purple mx-auto"></div>
+          <p className="mt-4 text-lg">Loading...</p>
+        </div>
+      </div>
+    );
   }
   
   if (!user) {
@@ -37,8 +44,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -57,12 +64,11 @@ const App = () => (
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

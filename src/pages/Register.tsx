@@ -29,20 +29,32 @@ const Register = () => {
     e.preventDefault();
     setIsLoading(true);
 
+    if (password.length < 8) {
+      toast.error('Password is too short', {
+        description: 'Password must be at least 8 characters long.',
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      console.log('Starting signup process');
       const { error } = await signUp(email, password, username);
       
       if (error) {
+        console.error('Signup error:', error);
         toast.error('Registration failed', {
           description: error.message,
         });
       } else {
+        console.log('Signup successful');
         toast.success('Registration successful!', {
           description: 'Please check your email to confirm your account.',
         });
         navigate('/login');
       }
     } catch (error) {
+      console.error('Unexpected signup error:', error);
       toast.error('An unexpected error occurred', {
         description: 'Please try again later.',
       });
