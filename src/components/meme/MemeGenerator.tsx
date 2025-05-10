@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MEME_TEMPLATES, CAPTION_STYLES } from '@/lib/constants';
-import { Image, Upload, Wand, Save, AlertCircle } from 'lucide-react';
+import { Image as LucideImage, Upload, Wand, Save, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -88,7 +87,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Load image
-    const img = new Image();
+    const img = new window.Image(); // Use window.Image instead of just Image
     img.crossOrigin = "anonymous";
     img.onload = () => {
       // Set canvas dimensions to match image
@@ -260,7 +259,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       <Tabs defaultValue="template" className="mb-4" onValueChange={setActiveTab}>
         <TabsList className="w-full">
           <TabsTrigger value="template" className="flex-1">
-            <Image className="h-4 w-4 mr-2" />
+            <LucideImage className="h-4 w-4 mr-2" />
             Template
           </TabsTrigger>
           <TabsTrigger value="upload" className="flex-1">
