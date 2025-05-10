@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Caption } from './types';
 
@@ -37,6 +38,35 @@ export const generateCaption = async (prompt: string, style: string): Promise<st
       `Nobody:\nAbsolutely nobody:\nMe: ${prompt}`,
       `${prompt}? Story of my life.`
     ];
+  }
+};
+
+// Added new function to generate AI images
+export const generateMemeImage = async (prompt: string, style: string = 'meme'): Promise<string | null> => {
+  console.log(`Generating AI image for prompt: "${prompt}" with style: ${style}`);
+  
+  try {
+    const { data, error } = await supabase.functions.invoke('gemini-ai', {
+      body: {
+        type: 'generate-image',
+        prompt,
+        style
+      }
+    });
+
+    if (error) {
+      console.error('Error generating image:', error);
+      throw error;
+    }
+
+    if (data && data.imageData) {
+      return data.imageData; // This will be a base64 data URL
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error in generateMemeImage:', error);
+    return null;
   }
 };
 

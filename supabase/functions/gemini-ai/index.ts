@@ -17,7 +17,13 @@ interface ImageRequest {
   imageUrl: string;
 }
 
-type GeminiRequest = TextRequest | ImageRequest;
+interface GenerateImageRequest {
+  type: 'generate-image';
+  prompt: string;
+  style?: string;
+}
+
+type GeminiRequest = TextRequest | ImageRequest | GenerateImageRequest;
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -252,6 +258,85 @@ serve(async (req) => {
       return new Response(JSON.stringify({ tags }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
+    }
+    else if (requestData.type === 'generate-image') {
+      // Handle image generation
+      const { prompt, style = 'meme' } = requestData;
+      
+      console.log(`Generating image for prompt: "${prompt}" with style: ${style}`);
+      
+      // Format the prompt based on style
+      let formattedPrompt = `Create a meme image for the concept: "${prompt}"`;
+      if (style === 'funny') {
+        formattedPrompt += ". Make it humorous and funny.";
+      } else if (style === 'dark') {
+        formattedPrompt += ". Use dark humor style.";
+      } else if (style === 'wholesome') {
+        formattedPrompt += ". Make it wholesome and positive.";
+      } else if (style === 'sarcastic') {
+        formattedPrompt += ". Use sarcastic and ironic style.";
+      }
+      
+      console.log(`Sending to Gemini for image generation with prompt: "${formattedPrompt}"`);
+      
+      // Use Gemini 1.5 Flash for image generation
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { 
+                  text: `Generate an image: ${formattedPrompt}. Create a funny meme-style image without any text overlay.` 
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.8,
+            topP: 0.9,
+            maxOutputTokens: 2048
+          },
+          "systemInstruction": {
+            "parts": [{ "text": "You are a meme image generator. Generate funny, creative meme-style images without any text overlay." }]
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Gemini API error for image generation:', errorData);
+        throw new Error(`Gemini API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Gemini API response for image generation:', JSON.stringify(data));
+      
+      // Extract the generated image data
+      try {
+        const parts = data.candidates[0].content.parts;
+        const imagePart = parts.find((part: any) => part.inlineData && part.inlineData.mimeType.startsWith('image/'));
+        
+        if (!imagePart) {
+          console.error('No image data found in the response');
+          throw new Error('No image data found in the response');
+        }
+        
+        const imageData = imagePart.inlineData.data;
+        console.log('Successfully extracted image data');
+        
+        return new Response(JSON.stringify({ 
+          imageData: `data:${imagePart.inlineData.mimeType};base64,${imageData}` 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (e) {
+        console.error('Error extracting image data from Gemini response:', e);
+        throw new Error('Failed to extract image data from response');
+      }
     }
     
     return new Response(JSON.stringify({ error: 'Invalid request type' }), {

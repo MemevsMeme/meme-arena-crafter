@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { createMeme } from '@/lib/database';
-import { generateCaption, analyzeMemeImage } from '@/lib/ai';
+import { generateCaption, analyzeMemeImage, generateMemeImage } from '@/lib/ai';
 import { uploadFileToIPFS } from '@/lib/ipfs';
 
 interface MemeGeneratorProps {
@@ -35,17 +36,19 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [imageTags, setImageTags] = useState<string[]>([]);
   const [isUploadingToIPFS, setIsUploadingToIPFS] = useState(false);
+  const [isGeneratingAIImage, setIsGeneratingAIImage] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Generate a preview when caption or template/image changes
   useEffect(() => {
-    if (caption && (selectedTemplate || uploadedImage)) {
+    if (caption && (selectedTemplate || uploadedImage || generatedImage)) {
       setShowPreview(true);
       renderMemeToCanvas();
     } else {
       setShowPreview(false);
     }
-  }, [caption, selectedTemplate, uploadedImage]);
+  }, [caption, selectedTemplate, uploadedImage, generatedImage]);
 
   const handleGenerateCaptions = async () => {
     if (!promptText) {
@@ -82,11 +85,53 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       setIsGeneratingCaptions(false);
     }
   };
+
+  const handleGenerateImage = async () => {
+    if (!promptText) {
+      toast({
+        title: "Error",
+        description: "Please enter a prompt text first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGeneratingAIImage(true);
+    setActiveTab('ai-generated');
+    
+    try {
+      // Use the Gemini API to generate an image
+      const imageData = await generateMemeImage(promptText, selectedStyle);
+      
+      if (imageData) {
+        setGeneratedImage(imageData);
+        toast({
+          title: "Success",
+          description: "AI image generated successfully!",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Couldn't generate image. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error generating image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate image",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingAIImage(false);
+    }
+  };
   
   const handleAnalyzeImage = async () => {
     const imageUrl = activeTab === 'template' 
       ? selectedTemplate?.url 
-      : uploadedImage;
+      : (activeTab === 'ai-generated' ? generatedImage : uploadedImage);
     
     if (!imageUrl) {
       toast({
@@ -174,7 +219,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
           }
         });
       } else {
-        // Default position for uploaded images - center bottom
+        // Default position for uploaded/generated images - center bottom
         const fontSize = Math.max(16, Math.min(canvas.width / 15, 36));
         const lineHeight = fontSize * 1.2;
         const totalHeight = lines.length * lineHeight;
@@ -192,7 +237,16 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       }
     };
     
-    img.src = activeTab === 'template' ? selectedTemplate.url : (uploadedImage as string);
+    let imageSrc = '';
+    if (activeTab === 'template') {
+      imageSrc = selectedTemplate.url;
+    } else if (activeTab === 'upload') {
+      imageSrc = uploadedImage as string;
+    } else if (activeTab === 'ai-generated') {
+      imageSrc = generatedImage as string;
+    }
+    
+    img.src = imageSrc;
   };
   
   // Helper function to draw text with stroke
@@ -218,6 +272,21 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
     ctx.fillText(text, x, y, maxWidth);
   };
   
+  // Helper function to convert a data URL to a File
+  const dataURLtoFile = (dataurl: string, filename: string): File => {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    
+    return new File([u8arr], filename, { type: mime });
+  };
+  
   // Function to save the meme
   const handleSaveMeme = async () => {
     if (!user) {
@@ -229,7 +298,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       return;
     }
     
-    if (!caption || (activeTab === 'upload' && !uploadedImage)) {
+    if (!caption || (!activeTab.includes('template') && !uploadedImage && !generatedImage)) {
       toast({
         title: "Error",
         description: "Please add both image and caption",
@@ -355,6 +424,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       setCaption('');
       setUploadedImage(null);
       setFile(null);
+      setGeneratedImage(null);
       setGeneratedCaptions([]);
       setImageTags([]);
       
@@ -393,6 +463,10 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
           <TabsTrigger value="upload" className="flex-1">
             <Upload className="h-4 w-4 mr-2" />
             Upload
+          </TabsTrigger>
+          <TabsTrigger value="ai-generated" className="flex-1">
+            <Wand className="h-4 w-4 mr-2" />
+            AI Image
           </TabsTrigger>
         </TabsList>
         
@@ -440,6 +514,36 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
             </div>
           )}
         </TabsContent>
+
+        <TabsContent value="ai-generated" className="py-4">
+          <div className="mb-4">
+            <Button 
+              onClick={handleGenerateImage} 
+              disabled={isGeneratingAIImage || !promptText}
+              className="w-full"
+            >
+              {isGeneratingAIImage ? 'Generating Image...' : 'Generate AI Image from Prompt'}
+              <Wand className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+          
+          {isGeneratingAIImage && (
+            <div className="flex flex-col items-center justify-center p-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-purple"></div>
+              <p className="mt-4 text-sm text-muted-foreground">Creating your meme image...</p>
+            </div>
+          )}
+          
+          {generatedImage && (
+            <div className="aspect-square max-h-64 mx-auto mb-4 rounded-lg overflow-hidden">
+              <img
+                src={generatedImage}
+                alt="AI Generated"
+                className="w-full h-full object-contain"
+              />
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
       
       <div className="flex flex-wrap gap-2 mb-4">
@@ -459,7 +563,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
           size="sm"
           className="flex items-center gap-1.5"
           onClick={handleAnalyzeImage}
-          disabled={isAnalyzingImage || (!selectedTemplate && !uploadedImage)}
+          disabled={isAnalyzingImage || (!selectedTemplate && !uploadedImage && !generatedImage)}
         >
           <Tag className="h-3.5 w-3.5" />
           {isAnalyzingImage ? 'Analyzing...' : 'Analyze Image'}
@@ -547,7 +651,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
         className="w-full create-button" 
         size="lg"
         onClick={handleSaveMeme}
-        disabled={!caption || (activeTab === 'upload' && !uploadedImage) || isCreatingMeme || !user}
+        disabled={!caption || (activeTab === 'upload' && !uploadedImage && !generatedImage) || isCreatingMeme || !user}
       >
         {isCreatingMeme ? (
           isUploadingToIPFS ? 'Storing on IPFS...' : 'Creating Meme...'
