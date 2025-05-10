@@ -9,7 +9,223 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      battles: {
+        Row: {
+          end_time: string
+          id: string
+          meme_one_id: string
+          meme_two_id: string
+          prompt_id: string | null
+          start_time: string
+          status: string
+          vote_count: number
+          winner_id: string | null
+        }
+        Insert: {
+          end_time?: string
+          id?: string
+          meme_one_id: string
+          meme_two_id: string
+          prompt_id?: string | null
+          start_time?: string
+          status?: string
+          vote_count?: number
+          winner_id?: string | null
+        }
+        Update: {
+          end_time?: string
+          id?: string
+          meme_one_id?: string
+          meme_two_id?: string
+          prompt_id?: string | null
+          start_time?: string
+          status?: string
+          vote_count?: number
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battles_meme_one_id_fkey"
+            columns: ["meme_one_id"]
+            isOneToOne: false
+            referencedRelation: "memes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battles_meme_two_id_fkey"
+            columns: ["meme_two_id"]
+            isOneToOne: false
+            referencedRelation: "memes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battles_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battles_winner_id_fkey"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "memes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memes: {
+        Row: {
+          caption: string
+          created_at: string
+          creator_id: string
+          id: string
+          image_url: string
+          ipfs_cid: string | null
+          prompt: string | null
+          prompt_id: string | null
+          tags: string[]
+          votes: number
+        }
+        Insert: {
+          caption: string
+          created_at?: string
+          creator_id: string
+          id?: string
+          image_url: string
+          ipfs_cid?: string | null
+          prompt?: string | null
+          prompt_id?: string | null
+          tags?: string[]
+          votes?: number
+        }
+        Update: {
+          caption?: string
+          created_at?: string
+          creator_id?: string
+          id?: string
+          image_url?: string
+          ipfs_cid?: string | null
+          prompt?: string | null
+          prompt_id?: string | null
+          tags?: string[]
+          votes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memes_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          level: number
+          losses: number
+          meme_streak: number
+          username: string
+          wins: number
+          xp: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          level?: number
+          losses?: number
+          meme_streak?: number
+          username: string
+          wins?: number
+          xp?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          level?: number
+          losses?: number
+          meme_streak?: number
+          username?: string
+          wins?: number
+          xp?: number
+        }
+        Relationships: []
+      }
+      prompts: {
+        Row: {
+          active: boolean
+          end_date: string
+          id: string
+          start_date: string
+          tags: string[]
+          text: string
+          theme: string | null
+        }
+        Insert: {
+          active?: boolean
+          end_date?: string
+          id?: string
+          start_date?: string
+          tags?: string[]
+          text: string
+          theme?: string | null
+        }
+        Update: {
+          active?: boolean
+          end_date?: string
+          id?: string
+          start_date?: string
+          tags?: string[]
+          text?: string
+          theme?: string | null
+        }
+        Relationships: []
+      }
+      votes: {
+        Row: {
+          battle_id: string
+          created_at: string
+          id: string
+          meme_id: string
+          user_id: string
+        }
+        Insert: {
+          battle_id: string
+          created_at?: string
+          id?: string
+          meme_id: string
+          user_id: string
+        }
+        Update: {
+          battle_id?: string
+          created_at?: string
+          id?: string
+          meme_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votes_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votes_meme_id_fkey"
+            columns: ["meme_id"]
+            isOneToOne: false
+            referencedRelation: "memes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

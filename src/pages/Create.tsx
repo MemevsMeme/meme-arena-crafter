@@ -41,6 +41,29 @@ const Create = () => {
     }, 1500);
   };
 
+  if (!user) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="container mx-auto px-4 py-8 flex-grow">
+          <div className="text-center p-10 bg-muted rounded-lg">
+            <h2 className="text-2xl font-heading mb-4">Login Required</h2>
+            <p className="text-muted-foreground mb-4">
+              You need to be logged in to create memes.
+            </p>
+            <button 
+              className="bg-brand-purple text-white px-6 py-2 rounded-md"
+              onClick={() => navigate('/login')}
+            >
+              Login / Register
+            </button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />

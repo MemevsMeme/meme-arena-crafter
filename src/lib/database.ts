@@ -199,20 +199,37 @@ export async function createMeme(meme: Partial<Meme>): Promise<Meme | null> {
 
 // Prompts
 export async function getActivePrompt(): Promise<Prompt | null> {
-  const { data, error } = await supabase
-    .from('prompts')
-    .select('*')
-    .eq('active', true)
-    .order('start_date', { ascending: false })
-    .limit(1)
-    .single();
-  
-  if (error) {
-    console.error('Error fetching active prompt:', error);
+  try {
+    const { data, error } = await supabase
+      .from('prompts')
+      .select('*')
+      .eq('active', true)
+      .order('start_date', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.log('No active prompt found');
+        return null;
+      }
+      console.error('Error fetching active prompt:', error);
+      return null;
+    }
+    
+    return {
+      id: data.id,
+      text: data.text,
+      theme: data.theme || '',
+      tags: data.tags || [],
+      active: data.active,
+      startDate: new Date(data.start_date),
+      endDate: new Date(data.end_date)
+    };
+  } catch (error) {
+    console.error('Exception in getActivePrompt:', error);
     return null;
   }
-  
-  return data as Prompt;
 }
 
 export async function getPrompts(limit = 10, offset = 0): Promise<Prompt[]> {
