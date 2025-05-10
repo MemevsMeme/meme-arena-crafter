@@ -30,23 +30,23 @@ const Login = () => {
 
     try {
       console.log('Starting login process');
-      const { error } = await signIn(email, password);
+      const result = await signIn(email, password);
       
-      if (error) {
-        console.error('Login error:', error);
+      if (result.error) {
+        console.error('Login error:', result.error);
         
         // Improved error messages
-        if (error.message.includes('Email not confirmed')) {
+        if (result.error.message.includes('Email not confirmed')) {
           toast.error('Email not confirmed', {
             description: 'Please check your email to confirm your account.',
           });
-        } else if (error.message.includes('Invalid login credentials')) {
+        } else if (result.error.message.includes('Invalid login credentials')) {
           toast.error('Invalid credentials', {
             description: 'Please check your email and password and try again.',
           });
         } else {
           toast.error('Login failed', {
-            description: error.message,
+            description: result.error.message,
           });
         }
       } else {

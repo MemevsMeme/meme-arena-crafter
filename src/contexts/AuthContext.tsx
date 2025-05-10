@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
@@ -9,8 +10,8 @@ interface AuthContextType {
   user: UserType | null;
   userProfile: UserType | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, username: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{error?: {message: string}}>;
+  signUp: (email: string, password: string, username: string) => Promise<{error?: {message: string}}>;
   signOut: () => Promise<void>;
   updateUserProfile: (updates: Partial<UserType>) => Promise<UserType | null>;
 }
@@ -57,11 +58,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         console.error('Sign-in error:', error);
         toast.error('Failed to sign in', { description: error.message });
+        return { error };
       }
+      return { error: undefined };
+    } catch (error: any) {
+      console.error('Unexpected sign-in error:', error);
+      return { error: { message: error.message || 'An unexpected error occurred' } };
     } finally {
       setLoading(false);
     }
@@ -83,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         console.error('Sign-up error:', error);
         toast.error('Failed to sign up', { description: error.message });
+        return { error };
       } else {
         // Create user profile
         if (data.user?.id) {
@@ -106,7 +113,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             toast.error('Failed to create profile');
           }
         }
+        return { error: undefined };
       }
+    } catch (error: any) {
+      console.error('Unexpected sign-up error:', error);
+      return { error: { message: error.message || 'An unexpected error occurred' } };
     } finally {
       setLoading(false);
     }
