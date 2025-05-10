@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MEME_TEMPLATES, CAPTION_STYLES } from '@/lib/constants';
-import { Image as LucideImage, Upload, Wand, Save, AlertCircle, MagicWand, Tag } from 'lucide-react';
+import { Image as LucideImage, Upload, Wand, Save, AlertCircle, WandSparkles, Tag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -361,7 +360,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
           onClick={handleGenerateCaptions}
           disabled={isGeneratingCaptions || !promptText}
         >
-          <MagicWand className="h-3.5 w-3.5" />
+          <WandSparkles className="h-3.5 w-3.5" />
           {isGeneratingCaptions ? 'Generating...' : 'Generate Caption Ideas'}
         </Button>
         
