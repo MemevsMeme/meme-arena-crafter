@@ -5,7 +5,7 @@ export const MEME_TEMPLATES = [
   {
     id: 'drake',
     name: 'Drake Hotline Bling',
-    url: '/templates/drake.jpg',
+    url: '/Drake-Hotline-Bling.jpg',
     textPositions: [
       { x: 50, y: 25, maxWidth: 200, fontSize: 24 },
       { x: 50, y: 75, maxWidth: 200, fontSize: 24 },
@@ -14,7 +14,7 @@ export const MEME_TEMPLATES = [
   {
     id: 'distracted-boyfriend',
     name: 'Distracted Boyfriend',
-    url: '/templates/distracted-boyfriend.jpg',
+    url: '/Distracted-Boyfriend.jpg',
     textPositions: [
       { x: 25, y: 20, maxWidth: 150, fontSize: 20 },
       { x: 50, y: 20, maxWidth: 150, fontSize: 20 },
@@ -24,7 +24,7 @@ export const MEME_TEMPLATES = [
   {
     id: 'change-my-mind',
     name: 'Change My Mind',
-    url: '/templates/change-my-mind.jpg',
+    url: '/Change-My-Mind-tilt-corrected-meme-2.jpg',
     textPositions: [
       { x: 50, y: 30, maxWidth: 250, fontSize: 28 },
     ],
@@ -32,7 +32,7 @@ export const MEME_TEMPLATES = [
   {
     id: 'two-buttons',
     name: 'Two Buttons',
-    url: '/templates/two-buttons.jpg',
+    url: '/Two-Buttons.jpg',
     textPositions: [
       { x: 25, y: 10, maxWidth: 100, fontSize: 18 },
       { x: 75, y: 10, maxWidth: 100, fontSize: 18 },
@@ -42,7 +42,7 @@ export const MEME_TEMPLATES = [
   {
     id: 'expanding-brain',
     name: 'Expanding Brain',
-    url: '/templates/expanding-brain.jpg',
+    url: '/expanding brain.png',
     textPositions: [
       { x: 75, y: 20, maxWidth: 150, fontSize: 20 },
       { x: 75, y: 40, maxWidth: 150, fontSize: 20 },
