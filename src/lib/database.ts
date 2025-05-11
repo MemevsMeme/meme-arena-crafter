@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Caption, Meme, Prompt, Battle, User } from './types';
+import { Database } from '@/integrations/supabase/types';
 
 /**
  * This file handles database operations through the Supabase client.
@@ -66,10 +67,10 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
   try {
     const today = new Date();
     
-    // Use explicit select
+    // Use explicit select with all columns to ensure all fields are included
     const { data, error } = await supabase
       .from('prompts')
-      .select('*')
+      .select('id, text, theme, tags, active, start_date, end_date, description, creator_id, is_community')
       .eq('active', true)
       .lte('start_date', today.toISOString())
       .gte('end_date', today.toISOString())
@@ -82,7 +83,7 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
 
     if (!data) return null;
     
-    // Cast to raw type without using "as"
+    // Cast to raw type and ensure all fields are available
     const row: RawPromptRow = {
       id: data.id,
       text: data.text,
@@ -93,7 +94,7 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
       end_date: data.end_date,
       description: data.description,
       creator_id: data.creator_id,
-      is_community: !!data.is_community
+      is_community: data.is_community
     };
     
     // Transform to our application model
@@ -119,7 +120,7 @@ export const getProfile = async (userId: string): Promise<User | null> => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, username, avatar_url, meme_streak, wins, losses, level, xp, created_at')
       .eq('id', userId)
       .single();
 
@@ -221,7 +222,7 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
   try {
     const { data, error } = await supabase
       .from('memes')
-      .select('*')
+      .select('id, prompt, prompt_id, image_url, ipfs_cid, caption, creator_id, votes, created_at, tags, battle_id, is_battle_submission')
       .eq('creator_id', userId)
       .order('created_at', { ascending: false });
 
@@ -248,7 +249,7 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
         created_at: item.created_at,
         tags: item.tags || [],
         battle_id: item.battle_id,
-        is_battle_submission: !!item.is_battle_submission
+        is_battle_submission: item.is_battle_submission
       };
       
       memes.push({
@@ -336,7 +337,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
     // Build the query manually to avoid TypeScript issues
     let query = supabase
       .from('battles')
-      .select('*')
+      .select('id, prompt_id, meme_one_id, meme_two_id, winner_id, vote_count, start_time, end_time, status, creator_id, is_community')
       .eq('status', 'active')
       .order('start_time', { ascending: false });
     
@@ -378,19 +379,19 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
         end_time: item.end_time,
         status: item.status,
         creator_id: item.creator_id,
-        is_community: !!item.is_community
+        is_community: item.is_community
       };
       
-      // Fetch meme one
+      // For memes, use separate queries to avoid deep type instantiation
       let memeOne: Meme | undefined;
       if (battleRow.meme_one_id) {
-        const { data: memeData, error: memeError } = await supabase
+        const { data: memeData } = await supabase
           .from('memes')
-          .select('*')
+          .select('id, prompt, prompt_id, image_url, ipfs_cid, caption, creator_id, votes, created_at, tags, battle_id, is_battle_submission')
           .eq('id', battleRow.meme_one_id)
           .single();
           
-        if (!memeError && memeData) {
+        if (memeData) {
           memeOne = {
             id: memeData.id,
             prompt: memeData.prompt || '',
@@ -402,7 +403,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
             votes: memeData.votes,
             createdAt: new Date(memeData.created_at),
             tags: memeData.tags || [],
-            isBattleSubmission: !!memeData.is_battle_submission,
+            isBattleSubmission: memeData.is_battle_submission,
             battleId: memeData.battle_id || undefined
           };
         }
@@ -411,13 +412,13 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
       // Fetch meme two
       let memeTwo: Meme | undefined;
       if (battleRow.meme_two_id) {
-        const { data: memeData, error: memeError } = await supabase
+        const { data: memeData } = await supabase
           .from('memes')
-          .select('*')
+          .select('id, prompt, prompt_id, image_url, ipfs_cid, caption, creator_id, votes, created_at, tags, battle_id, is_battle_submission')
           .eq('id', battleRow.meme_two_id)
           .single();
           
-        if (!memeError && memeData) {
+        if (memeData) {
           memeTwo = {
             id: memeData.id,
             prompt: memeData.prompt || '',
@@ -429,7 +430,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
             votes: memeData.votes,
             createdAt: new Date(memeData.created_at),
             tags: memeData.tags || [],
-            isBattleSubmission: !!memeData.is_battle_submission,
+            isBattleSubmission: memeData.is_battle_submission,
             battleId: memeData.battle_id || undefined
           };
         }
@@ -464,7 +465,7 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
   try {
     const { data, error } = await supabase
       .from('prompts')
-      .select('*')
+      .select('id, text, theme, tags, active, start_date, end_date, description, creator_id, is_community')
       .eq('active', true)
       .eq('is_community', isCommunity)
       .order('start_date', { ascending: false })
@@ -492,7 +493,7 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
         end_date: item.end_date,
         description: item.description,
         creator_id: item.creator_id,
-        is_community: !!item.is_community
+        is_community: item.is_community
       };
       
       prompts.push({
@@ -550,7 +551,7 @@ export const createMeme = async (meme: {
     const { data, error } = await supabase
       .from('memes')
       .insert(dbMeme)
-      .select();
+      .select('id, prompt, prompt_id, image_url, ipfs_cid, caption, creator_id, votes, created_at, tags, battle_id, is_battle_submission');
 
     if (error) {
       console.error('Error creating meme:', error);
@@ -576,7 +577,7 @@ export const createMeme = async (meme: {
       created_at: data[0].created_at,
       tags: data[0].tags || [],
       battle_id: data[0].battle_id,
-      is_battle_submission: !!data[0].is_battle_submission
+      is_battle_submission: data[0].is_battle_submission
     };
     
     // Transform to application model
