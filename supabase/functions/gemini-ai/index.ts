@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+const GEMINI_API_KEY = Deno.env.get('GEM_API'); // Updated to use GEM_API
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -106,7 +106,7 @@ serve(async (req) => {
           console.log(`API Key exists: ${!!GEMINI_API_KEY}`); 
           
           if (!GEMINI_API_KEY) {
-            console.error("GEMINI_API_KEY is not set");
+            console.error("GEM_API is not set");
             throw new Error("API Key not configured");
           }
           
@@ -287,3 +287,4 @@ serve(async (req) => {
     );
   }
 });
+
