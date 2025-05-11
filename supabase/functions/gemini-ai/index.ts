@@ -79,7 +79,8 @@ serve(async (req) => {
 
       console.log(`Sending to Gemini API with formatted prompt: "${formattedPrompt}"`);
       
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+      // Updated to use Gemini 2.0 model
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,7 +179,8 @@ serve(async (req) => {
       
       console.log('Image converted to base64 for processing');
       
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-vision:generateContent?key=${GEMINI_API_KEY}`, {
+      // Updated to use Gemini 2.0 model
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro-vision:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -279,7 +281,7 @@ serve(async (req) => {
       
       console.log(`Sending to Gemini for image generation with prompt: "${formattedPrompt}"`);
       
-      // Use the new gemini-2.0-flash-preview-image-generation model
+      // Updated to use correct model and format for Gemini 2.0 image generation
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -288,6 +290,7 @@ serve(async (req) => {
         body: JSON.stringify({
           contents: [
             {
+              role: "user",
               parts: [
                 { text: formattedPrompt }
               ]
@@ -296,7 +299,7 @@ serve(async (req) => {
           generationConfig: {
             temperature: 0.9,
           },
-          safety_settings: [
+          safetySettings: [
             {
               category: "HARM_CATEGORY_HATE_SPEECH",
               threshold: "BLOCK_MEDIUM_AND_ABOVE"
@@ -328,23 +331,29 @@ serve(async (req) => {
       
       // Extract the generated image data
       try {
-        const parts = data.candidates[0].content.parts;
-        // Look for the image part in the response
-        const imageData = parts.find(part => 
-          part.inlineData && 
-          part.inlineData.mimeType && 
-          part.inlineData.mimeType.startsWith('image/')
-        );
+        const candidates = data.candidates;
+        if (!candidates || candidates.length === 0) {
+          throw new Error('No candidates returned in the response');
+        }
         
-        if (!imageData) {
+        const content = candidates[0].content;
+        if (!content || !content.parts || content.parts.length === 0) {
+          throw new Error('No content parts found in the response');
+        }
+        
+        // Look for the image part in the response (format is different in Gemini 2.0)
+        const imagePart = content.parts.find(part => part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/'));
+        
+        if (!imagePart || !imagePart.inlineData) {
           console.error('No image data found in the response');
+          console.log('Response structure:', JSON.stringify(content.parts));
           throw new Error('No image data found in the response');
         }
         
         console.log('Successfully extracted image data');
         
         return new Response(JSON.stringify({ 
-          imageData: `data:${imageData.inlineData.mimeType};base64,${imageData.inlineData.data}` 
+          imageData: `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}` 
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
