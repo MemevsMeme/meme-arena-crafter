@@ -108,6 +108,7 @@ serve(async (req) => {
           }
           
           console.log(`Sending to Gemini for image generation with prompt: "${formattedPrompt}"`);
+          console.log(`API Key exists: ${!!GEMINI_API_KEY}`); // Log if key exists, not the actual key
           
           // Use Gemini 2.0 Flash Preview Image Generation model for image generation
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${GEMINI_API_KEY}`;
