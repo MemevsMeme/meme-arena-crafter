@@ -79,7 +79,7 @@ serve(async (req) => {
 
       console.log(`Sending to Gemini API with formatted prompt: "${formattedPrompt}"`);
       
-      // Updated to use Gemini 2.0 model
+      // Use Gemini 2.0 model
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -179,7 +179,7 @@ serve(async (req) => {
       
       console.log('Image converted to base64 for processing');
       
-      // Updated to use Gemini 2.0 model
+      // Use Gemini 2.0 model
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro-vision:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -281,7 +281,7 @@ serve(async (req) => {
       
       console.log(`Sending to Gemini for image generation with prompt: "${formattedPrompt}"`);
       
-      // Updated to use correct model and format for Gemini 2.0 image generation
+      // The specific format needed for gemini-2.0-flash-preview-image-generation
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -295,34 +295,13 @@ serve(async (req) => {
                 { text: formattedPrompt }
               ]
             }
-          ],
-          generationConfig: {
-            temperature: 0.9,
-          },
-          safetySettings: [
-            {
-              category: "HARM_CATEGORY_HATE_SPEECH",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_HARASSMENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            }
           ]
         })
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Gemini API error for image generation:', errorData);
+        const errorText = await response.text();
+        console.error('Gemini API error for image generation:', errorText);
         throw new Error(`Gemini API error: ${response.status}`);
       }
 
