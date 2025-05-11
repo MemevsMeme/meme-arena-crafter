@@ -1,10 +1,10 @@
 
 -- Enable Row Level Security on all tables
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.memes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.battles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.prompts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.votes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE memes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE battles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE prompts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE votes ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Public profiles are viewable by everyone" 
@@ -12,9 +12,6 @@ CREATE POLICY "Public profiles are viewable by everyone"
 
 CREATE POLICY "Users can update their own profile" 
   ON profiles FOR UPDATE USING (auth.uid() = id);
-
-CREATE POLICY "Users can insert their own profile" 
-  ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Memes policies
 CREATE POLICY "Memes are viewable by everyone" 

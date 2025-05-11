@@ -11,8 +11,10 @@ export type Database = {
     Tables: {
       battles: {
         Row: {
+          creator_id: string | null
           end_time: string
           id: string
+          is_community: boolean | null
           meme_one_id: string
           meme_two_id: string
           prompt_id: string | null
@@ -22,8 +24,10 @@ export type Database = {
           winner_id: string | null
         }
         Insert: {
+          creator_id?: string | null
           end_time?: string
           id?: string
+          is_community?: boolean | null
           meme_one_id: string
           meme_two_id: string
           prompt_id?: string | null
@@ -33,8 +37,10 @@ export type Database = {
           winner_id?: string | null
         }
         Update: {
+          creator_id?: string | null
           end_time?: string
           id?: string
+          is_community?: boolean | null
           meme_one_id?: string
           meme_two_id?: string
           prompt_id?: string | null
@@ -76,42 +82,55 @@ export type Database = {
       }
       memes: {
         Row: {
+          battle_id: string | null
           caption: string
           created_at: string
           creator_id: string
           id: string
           image_url: string
           ipfs_cid: string | null
+          is_battle_submission: boolean | null
           prompt: string | null
           prompt_id: string | null
           tags: string[]
           votes: number
         }
         Insert: {
+          battle_id?: string | null
           caption: string
           created_at?: string
           creator_id: string
           id?: string
           image_url: string
           ipfs_cid?: string | null
+          is_battle_submission?: boolean | null
           prompt?: string | null
           prompt_id?: string | null
           tags?: string[]
           votes?: number
         }
         Update: {
+          battle_id?: string | null
           caption?: string
           created_at?: string
           creator_id?: string
           id?: string
           image_url?: string
           ipfs_cid?: string | null
+          is_battle_submission?: boolean | null
           prompt?: string | null
           prompt_id?: string | null
           tags?: string[]
           votes?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "memes_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "memes_prompt_id_fkey"
             columns: ["prompt_id"]
@@ -160,8 +179,11 @@ export type Database = {
       prompts: {
         Row: {
           active: boolean
+          creator_id: string | null
+          description: string | null
           end_date: string
           id: string
+          is_community: boolean | null
           start_date: string
           tags: string[]
           text: string
@@ -169,8 +191,11 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          creator_id?: string | null
+          description?: string | null
           end_date?: string
           id?: string
+          is_community?: boolean | null
           start_date?: string
           tags?: string[]
           text: string
@@ -178,8 +203,11 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          creator_id?: string | null
+          description?: string | null
           end_date?: string
           id?: string
+          is_community?: boolean | null
           start_date?: string
           tags?: string[]
           text?: string
