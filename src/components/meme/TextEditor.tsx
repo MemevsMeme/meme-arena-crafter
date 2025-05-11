@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -73,7 +72,17 @@ const TextEditor: React.FC<TextEditorProps> = ({
     const updated = [...textPositions];
     // Increase max font size to 150px
     const newSize = Math.max(10, Math.min(150, updated[index].fontSize + delta));
-    updated[index] = { ...updated[index], fontSize: newSize };
+    
+    // Adjust stretch proportionally to font size change to maintain aspect ratio
+    const stretchFactor = updated[index].stretch || 1.0;
+    
+    updated[index] = { 
+      ...updated[index], 
+      fontSize: newSize,
+      // Keep the existing stretch value
+      stretch: stretchFactor
+    };
+    
     onChange(updated);
   };
   
@@ -83,6 +92,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
       const updated = [...textPositions];
       // Allow direct input of font size up to 150px
       const newSize = Math.max(10, Math.min(150, fontSize));
+      
       updated[index] = { ...updated[index], fontSize: newSize };
       onChange(updated);
     }

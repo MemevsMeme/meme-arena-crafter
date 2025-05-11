@@ -84,13 +84,18 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     
     // Use a comprehensive set of fallbacks for better compatibility
     const fontList = `${fontFamily}, Impact, Arial Black, Arial, Helvetica, sans-serif`;
-    ctx.font = `${fontStyle}${fontSize}px ${fontList}`;
     
-    // Apply stretching by scaling the context horizontally
-    ctx.scale(stretch, 1.0);
+    // Important: Apply font size proportionally to both dimensions via the scale method
+    // This ensures text scales uniformly in both width and height
+    const scaledFontSize = fontSize / stretch;
+    ctx.font = `${fontStyle}${scaledFontSize}px ${fontList}`;
     
-    // Adjust x position for stretching
+    // Apply scaling for proper width and height proportions
+    ctx.scale(stretch, stretch);
+    
+    // Adjust x and y positions for scaling
     const adjustedX = x / stretch;
+    const adjustedY = y / stretch;
     
     // Set text alignment and baseline
     ctx.textAlign = alignment;
@@ -100,11 +105,11 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     ctx.lineJoin = 'round'; // Rounded corners for smoother outlines
     
     // Multiple passes of outlines with decreasing thickness for better visibility
-    const outlineSizes = [fontSize/4, fontSize/6, fontSize/10];
+    const outlineSizes = [fontSize/6, fontSize/10, fontSize/15];
     for (const thickness of outlineSizes) {
       ctx.strokeStyle = 'black';
-      ctx.lineWidth = thickness;
-      ctx.strokeText(text, adjustedX, y, maxWidth / stretch);
+      ctx.lineWidth = thickness / stretch; // Adjust outline thickness for scaling
+      ctx.strokeText(text, adjustedX, adjustedY, maxWidth / stretch);
     }
     
     // Draw text fill with enhanced shadow for better readability
@@ -112,12 +117,12 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     
     // Add shadow for depth - make it proportional to font size
     ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-    ctx.shadowBlur = Math.min(8, fontSize / 5);
-    ctx.shadowOffsetX = Math.min(4, fontSize / 8);
-    ctx.shadowOffsetY = Math.min(4, fontSize / 8);
+    ctx.shadowBlur = Math.min(8, fontSize / 5) / stretch;
+    ctx.shadowOffsetX = Math.min(3, fontSize / 10) / stretch;
+    ctx.shadowOffsetY = Math.min(3, fontSize / 10) / stretch;
     
     // Fill the text
-    ctx.fillText(text, adjustedX, y, maxWidth / stretch);
+    ctx.fillText(text, adjustedX, adjustedY, maxWidth / stretch);
     
     // Restore context to original state
     ctx.restore();

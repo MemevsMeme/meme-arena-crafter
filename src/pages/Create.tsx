@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -15,6 +14,9 @@ const Create = () => {
   const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
   const [loading, setLoading] = useState(true);
   const [createdMeme, setCreatedMeme] = useState<{ id: string; caption: string; imageUrl: string } | null>(null);
+  
+  // Add state for default edit mode
+  const [defaultEditMode] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchActivePrompt = async () => {
@@ -106,6 +108,7 @@ const Create = () => {
               promptText={activePrompt?.text || ''} 
               promptId={activePrompt?.id}
               onSave={handleMemeSave}
+              defaultEditMode={defaultEditMode}
             />
           </div>
           
