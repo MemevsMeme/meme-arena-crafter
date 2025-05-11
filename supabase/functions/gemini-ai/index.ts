@@ -1,4 +1,5 @@
-import { serve } from 'std/server';
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
@@ -36,7 +37,7 @@ serve(async (req) => {
 
           console.log(`Sending to Gemini with prompt: "${formattedPrompt}"`);
 
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -209,7 +210,7 @@ serve(async (req) => {
 
           console.log(`Analyzing image: ${imageUrl}`);
 
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${GEMINI_API_KEY}`, {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro-vision:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
