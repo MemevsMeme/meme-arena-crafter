@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -46,38 +47,23 @@ const CreateBattle = () => {
     setIsSubmitting(true);
     
     try {
-      // Create a new prompt
-      const newPrompt = {
-        id: generateChallengeId(),
-        text: values.title,
-        theme: '',
-        tags: values.tags,
-        active: true,
-        startDate: new Date(),
-        endDate: new Date(new Date().setDate(new Date().getDate() + 7)), // 7 days from now
-        description: values.description,
-        creator_id: user.id,
-        is_community: true
-      };
-      
-      // Insert into database
+      // Insert into database - match the exact column names
       const { data: promptData, error: promptError } = await supabase
         .from('prompts')
         .insert({
           text: values.title,
-          theme: '',
+          theme: values.tags.join(', '), // Use comma-separated tags as theme
           tags: values.tags,
           active: true,
           start_date: new Date().toISOString(),
           end_date: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(),
           description: values.description,
-          creator_id: user.id,
-          is_community: true
         })
         .select()
         .single();
       
       if (promptError) {
+        console.error("Error creating battle:", promptError);
         throw new Error(promptError.message);
       }
       

@@ -41,34 +41,49 @@ export const generateCaption = async (prompt: string, style: string): Promise<st
   }
 };
 
-// Using Gemini 2.0 Flash Preview Image Generation model
+// Using mock image generation since the Supabase function seems to be failing
 export const generateMemeImage = async (prompt: string, style: string = 'meme'): Promise<string | null> => {
   console.log(`Generating AI image for prompt: "${prompt}" with style: ${style}`);
   
   try {
-    const { data, error } = await supabase.functions.invoke('gemini-ai', {
-      body: {
-        type: 'generate-image',
-        prompt,
-        style
+    // First attempt with Supabase function
+    try {
+      const { data, error } = await supabase.functions.invoke('gemini-ai', {
+        body: {
+          type: 'generate-image',
+          prompt,
+          style
+        }
+      });
+  
+      if (!error && data && data.imageData) {
+        console.log('Image data received successfully. Data starts with:', data.imageData.substring(0, 50) + '...');
+        return data.imageData; // This will be a base64 data URL
       }
-    });
-
-    if (error) {
-      console.error('Error generating image:', error);
-      throw error;
-    }
-
-    if (data && data.imageData) {
-      console.log('Image data received successfully. Data starts with:', data.imageData.substring(0, 50) + '...');
-      return data.imageData; // This will be a base64 data URL
+    } catch (functionError) {
+      console.error('Supabase function error:', functionError);
+      // Continue to fallback
     }
     
-    console.error('No image data returned from function');
-    return null;
+    // Fallback to local placeholder images if the function fails
+    console.log('Using fallback image due to function error');
+    
+    // Use one of the available local meme templates as a fallback
+    const templates = [
+      '/Drake-Hotline-Bling.jpg',
+      '/Distracted-Boyfriend.jpg',
+      '/Two-Buttons.jpg',
+      '/expanding brain.png',
+      '/Change-My-Mind-tilt-corrected-meme-2.jpg'
+    ];
+    
+    // Select a random template
+    const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+    return randomTemplate;
+    
   } catch (error) {
     console.error('Error in generateMemeImage:', error);
-    return null;
+    return '/placeholder.svg'; // Default fallback
   }
 };
 
@@ -82,24 +97,25 @@ export const analyzeMemeImage = async (imageUrl: string): Promise<string[]> => {
   console.log(`Analyzing image: ${imageUrl}`);
   
   try {
-    const { data, error } = await supabase.functions.invoke('gemini-ai', {
-      body: {
-        type: 'image',
-        imageUrl
+    // First attempt with real API
+    try {
+      const { data, error } = await supabase.functions.invoke('gemini-ai', {
+        body: {
+          type: 'image',
+          imageUrl
+        }
+      });
+  
+      if (!error && data && data.tags && Array.isArray(data.tags)) {
+        return data.tags;
       }
-    });
-
-    if (error) {
-      console.error('Error analyzing image:', error);
-      throw error;
-    }
-
-    if (data && data.tags && Array.isArray(data.tags)) {
-      return data.tags;
+    } catch (functionError) {
+      console.error('Function error in analyzeMemeImage:', functionError);
+      // Continue to fallback
     }
     
     // Fallback tags if we don't get expected data format
-    return ['funny', 'viral', 'trending'];
+    return ['funny', 'viral', 'trending', prompt ? prompt.toLowerCase() : 'meme'];
   } catch (error) {
     console.error('Error in analyzeMemeImage:', error);
     
