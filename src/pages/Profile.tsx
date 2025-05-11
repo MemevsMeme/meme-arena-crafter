@@ -119,7 +119,15 @@ const Profile = () => {
                 {memes.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {memes.map(meme => (
-                      <MemeCard key={meme.id} meme={meme} />
+                      <MemeCard key={meme.id} meme={{
+                        ...meme,
+                        // Ensure imageUrl is absolute
+                        imageUrl: meme.imageUrl.startsWith('data:') 
+                          ? meme.imageUrl 
+                          : (meme.imageUrl.startsWith('http') 
+                              ? meme.imageUrl 
+                              : `${window.location.origin}${meme.imageUrl.startsWith('/') ? '' : '/'}${meme.imageUrl}`)
+                      }} />
                     ))}
                   </div>
                 ) : (

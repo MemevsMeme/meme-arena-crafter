@@ -60,9 +60,11 @@ export const generateMemeImage = async (prompt: string, style: string = 'meme'):
     }
 
     if (data && data.imageData) {
+      console.log('Image data received successfully. Data starts with:', data.imageData.substring(0, 50) + '...');
       return data.imageData; // This will be a base64 data URL
     }
     
+    console.error('No image data returned from function');
     return null;
   } catch (error) {
     console.error('Error in generateMemeImage:', error);

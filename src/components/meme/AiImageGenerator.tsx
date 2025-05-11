@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Wand } from 'lucide-react';
+import { Wand, Save } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 
@@ -10,13 +10,15 @@ interface AiImageGeneratorProps {
   isGeneratingAIImage: boolean;
   generatedImage: string | null;
   handleGenerateImage: () => void;
+  onSaveAsTemplate?: (imageUrl: string, promptText: string) => void;
 }
 
 const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
   promptText,
   isGeneratingAIImage,
   generatedImage,
-  handleGenerateImage
+  handleGenerateImage,
+  onSaveAsTemplate
 }) => {
   const handleImageGeneration = () => {
     if (!promptText) {
@@ -34,6 +36,16 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
     });
     
     handleGenerateImage();
+  };
+
+  const handleSaveAsTemplate = () => {
+    if (generatedImage && onSaveAsTemplate) {
+      onSaveAsTemplate(generatedImage, promptText);
+      toast({
+        title: "Success",
+        description: "Image saved as template"
+      });
+    }
   };
 
   return (
@@ -66,12 +78,29 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
       )}
       
       {generatedImage && (
-        <div className="aspect-square max-h-64 mx-auto mb-4 rounded-lg overflow-hidden">
-          <img
-            src={generatedImage}
-            alt="AI Generated"
-            className="w-full h-full object-contain"
-          />
+        <div className="flex flex-col">
+          <div className="aspect-square max-h-64 mx-auto mb-4 rounded-lg overflow-hidden">
+            <img
+              src={generatedImage}
+              alt="AI Generated"
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                console.error("Image failed to load:", generatedImage);
+                e.currentTarget.src = '/placeholder.svg';
+              }}
+            />
+          </div>
+          
+          {onSaveAsTemplate && (
+            <Button 
+              onClick={handleSaveAsTemplate} 
+              variant="outline" 
+              className="mt-2"
+            >
+              <Save className="mr-2 h-4 w-4" />
+              Save as Template
+            </Button>
+          )}
         </div>
       )}
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -474,6 +473,38 @@ const MemeGenerator = ({ promptText = '', promptId, onSave, defaultEditMode = fa
     }
   };
 
+  // Function to save AI-generated image as a template
+  const handleSaveAsTemplate = async (imageUrl: string, prompt: string) => {
+    // Here we would typically save this to user's custom templates in the database
+    // For now, we'll just store it in localStorage as a simple implementation
+    const templateName = `AI: ${prompt.substring(0, 20)}${prompt.length > 20 ? '...' : ''}`;
+    
+    const customTemplates = JSON.parse(localStorage.getItem('customMemeTemplates') || '[]');
+    
+    customTemplates.push({
+      id: `custom-${Date.now()}`,
+      name: templateName,
+      url: imageUrl,
+      prompt,
+      textPositions: [
+        {
+          x: 50,
+          y: 50,
+          fontSize: 32,
+          maxWidth: 300,
+          alignment: 'center'
+        }
+      ]
+    });
+    
+    localStorage.setItem('customMemeTemplates', JSON.stringify(customTemplates));
+    
+    toast({
+      title: "Template Saved",
+      description: "Your AI-generated image has been saved as a template"
+    });
+  };
+
   return (
     <div className="bg-background border rounded-xl p-4 shadow-sm">
       <div className="mb-4">
@@ -523,7 +554,8 @@ const MemeGenerator = ({ promptText = '', promptId, onSave, defaultEditMode = fa
             promptText={promptText} 
             isGeneratingAIImage={isGeneratingAIImage} 
             generatedImage={generatedImage}
-            handleGenerateImage={handleGenerateImage} 
+            handleGenerateImage={handleGenerateImage}
+            onSaveAsTemplate={handleSaveAsTemplate}
           />
         </TabsContent>
       </Tabs>
