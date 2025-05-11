@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 
 interface MemeCanvasProps {
@@ -78,21 +77,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     // Save context state to restore later
     ctx.save();
     
-    // Apply horizontal scaling for text stretching
-    ctx.setTransform(
-      stretch, // Horizontal scaling
-      0,       // Horizontal skewing
-      0,       // Vertical skewing
-      1,       // Vertical scaling
-      x,       // Horizontal position
-      y        // Vertical position
-    );
-    
-    // Convert coordinates for proper text positioning after transform
-    const adjX = 0; // X is now 0 because we translated in the transform
-    const adjY = 0; // Y is now 0 because we translated in the transform
-    
-    // Set font style with better fallbacks
+    // Get text metrics for calculating proper dimensions
     let fontStyle = '';
     if (isBold) fontStyle += 'bold ';
     if (isItalic) fontStyle += 'italic ';
@@ -100,36 +85,39 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     // Use a comprehensive set of fallbacks for better compatibility
     const fontList = `${fontFamily}, Impact, Arial Black, Arial, Helvetica, sans-serif`;
     ctx.font = `${fontStyle}${fontSize}px ${fontList}`;
+    
+    // Apply stretching by scaling the context horizontally
+    ctx.scale(stretch, 1.0);
+    
+    // Adjust x position for stretching
+    const adjustedX = x / stretch;
+    
+    // Set text alignment and baseline
     ctx.textAlign = alignment;
     ctx.textBaseline = 'middle';
     
-    // Draw multiple outlines for better text visibility
+    // Improved multiple outlines for better text visibility
     ctx.lineJoin = 'round'; // Rounded corners for smoother outlines
     
-    // Outer thick black stroke (thicker for larger text)
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = fontSize / 4;  // Make outline proportional to font size
-    ctx.strokeText(text, adjX, adjY, maxWidth / stretch);
-    
-    // Middle black stroke
-    ctx.lineWidth = fontSize / 6;
-    ctx.strokeText(text, adjX, adjY, maxWidth / stretch);
-    
-    // Inner black stroke for crisp edges
-    ctx.lineWidth = fontSize / 10;
-    ctx.strokeText(text, adjX, adjY, maxWidth / stretch);
+    // Multiple passes of outlines with decreasing thickness for better visibility
+    const outlineSizes = [fontSize/4, fontSize/6, fontSize/10];
+    for (const thickness of outlineSizes) {
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = thickness;
+      ctx.strokeText(text, adjustedX, y, maxWidth / stretch);
+    }
     
     // Draw text fill with enhanced shadow for better readability
     ctx.fillStyle = color;
     
-    // Add shadow for depth
+    // Add shadow for depth - make it proportional to font size
     ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-    ctx.shadowBlur = Math.min(6, fontSize / 6);
-    ctx.shadowOffsetX = Math.min(3, fontSize / 10);
-    ctx.shadowOffsetY = Math.min(3, fontSize / 10);
+    ctx.shadowBlur = Math.min(8, fontSize / 5);
+    ctx.shadowOffsetX = Math.min(4, fontSize / 8);
+    ctx.shadowOffsetY = Math.min(4, fontSize / 8);
     
     // Fill the text
-    ctx.fillText(text, adjX, adjY, maxWidth / stretch);
+    ctx.fillText(text, adjustedX, y, maxWidth / stretch);
     
     // Restore context to original state
     ctx.restore();

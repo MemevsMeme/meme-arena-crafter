@@ -109,13 +109,26 @@ const TextEditor: React.FC<TextEditorProps> = ({
     onChange(updated);
   };
 
+  // Improved stretch handling with better visual feedback
   const handleStretchChange = (index: number, delta: number) => {
     const updated = [...textPositions];
-    // Set stretch between 0.5 and 2.0 (50% to 200%)
+    // Set stretch between 0.5 and 2.0 (50% to 200%) with finer control
     const currentStretch = updated[index].stretch || 1.0;
     const newStretch = Math.max(0.5, Math.min(2.0, currentStretch + delta));
     updated[index] = { ...updated[index], stretch: newStretch };
     onChange(updated);
+  };
+  
+  // Direct input for stretch value
+  const handleStretchInput = (index: number, value: string) => {
+    const stretchValue = parseInt(value, 10);
+    if (!isNaN(stretchValue)) {
+      const updated = [...textPositions];
+      // Convert percentage to decimal (50-200% → 0.5-2.0)
+      const newStretch = Math.max(50, Math.min(200, stretchValue)) / 100;
+      updated[index] = { ...updated[index], stretch: newStretch };
+      onChange(updated);
+    }
   };
 
   const handleColorChange = (index: number, color: string) => {
@@ -259,24 +272,30 @@ const TextEditor: React.FC<TextEditorProps> = ({
               </div>
               
               <div>
-                <Label className="text-xs block mb-1">Text Stretch</Label>
+                <Label className="text-xs block mb-1">Text Stretch (%)</Label>
                 <div className="flex items-center">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleStretchChange(index, -0.1)}
+                    onClick={() => handleStretchChange(index, -0.05)}
                     title="Compress text"
                     className="h-8 px-2"
                   >
                     <StretchHorizontal className="h-3 w-3 rotate-90" />
                   </Button>
-                  <div className="w-16 h-8 mx-1 flex items-center justify-center text-xs">
-                    {Math.round((position.stretch || 1) * 100)}%
-                  </div>
+                  <Input
+                    type="number"
+                    min={50}
+                    max={200}
+                    step={5}
+                    className="w-16 h-8 mx-1 text-center text-xs"
+                    value={Math.round((position.stretch || 1) * 100)}
+                    onChange={(e) => handleStretchInput(index, e.target.value)}
+                  />
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleStretchChange(index, 0.1)}
+                    onClick={() => handleStretchChange(index, 0.05)}
                     title="Expand text"
                     className="h-8 px-2"
                   >
