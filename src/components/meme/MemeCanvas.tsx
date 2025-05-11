@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 
 interface MemeCanvasProps {
@@ -167,12 +168,12 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       // In simple mode, use the caption text
       if (!isEditMode) {
         // Add caption
-        const lines = caption.split('\n');
+        const lines = caption ? caption.split('\n') : [];
         
-        if (activeTab === 'template' && selectedTemplate.textPositions) {
+        if (activeTab === 'template' && selectedTemplate && selectedTemplate.textPositions) {
           // Use predefined positions for templates
           selectedTemplate.textPositions.forEach((pos: any, index: number) => {
-            if (index < lines.length) {
+            if (index < lines.length && lines[index]) {
               drawText(
                 ctx, 
                 lines[index], 
@@ -192,16 +193,18 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
           const totalHeight = lines.length * lineHeight;
           
           lines.forEach((line, index) => {
-            drawText(
-              ctx,
-              line,
-              canvas.width / 2,
-              canvas.height - totalHeight + index * lineHeight,
-              fontSize,
-              canvas.width * 0.8,
-              'center',
-              '#ffffff'
-            );
+            if (line) { // Add null check for line
+              drawText(
+                ctx,
+                line,
+                canvas.width / 2,
+                canvas.height - totalHeight + index * lineHeight,
+                fontSize,
+                canvas.width * 0.8,
+                'center',
+                '#ffffff'
+              );
+            }
           });
         }
       }
@@ -274,12 +277,24 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     };
     
     let imageSrc = '';
-    if (activeTab === 'template') {
-      imageSrc = selectedTemplate.url;
+    if (activeTab === 'template' && selectedTemplate) {
+      imageSrc = selectedTemplate.url || '';
     } else if (activeTab === 'upload') {
-      imageSrc = uploadedImage as string;
+      imageSrc = uploadedImage as string || '';
     } else if (activeTab === 'ai-generated') {
-      imageSrc = generatedImage as string;
+      imageSrc = generatedImage as string || '';
+    }
+    
+    if (!imageSrc) {
+      console.error("No valid image source found");
+      // Draw a placeholder
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(0, 0, 400, 300);
+      ctx.fillStyle = '#ff0000';
+      ctx.font = '20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No image selected', 200, 150);
+      return;
     }
     
     console.log(`Loading image source: ${imageSrc.substring(0, 100)}...`);
