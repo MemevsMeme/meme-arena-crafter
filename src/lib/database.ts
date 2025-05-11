@@ -82,8 +82,8 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
     // Return null if no data found
     if (!data) return null;
     
-    // Explicitly cast to our raw type to avoid deep type instantiation
-    const row = data as RawPromptRow;
+    // Use type assertion with unknown as intermediate step to completely break the type chain
+    const row = data as unknown as RawPromptRow;
     
     return {
       id: row.id,
@@ -118,8 +118,8 @@ export const getProfile = async (userId: string): Promise<User | null> => {
 
     if (!data) return null;
     
-    // Explicitly cast to our raw type
-    const profile = data as RawProfileRow;
+    // Use type assertion with unknown as intermediate step
+    const profile = data as unknown as RawProfileRow;
     
     return {
       id: profile.id,
@@ -164,7 +164,7 @@ export const updateProfile = async (userId: string, updates: any): Promise<User 
 
     if (!data) return null;
     
-    // Return transformed profile with explicit type conversions
+    // Return transformed profile with complete disconnect from DB types
     return {
       id: data.id,
       username: data.username,
@@ -197,9 +197,10 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
 
     if (!data || !data.length) return [];
     
-    // Transform array data with explicit type casting to avoid deep instantiation
-    return data.map((item: any) => {
-      const meme = item as RawMemeRow;
+    // Complete disconnect from Supabase types to avoid recursion
+    return data.map((item) => {
+      // Two-step casting to completely break type chain
+      const meme = item as unknown as RawMemeRow;
       return {
         id: meme.id,
         prompt: meme.prompt || '',
@@ -249,7 +250,7 @@ export const createProfile = async (profile: {
 
     if (!data) return null;
     
-    // Return explicitly typed profile
+    // Clean return type with no dependency on Supabase types
     return {
       id: data.id,
       username: data.username,
@@ -296,9 +297,9 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
 
     const transformedBattles: Battle[] = [];
     
-    // Process each battle separately to avoid deep instantiation
+    // Process each battle separately and completely break type chains
     for (const battle of battlesData) {
-      // Use type assertion to break the circular reference
+      // Two-step casting to break the circular reference
       const battleRow = battle as unknown as RawBattleRow;
       
       // Get meme one if it exists
@@ -311,6 +312,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
         
         if (memeOneData) {
+          // Two-step casting
           const memeRow = memeOneData as unknown as RawMemeRow;
           
           memeOne = {
@@ -340,6 +342,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
         
         if (memeTwoData) {
+          // Two-step casting
           const memeRow = memeTwoData as unknown as RawMemeRow;
           
           memeTwo = {
@@ -359,7 +362,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
         }
       }
 
-      // Transform battle with explicit boolean casting
+      // Transform battle with explicit boolean casting and no type dependencies
       transformedBattles.push({
         id: battleRow.id,
         promptId: battleRow.prompt_id || '',
@@ -401,8 +404,9 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
 
     if (!data || !data.length) return [];
     
-    // Transform with explicit type casting to avoid deep instantiation
-    return data.map((item: any) => {
+    // Complete type disconnect to avoid circular references
+    return data.map((item) => {
+      // Two-step casting to break type chains
       const promptRow = item as unknown as RawPromptRow;
       
       return {
@@ -472,9 +476,10 @@ export const createMeme = async (meme: {
       throw new Error('No data returned from database after inserting meme');
     }
     
+    // Two-step casting for complete type disconnect
     const memeRow = data as unknown as RawMemeRow;
     
-    // Return formatted meme object
+    // Return formatted meme object with no type dependencies
     return {
       id: memeRow.id,
       prompt: memeRow.prompt || '',
