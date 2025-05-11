@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Caption } from './types';
 
@@ -116,9 +115,6 @@ export const analyzeMemeImage = async (imageUrl: string): Promise<string[]> => {
     
     // Fallback tags if we don't get expected data format
     const fallbackTags = ['funny', 'viral', 'trending'];
-    if (prompt && typeof prompt === 'string') {
-      fallbackTags.push(prompt.toLowerCase());
-    }
     return fallbackTags;
   } catch (error) {
     console.error('Error in analyzeMemeImage:', error);
