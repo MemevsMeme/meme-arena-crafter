@@ -7,7 +7,7 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
     const today = new Date();
     const formattedDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
 
-    // Use "*.select()" instead of ".select('*')" to avoid excessive type nesting
+    // Avoid deep type recursion by using explicit return type and .select()
     const { data, error } = await supabase
       .from('prompts')
       .select()
@@ -19,8 +19,10 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
       throw error;
     }
 
-    // Transform data to match Prompt interface
-    return data ? {
+    // Transform data to match Prompt interface with explicit null/undefined checks
+    if (!data) return null;
+    
+    return {
       id: data.id,
       text: data.text,
       theme: data.theme || '',
@@ -30,8 +32,8 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
       endDate: new Date(data.end_date),
       description: data.description || undefined,
       creator_id: data.creator_id || undefined,
-      is_community: Boolean(data.is_community) || false
-    } : null;
+      is_community: data.is_community !== undefined ? Boolean(data.is_community) : false
+    };
   } catch (error) {
     console.error('Error in getActivePrompt:', error);
     return null;
@@ -40,7 +42,6 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
 
 export const getProfile = async (userId: string): Promise<User | null> => {
   try {
-    // Use "*.select()" instead of ".select('*')" to avoid excessive type nesting
     const { data, error } = await supabase
       .from('profiles')
       .select()
@@ -52,8 +53,9 @@ export const getProfile = async (userId: string): Promise<User | null> => {
       throw error;
     }
 
-    // Transform data to match User interface
-    return data ? {
+    if (!data) return null;
+    
+    return {
       id: data.id,
       username: data.username,
       avatarUrl: data.avatar_url || '',
@@ -63,7 +65,7 @@ export const getProfile = async (userId: string): Promise<User | null> => {
       level: data.level,
       xp: data.xp,
       createdAt: new Date(data.created_at)
-    } : null;
+    };
   } catch (error) {
     console.error('Error in getProfile:', error);
     return null;
@@ -82,7 +84,6 @@ export const updateProfile = async (userId: string, updates: any): Promise<User 
     if (updates.level !== undefined) dbUpdates.level = updates.level;
     if (updates.xp !== undefined) dbUpdates.xp = updates.xp;
 
-    // Use "*.select()" instead of ".select('*')" to avoid excessive type nesting
     const { data, error } = await supabase
       .from('profiles')
       .update(dbUpdates)
@@ -95,8 +96,9 @@ export const updateProfile = async (userId: string, updates: any): Promise<User 
       throw error;
     }
 
-    // Transform data to match User interface
-    return data ? {
+    if (!data) return null;
+    
+    return {
       id: data.id,
       username: data.username,
       avatarUrl: data.avatar_url || '',
@@ -106,7 +108,7 @@ export const updateProfile = async (userId: string, updates: any): Promise<User 
       level: data.level,
       xp: data.xp,
       createdAt: new Date(data.created_at)
-    } : null;
+    };
   } catch (error) {
     console.error('Error in updateProfile:', error);
     return null;
@@ -115,7 +117,6 @@ export const updateProfile = async (userId: string, updates: any): Promise<User 
 
 export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
   try {
-    // Use "*.select()" instead of ".select('*')" to avoid excessive type nesting
     const { data, error } = await supabase
       .from('memes')
       .select()
@@ -127,8 +128,10 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
       throw error;
     }
 
-    // Transform data to match Meme interface
-    return data ? data.map(meme => ({
+    if (!data) return [];
+    
+    // Transform data to match Meme interface - safely handling potentially missing fields
+    return data.map(meme => ({
       id: meme.id,
       prompt: meme.prompt || '',
       prompt_id: meme.prompt_id,
@@ -139,9 +142,10 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
       votes: meme.votes,
       createdAt: new Date(meme.created_at),
       tags: meme.tags || [],
-      isBattleSubmission: meme.is_battle_submission !== undefined ? Boolean(meme.is_battle_submission) : false,
-      battleId: meme.battle_id
-    })) : [];
+      // Explicitly handle fields that may not exist in older database records
+      isBattleSubmission: typeof meme.is_battle_submission !== 'undefined' ? Boolean(meme.is_battle_submission) : false,
+      battleId: meme.battle_id || undefined
+    }));
   } catch (error) {
     console.error('Error in getMemesByUserId:', error);
     return [];
@@ -174,8 +178,9 @@ export const createProfile = async (profile: {
       throw error;
     }
 
-    // Transform data to match User interface
-    return data ? {
+    if (!data) return null;
+    
+    return {
       id: data.id,
       username: data.username,
       avatarUrl: data.avatar_url || '',
@@ -185,7 +190,7 @@ export const createProfile = async (profile: {
       level: data.level,
       xp: data.xp,
       createdAt: new Date(data.created_at)
-    } : null;
+    };
   } catch (error) {
     console.error('Error in createProfile:', error);
     return null;
@@ -194,8 +199,7 @@ export const createProfile = async (profile: {
 
 export const getActiveBattles = async (limit: number = 20, offset: number = 0, filter: string = 'all'): Promise<Battle[]> => {
   try {
-    // Use separate queries instead of relationships to avoid the type issues and "column doesn't exist" error
-    // First, get the battles
+    // Get battles from database
     let battleQuery = supabase
       .from('battles')
       .select()
@@ -221,20 +225,24 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
       return [];
     }
 
-    // Transform battles data with separate meme queries
     const transformedBattles: Battle[] = [];
     
+    // Process each battle separately
     for (const battle of battlesData) {
+      // Handle potentially missing fields in the database
+      const safeBattle: Record<string, any> = { ...battle };
+      
       // Get meme one if it exists
       let memeOne: Meme | undefined;
-      if (battle.meme_one_id) {
+      if (safeBattle.meme_one_id) {
         const { data: memeOneData } = await supabase
           .from('memes')
           .select()
-          .eq('id', battle.meme_one_id)
+          .eq('id', safeBattle.meme_one_id)
           .single();
         
         if (memeOneData) {
+          // Transform memeOneData with safe handling of potentially missing fields
           memeOne = {
             id: memeOneData.id,
             prompt: memeOneData.prompt || '',
@@ -246,19 +254,21 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
             votes: memeOneData.votes,
             createdAt: new Date(memeOneData.created_at),
             tags: memeOneData.tags || [],
-            isBattleSubmission: memeOneData.is_battle_submission !== undefined ? Boolean(memeOneData.is_battle_submission) : false,
-            battleId: memeOneData.battle_id
+            isBattleSubmission: typeof memeOneData.is_battle_submission !== 'undefined' 
+              ? Boolean(memeOneData.is_battle_submission) 
+              : false,
+            battleId: memeOneData.battle_id || undefined
           };
         }
       }
       
       // Get meme two if it exists
       let memeTwo: Meme | undefined;
-      if (battle.meme_two_id) {
+      if (safeBattle.meme_two_id) {
         const { data: memeTwoData } = await supabase
           .from('memes')
           .select()
-          .eq('id', battle.meme_two_id)
+          .eq('id', safeBattle.meme_two_id)
           .single();
         
         if (memeTwoData) {
@@ -273,30 +283,37 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
             votes: memeTwoData.votes,
             createdAt: new Date(memeTwoData.created_at),
             tags: memeTwoData.tags || [],
-            isBattleSubmission: memeTwoData.is_battle_submission !== undefined ? Boolean(memeTwoData.is_battle_submission) : false,
-            battleId: memeTwoData.battle_id
+            isBattleSubmission: typeof memeTwoData.is_battle_submission !== 'undefined' 
+              ? Boolean(memeTwoData.is_battle_submission) 
+              : false,
+            battleId: memeTwoData.battle_id || undefined
           };
         }
       }
 
-      // Safely handle is_community and creator_id properties which may not exist in older battles
-      const is_community = 'is_community' in battle ? battle.is_community : false;
-      const creator_id = 'creator_id' in battle ? battle.creator_id : undefined;
+      // Safely convert creator_id and is_community which might not exist in older records
+      const creator_id = safeBattle.creator_id || undefined;
+      const is_community = typeof safeBattle.is_community !== 'undefined' 
+        ? Boolean(safeBattle.is_community) 
+        : false;
+      
+      // Use 'as string' to assert winner_id type since it's possibly undefined
+      const winner_id = safeBattle.winner_id as string | undefined;
 
       // Transform battle data
       transformedBattles.push({
-        id: battle.id,
-        promptId: battle.prompt_id || '',
-        memeOneId: battle.meme_one_id,
-        memeTwoId: battle.meme_two_id,
+        id: safeBattle.id,
+        promptId: safeBattle.prompt_id || '',
+        memeOneId: safeBattle.meme_one_id,
+        memeTwoId: safeBattle.meme_two_id,
         memeOne,
         memeTwo,
-        winnerId: battle.winner_id,
-        voteCount: battle.vote_count,
-        startTime: new Date(battle.start_time),
-        endTime: new Date(battle.end_time),
-        status: battle.status as 'active' | 'completed' | 'cancelled',
-        is_community: Boolean(is_community),
+        winnerId: winner_id,
+        voteCount: safeBattle.vote_count,
+        startTime: new Date(safeBattle.start_time),
+        endTime: new Date(safeBattle.end_time),
+        status: safeBattle.status as 'active' | 'completed' | 'cancelled',
+        is_community,
         creator_id
       });
     }
@@ -310,7 +327,6 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
 
 export const getPrompts = async (limit: number = 10, offset: number = 0, isCommunity: boolean = false): Promise<Prompt[]> => {
   try {
-    // Use "*.select()" instead of ".select('*')" to avoid excessive type nesting
     const { data, error } = await supabase
       .from('prompts')
       .select()
@@ -324,8 +340,10 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
       throw error;
     }
 
-    // Transform data to match Prompt interface
-    return data ? data.map(prompt => ({
+    if (!data) return [];
+    
+    // Transform data safely with explicit checks for fields that may be missing
+    return data.map(prompt => ({
       id: prompt.id,
       text: prompt.text,
       theme: prompt.theme || '',
@@ -335,8 +353,8 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
       endDate: new Date(prompt.end_date),
       description: prompt.description || undefined,
       creator_id: prompt.creator_id || undefined,
-      is_community: prompt.is_community !== undefined ? Boolean(prompt.is_community) : false
-    })) : [];
+      is_community: typeof prompt.is_community !== 'undefined' ? Boolean(prompt.is_community) : false
+    }));
   } catch (error) {
     console.error('Error in getPrompts:', error);
     return [];
@@ -361,7 +379,7 @@ export const createMeme = async (meme: {
     const dbMeme = {
       prompt: meme.prompt,
       prompt_id: meme.prompt_id,
-      image_url: meme.imageUrl, // Note the snake_case here
+      image_url: meme.imageUrl,
       ipfs_cid: meme.ipfsCid,
       caption: meme.caption,
       creator_id: meme.creatorId,
@@ -388,8 +406,12 @@ export const createMeme = async (meme: {
 
     console.log('Meme successfully saved to database:', data);
     
+    if (!data) {
+      throw new Error('No data returned from database after inserting meme');
+    }
+    
     // Transform the database response to match the expected format with camelCase properties
-    const transformedData = {
+    return {
       id: data.id,
       prompt: data.prompt || '',
       prompt_id: data.prompt_id,
@@ -400,14 +422,11 @@ export const createMeme = async (meme: {
       votes: data.votes,
       createdAt: new Date(data.created_at),
       tags: data.tags || [],
-      isBattleSubmission: data.is_battle_submission !== undefined ? Boolean(data.is_battle_submission) : false,
-      battleId: data.battle_id
+      isBattleSubmission: typeof data.is_battle_submission !== 'undefined' ? Boolean(data.is_battle_submission) : false,
+      battleId: data.battle_id || undefined
     };
-    
-    return transformedData;
   } catch (err) {
     console.error('Error creating meme record in database');
     throw new Error('Failed to create meme record');
   }
 };
-
