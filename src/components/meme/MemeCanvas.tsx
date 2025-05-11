@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 
 interface MemeCanvasProps {
@@ -56,7 +55,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     renderMemeToCanvas();
   }, [caption, selectedTemplate, uploadedImage, generatedImage, textPositions, isDragging, dragIndex]);
 
-  // Helper function to draw text with stroke
+  // Improved helper function to draw text with better legibility
   const drawText = (
     ctx: CanvasRenderingContext2D,
     text: string,
@@ -76,18 +75,37 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     if (isBold) fontStyle += 'bold ';
     if (isItalic) fontStyle += 'italic ';
     
-    ctx.font = `${fontStyle}${fontSize}px Impact, sans-serif`;
+    // Use a more visible font combination - Impact is standard for memes but fall back to sans-serif
+    ctx.font = `${fontStyle}${fontSize}px Impact, Arial, sans-serif`;
     ctx.textAlign = alignment;
     ctx.textBaseline = 'middle';
     
-    // Draw text stroke (outline)
+    // Improved text stroke (outline) for better legibility
+    // Draw multiple strokes for a thicker effect
+    ctx.lineJoin = 'round'; // Rounded corners for better appearance
+    
+    // First pass - wider black stroke
     ctx.strokeStyle = 'black';
-    ctx.lineWidth = fontSize / 8;
+    ctx.lineWidth = fontSize / 6;
     ctx.strokeText(text, x, y, maxWidth);
     
-    // Draw text fill
+    // Second pass - thinner black stroke for definition
+    ctx.lineWidth = fontSize / 10;
+    ctx.strokeText(text, x, y, maxWidth);
+    
+    // Draw text fill with slight shadow
     ctx.fillStyle = color;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    ctx.shadowBlur = 2;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
     ctx.fillText(text, x, y, maxWidth);
+    
+    // Reset shadow for subsequent drawing operations
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
   };
 
   const renderMemeToCanvas = () => {
@@ -381,7 +399,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
         style={{ maxHeight: '500px', objectFit: 'contain' }}
       />
       {isEditMode && (
-        <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
           Edit Mode: Drag text to reposition
         </div>
       )}
