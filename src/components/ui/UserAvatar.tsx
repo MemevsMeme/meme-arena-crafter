@@ -25,19 +25,22 @@ const UserAvatar = ({
     lg: 'h-12 w-12',
   };
 
+  const username = user?.username || 'User';
+  const initials = username ? username.substring(0, 2).toUpperCase() : 'U';
+
   const avatarContent = (
     <div className="flex items-center gap-2">
       <Avatar className={sizeClasses[size]}>
-        <AvatarImage src={user.avatarUrl} alt={user.username || 'User'} />
+        <AvatarImage src={user?.avatarUrl} alt={username} />
         <AvatarFallback>
-          {user.username?.substring(0, 2).toUpperCase() || 'U'}
+          {initials}
         </AvatarFallback>
       </Avatar>
       
       {showUsername && (
         <div className="flex flex-col">
-          <span className="font-medium text-sm">{user.username}</span>
-          {showLevel && user.level && (
+          <span className="font-medium text-sm">{username}</span>
+          {showLevel && user?.level && (
             <span className="text-xs text-muted-foreground">
               Lvl {user.level}
             </span>
@@ -47,7 +50,7 @@ const UserAvatar = ({
     </div>
   );
 
-  if (linkToProfile && user.id) {
+  if (linkToProfile && user?.id) {
     return (
       <Link to={`/profile/${user.id}`} className="hover:opacity-90 transition-opacity">
         {avatarContent}

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -388,10 +389,11 @@ const MemeGenerator = ({ promptText = '', promptId, onSave, defaultEditMode = fa
       
       // Also upload to IPFS for permanent storage
       setIsUploadingToIPFS(true);
-      // Use the first text position or caption for the title
+      
+      // Safely get a meme title with null checks
       const memeTitle = isEditMode && textPositions.length > 0 && textPositions[0].text
-        ? textPositions[0].text.substring(0, 30) + '...'
-        : caption.substring(0, 30) + '...';
+        ? (textPositions[0].text.substring(0, 30) || 'Untitled') + '...'
+        : (caption ? (caption.substring(0, 30) + '...') : 'Untitled Meme');
         
       const ipfsResult = await uploadFileToIPFS(memeFile, `Meme: ${memeTitle}`);
       setIsUploadingToIPFS(false);
@@ -401,9 +403,9 @@ const MemeGenerator = ({ promptText = '', promptId, onSave, defaultEditMode = fa
       console.log('IPFS upload result:', ipfsResult);
       
       // Get the final caption text (combine all text positions if in edit mode)
-      const finalCaption = isEditMode
-        ? textPositions.map(pos => pos.text).filter(Boolean).join('\n')
-        : caption;
+      const finalCaption = isEditMode && textPositions.length > 0
+        ? textPositions.map(pos => pos.text || '').filter(Boolean).join('\n')
+        : caption || '';
       
       // Create meme record in database with absolute URL
       console.log('Saving meme to database with creator_id:', user.id);
