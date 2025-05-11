@@ -26,6 +26,7 @@ const Index = () => {
     queryKey: ['activePrompt'],
     queryFn: async () => {
       try {
+        // First try to get an active prompt from the database
         const { data, error } = await supabase
           .from('prompts')
           .select()
@@ -44,7 +45,19 @@ const Index = () => {
           return getTodaysChallenge(); // Fallback to local challenge
         }
         
-        return data as unknown as Prompt;
+        // Convert database prompt format to our application format
+        const prompt: Prompt = {
+          id: data.id,
+          text: data.text,
+          theme: data.theme,
+          tags: data.tags || [],
+          active: data.active,
+          startDate: new Date(data.start_date),
+          endDate: new Date(data.end_date),
+          description: data.description
+        };
+        
+        return prompt;
       } catch (error) {
         console.error('Failed to fetch active prompt:', error);
         return getTodaysChallenge(); // Fallback to local challenge
@@ -63,7 +76,7 @@ const Index = () => {
             <section>
               <h2 className="text-2xl font-heading mb-3">Today's Challenge</h2>
               <PromptOfTheDay 
-                prompt={activePrompt || MOCK_PROMPTS[0]} 
+                prompt={activePrompt} 
                 isLoading={promptLoading} 
               />
               

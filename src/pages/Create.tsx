@@ -18,7 +18,7 @@ const Create = () => {
   const [createdMeme, setCreatedMeme] = useState<{ id: string; caption: string; imageUrl: string } | null>(null);
   
   // Add state for default edit mode
-  const [defaultEditMode] = useState<boolean>(true);
+  const [defaultEditMode] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchActivePrompt = async () => {
@@ -28,6 +28,7 @@ const Create = () => {
         const prompt = await getActivePrompt();
         
         if (prompt) {
+          console.log('Active prompt from DB:', prompt);
           setActivePrompt(prompt);
         } else {
           // If no prompt from database, use our daily challenge as fallback
