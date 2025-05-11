@@ -2,9 +2,13 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Caption, Meme, Prompt, Battle, User } from './types';
 
-// Simple type definitions to avoid deep recursion
-// Instead of using the full Database types which may cause circular references
-type SimplePromptRow = {
+/**
+ * This file handles database operations through the Supabase client.
+ * We use simple type mappings to avoid TypeScript circular reference errors.
+ */
+
+// Raw database row types to avoid recursive type issues
+type RawPromptRow = {
   id: string;
   text: string;
   theme: string | null;
@@ -17,7 +21,7 @@ type SimplePromptRow = {
   is_community?: boolean | null;
 };
 
-type SimpleMemeRow = {
+type RawMemeRow = {
   id: string;
   prompt: string | null;
   prompt_id: string | null;
@@ -32,7 +36,7 @@ type SimpleMemeRow = {
   is_battle_submission?: boolean | null;
 };
 
-type SimpleBattleRow = {
+type RawBattleRow = {
   id: string;
   prompt_id: string | null;
   meme_one_id: string;
@@ -46,7 +50,7 @@ type SimpleBattleRow = {
   is_community?: boolean | null;
 };
 
-type SimpleProfileRow = {
+type RawProfileRow = {
   id: string;
   username: string;
   avatar_url: string | null;
@@ -61,13 +65,13 @@ type SimpleProfileRow = {
 export const getActivePrompt = async (): Promise<Prompt | null> => {
   try {
     const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
-
-    // Use our simplified type instead of the deep Database type
+    
     const { data, error } = await supabase
       .from('prompts')
       .select()
-      .eq('date', formattedDate)
+      .eq('active', true)
+      .lte('start_date', today.toISOString())
+      .gte('end_date', today.toISOString())
       .single();
 
     if (error) {
@@ -75,11 +79,11 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
       throw error;
     }
 
-    // Transform data to match Prompt interface with explicit null/undefined checks
+    // Return null if no data found
     if (!data) return null;
     
-    // Use our simplified type for more straightforward handling
-    const row = data as unknown as SimplePromptRow;
+    // Directly use raw data without complex type casting
+    const row = data as RawPromptRow;
     
     return {
       id: row.id,
@@ -91,7 +95,7 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
       endDate: new Date(row.end_date),
       description: row.description || undefined,
       creator_id: row.creator_id || undefined,
-      is_community: typeof row.is_community !== undefined ? Boolean(row.is_community) : false
+      is_community: row.is_community === true
     };
   } catch (error) {
     console.error('Error in getActivePrompt:', error);
@@ -114,8 +118,8 @@ export const getProfile = async (userId: string): Promise<User | null> => {
 
     if (!data) return null;
     
-    // Cast to our simplified type
-    const profile = data as unknown as SimpleProfileRow;
+    // Use simple casting to raw type
+    const profile = data as RawProfileRow;
     
     return {
       id: profile.id,
@@ -190,27 +194,24 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
       throw error;
     }
 
-    if (!data) return [];
+    if (!data || !data.length) return [];
     
-    // Transform data to match Meme interface - safely handling potentially missing fields
-    return data.map(meme => {
-      // Cast to our simplified type
-      const memeData = meme as unknown as SimpleMemeRow;
-      
+    // Transform array data with explicit type
+    return data.map(item => {
+      const meme = item as RawMemeRow;
       return {
-        id: memeData.id,
-        prompt: memeData.prompt || '',
-        prompt_id: memeData.prompt_id,
-        imageUrl: memeData.image_url,
-        ipfsCid: memeData.ipfs_cid || '',
-        caption: memeData.caption,
-        creatorId: memeData.creator_id,
-        votes: memeData.votes,
-        createdAt: new Date(memeData.created_at),
-        tags: memeData.tags || [],
-        // Explicitly handle fields that may not exist in older database records
-        isBattleSubmission: typeof memeData.is_battle_submission !== undefined ? Boolean(memeData.is_battle_submission) : false,
-        battleId: memeData.battle_id || undefined
+        id: meme.id,
+        prompt: meme.prompt || '',
+        prompt_id: meme.prompt_id || undefined,
+        imageUrl: meme.image_url,
+        ipfsCid: meme.ipfs_cid || '',
+        caption: meme.caption,
+        creatorId: meme.creator_id,
+        votes: meme.votes,
+        createdAt: new Date(meme.created_at),
+        tags: meme.tags || [],
+        isBattleSubmission: meme.is_battle_submission === true,
+        battleId: meme.battle_id || undefined
       };
     });
   } catch (error) {
@@ -269,7 +270,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
     // First, get battles without JOIN to avoid type recursion issues
     let battleQuery = supabase
       .from('battles')
-      .select('id, prompt_id, meme_one_id, meme_two_id, winner_id, vote_count, start_time, end_time, status, creator_id, is_community')
+      .select()
       .eq('status', 'active')
       .order('start_time', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -287,101 +288,90 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
       throw battlesError;
     }
     
-    // No battles found
     if (!battlesData || battlesData.length === 0) {
       return [];
     }
 
     const transformedBattles: Battle[] = [];
     
-    // Process each battle separately
+    // Process each battle separately to avoid deep instantiation
     for (const battle of battlesData) {
-      // Cast to our simplified type
-      const battleData = battle as unknown as SimpleBattleRow;
+      // Explicitly type battle data
+      const battleRow = battle as RawBattleRow;
       
       // Get meme one if it exists
       let memeOne: Meme | undefined;
-      if (battleData.meme_one_id) {
+      if (battleRow.meme_one_id) {
         const { data: memeOneData } = await supabase
           .from('memes')
           .select()
-          .eq('id', battleData.meme_one_id)
+          .eq('id', battleRow.meme_one_id)
           .single();
         
         if (memeOneData) {
-          // Cast to our simplified type
-          const meme = memeOneData as unknown as SimpleMemeRow;
+          const memeRow = memeOneData as RawMemeRow;
           
-          // Transform memeOneData with safe handling of potentially missing fields
           memeOne = {
-            id: meme.id,
-            prompt: meme.prompt || '',
-            prompt_id: meme.prompt_id,
-            imageUrl: meme.image_url,
-            ipfsCid: meme.ipfs_cid || '',
-            caption: meme.caption,
-            creatorId: meme.creator_id,
-            votes: meme.votes,
-            createdAt: new Date(meme.created_at),
-            tags: meme.tags || [],
-            isBattleSubmission: typeof meme.is_battle_submission !== 'undefined' 
-              ? Boolean(meme.is_battle_submission) 
-              : false,
-            battleId: meme.battle_id || undefined
+            id: memeRow.id,
+            prompt: memeRow.prompt || '',
+            prompt_id: memeRow.prompt_id || undefined,
+            imageUrl: memeRow.image_url,
+            ipfsCid: memeRow.ipfs_cid || '',
+            caption: memeRow.caption,
+            creatorId: memeRow.creator_id,
+            votes: memeRow.votes,
+            createdAt: new Date(memeRow.created_at),
+            tags: memeRow.tags || [],
+            isBattleSubmission: memeRow.is_battle_submission === true,
+            battleId: memeRow.battle_id || undefined
           };
         }
       }
       
       // Get meme two if it exists
       let memeTwo: Meme | undefined;
-      if (battleData.meme_two_id) {
+      if (battleRow.meme_two_id) {
         const { data: memeTwoData } = await supabase
           .from('memes')
           .select()
-          .eq('id', battleData.meme_two_id)
+          .eq('id', battleRow.meme_two_id)
           .single();
         
         if (memeTwoData) {
-          // Cast to our simplified type
-          const meme = memeTwoData as unknown as SimpleMemeRow;
+          const memeRow = memeTwoData as RawMemeRow;
           
           memeTwo = {
-            id: meme.id,
-            prompt: meme.prompt || '',
-            prompt_id: meme.prompt_id,
-            imageUrl: meme.image_url,
-            ipfsCid: meme.ipfs_cid || '',
-            caption: meme.caption,
-            creatorId: meme.creator_id,
-            votes: meme.votes,
-            createdAt: new Date(meme.created_at),
-            tags: meme.tags || [],
-            isBattleSubmission: typeof meme.is_battle_submission !== 'undefined' 
-              ? Boolean(meme.is_battle_submission) 
-              : false,
-            battleId: meme.battle_id || undefined
+            id: memeRow.id,
+            prompt: memeRow.prompt || '',
+            prompt_id: memeRow.prompt_id || undefined,
+            imageUrl: memeRow.image_url,
+            ipfsCid: memeRow.ipfs_cid || '',
+            caption: memeRow.caption,
+            creatorId: memeRow.creator_id,
+            votes: memeRow.votes,
+            createdAt: new Date(memeRow.created_at),
+            tags: memeRow.tags || [],
+            isBattleSubmission: memeRow.is_battle_submission === true,
+            battleId: memeRow.battle_id || undefined
           };
         }
       }
 
-      // Use explicit String casting to handle potentially undefined values
-      const winner_id = battleData.winner_id as string | undefined;
-      
-      // Transform battle data with safe type handling
+      // Transform battle with explicit boolean casting
       transformedBattles.push({
-        id: battleData.id,
-        promptId: battleData.prompt_id || '',
-        memeOneId: battleData.meme_one_id,
-        memeTwoId: battleData.meme_two_id,
+        id: battleRow.id,
+        promptId: battleRow.prompt_id || '',
+        memeOneId: battleRow.meme_one_id,
+        memeTwoId: battleRow.meme_two_id,
         memeOne,
         memeTwo,
-        winnerId: winner_id,
-        voteCount: battleData.vote_count,
-        startTime: new Date(battleData.start_time),
-        endTime: new Date(battleData.end_time),
-        status: battleData.status as 'active' | 'completed' | 'cancelled',
-        is_community: typeof battleData.is_community !== 'undefined' ? Boolean(battleData.is_community) : false,
-        creator_id: battleData.creator_id || undefined
+        winnerId: battleRow.winner_id || undefined,
+        voteCount: battleRow.vote_count,
+        startTime: new Date(battleRow.start_time),
+        endTime: new Date(battleRow.end_time),
+        status: battleRow.status as 'active' | 'completed' | 'cancelled',
+        is_community: battleRow.is_community === true,
+        creator_id: battleRow.creator_id || undefined
       });
     }
 
@@ -407,24 +397,23 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
       throw error;
     }
 
-    if (!data) return [];
+    if (!data || !data.length) return [];
     
-    // Transform data safely with explicit checks for fields that may be missing
-    return data.map(prompt => {
-      // Cast to our simplified type
-      const promptData = prompt as unknown as SimplePromptRow;
+    // Transform with explicit typing
+    return data.map(item => {
+      const promptRow = item as RawPromptRow;
       
       return {
-        id: promptData.id,
-        text: promptData.text,
-        theme: promptData.theme || '',
-        tags: promptData.tags || [],
-        active: promptData.active,
-        startDate: new Date(promptData.start_date),
-        endDate: new Date(promptData.end_date),
-        description: promptData.description || undefined,
-        creator_id: promptData.creator_id || undefined,
-        is_community: typeof promptData.is_community !== 'undefined' ? Boolean(promptData.is_community) : false
+        id: promptRow.id,
+        text: promptRow.text,
+        theme: promptRow.theme || '',
+        tags: promptRow.tags || [],
+        active: promptRow.active,
+        startDate: new Date(promptRow.start_date),
+        endDate: new Date(promptRow.end_date),
+        description: promptRow.description || undefined,
+        creator_id: promptRow.creator_id || undefined,
+        is_community: promptRow.is_community === true
       };
     });
   } catch (error) {
@@ -447,7 +436,7 @@ export const createMeme = async (meme: {
   console.log('Creating meme with data:', meme);
 
   try {
-    // Convert the meme object to a database-friendly format
+    // Convert to database format
     const dbMeme = {
       prompt: meme.prompt,
       prompt_id: meme.prompt_id,
@@ -458,7 +447,6 @@ export const createMeme = async (meme: {
       votes: meme.votes,
       created_at: meme.createdAt.toISOString(),
       tags: meme.tags,
-      // Add these default values to prevent database errors
       is_battle_submission: false,
       battle_id: null
     };
@@ -482,23 +470,22 @@ export const createMeme = async (meme: {
       throw new Error('No data returned from database after inserting meme');
     }
     
-    // Cast to our simplified type
-    const memeData = data as unknown as SimpleMemeRow;
+    const memeRow = data as RawMemeRow;
     
-    // Transform the database response to match the expected format with camelCase properties
+    // Return formatted meme object
     return {
-      id: memeData.id,
-      prompt: memeData.prompt || '',
-      prompt_id: memeData.prompt_id,
-      imageUrl: memeData.image_url,
-      ipfsCid: memeData.ipfs_cid || '',
-      caption: memeData.caption,
-      creatorId: memeData.creator_id,
-      votes: memeData.votes,
-      createdAt: new Date(memeData.created_at),
-      tags: memeData.tags || [],
-      isBattleSubmission: typeof memeData.is_battle_submission !== 'undefined' ? Boolean(memeData.is_battle_submission) : false,
-      battleId: memeData.battle_id || undefined
+      id: memeRow.id,
+      prompt: memeRow.prompt || '',
+      prompt_id: memeRow.prompt_id || undefined,
+      imageUrl: memeRow.image_url,
+      ipfsCid: memeRow.ipfs_cid || '',
+      caption: memeRow.caption,
+      creatorId: memeRow.creator_id,
+      votes: memeRow.votes,
+      createdAt: new Date(memeRow.created_at),
+      tags: memeRow.tags || [],
+      isBattleSubmission: memeRow.is_battle_submission === true,
+      battleId: memeRow.battle_id || undefined
     };
   } catch (err) {
     console.error('Error creating meme record in database');
