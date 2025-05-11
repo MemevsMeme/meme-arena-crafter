@@ -7,7 +7,7 @@ import Footer from '@/components/layout/Footer';
 import MemeCard from '@/components/meme/MemeCard';
 import UserProfileForm from '@/components/profile/UserProfileForm';
 import { useAuth } from '@/contexts/AuthContext';
-import { getProfile, getMemesByUser } from '@/lib/database';
+import { getProfile, getMemesByUserId } from '@/lib/database';
 import { User, Meme } from '@/lib/types';
 import UserAvatar from '@/components/ui/UserAvatar';
 
@@ -32,7 +32,7 @@ const Profile = () => {
       }
       
       if (id) {
-        const userMemes = await getMemesByUser(id);
+        const userMemes = await getMemesByUserId(id);
         setMemes(userMemes);
       }
       

@@ -1,7 +1,8 @@
-import { supabase } from '@/integrations/supabase/client';
-import { Caption } from './types';
 
-export const getActivePrompt = async (): Promise<any | null> => {
+import { supabase } from '@/integrations/supabase/client';
+import { Caption, Meme, Prompt, Battle } from './types';
+
+export const getActivePrompt = async (): Promise<Prompt | null> => {
   try {
     const today = new Date();
     const formattedDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -85,6 +86,90 @@ export const getMemesByUserId = async (userId: string): Promise<any[]> => {
   }
 };
 
+export const createProfile = async (profile: {
+  id: string;
+  username: string;
+  avatarUrl?: string;
+}): Promise<any | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert({
+        id: profile.id,
+        username: profile.username,
+        avatar_url: profile.avatarUrl,
+        meme_streak: 0,
+        wins: 0,
+        losses: 0,
+        level: 1,
+        xp: 0
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating profile:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in createProfile:', error);
+    return null;
+  }
+};
+
+export const getActiveBattles = async (limit: number = 20, offset: number = 0, filter: string = 'all'): Promise<Battle[]> => {
+  try {
+    let query = supabase
+      .from('battles')
+      .select('*, meme_one_id(*), meme_two_id(*)')
+      .eq('status', 'active')
+      .order('start_time', { ascending: false })
+      .range(offset, offset + limit - 1);
+    
+    if (filter === 'community') {
+      query = query.eq('is_community', true);
+    } else if (filter === 'official') {
+      query = query.eq('is_community', false);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching active battles:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getActiveBattles:', error);
+    return [];
+  }
+};
+
+export const getPrompts = async (limit: number = 10, offset: number = 0, isCommunity: boolean = false): Promise<Prompt[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('prompts')
+      .select('*')
+      .eq('active', true)
+      .eq('is_community', isCommunity)
+      .order('start_date', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error('Error fetching prompts:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getPrompts:', error);
+    return [];
+  }
+};
+
 export const createMeme = async (meme: {
   prompt?: string;
   prompt_id?: string;
@@ -103,7 +188,7 @@ export const createMeme = async (meme: {
     const dbMeme = {
       prompt: meme.prompt,
       prompt_id: meme.prompt_id,
-      image_url: meme.imageUrl,
+      image_url: meme.imageUrl, // Note the snake_case here
       ipfs_cid: meme.ipfsCid,
       caption: meme.caption,
       creator_id: meme.creatorId,
@@ -129,7 +214,16 @@ export const createMeme = async (meme: {
     }
 
     console.log('Meme successfully saved to database:', data);
-    return data;
+    
+    // Transform the database response to match the expected format with camelCase properties
+    const transformedData = {
+      ...data,
+      imageUrl: data.image_url,
+      creatorId: data.creator_id,
+      createdAt: new Date(data.created_at)
+    };
+    
+    return transformedData;
   } catch (err) {
     console.error('Error creating meme record in database');
     throw new Error('Failed to create meme record');

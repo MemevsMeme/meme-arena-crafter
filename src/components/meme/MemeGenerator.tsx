@@ -442,7 +442,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave, defaultEditMode = fa
         onSave({
           id: memeData.id,
           caption: memeData.caption,
-          imageUrl: memeData.imageUrl
+          imageUrl: memeData.imageUrl || memeData.image_url // Handle both property formats
         });
       }
       
