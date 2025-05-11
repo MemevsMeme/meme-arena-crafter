@@ -6,6 +6,7 @@ import { CAPTION_STYLES } from '@/lib/constants';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from '@/hooks/use-toast';
 
 interface CaptionGeneratorProps {
   promptText: string;
@@ -26,6 +27,24 @@ const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({
   handleGenerateCaptions,
   handleSelectCaption
 }) => {
+  const onGenerateCaptions = () => {
+    if (!promptText) {
+      toast({
+        title: "Error",
+        description: "Please enter a prompt text first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    toast({
+      title: "Generating captions...",
+      description: "This might take a few seconds with Gemini AI",
+    });
+    
+    handleGenerateCaptions();
+  };
+  
   return (
     <div className="mb-6 p-4 bg-muted/20 rounded-lg border">
       <h3 className="font-medium mb-2">AI Caption Generator</h3>
@@ -47,7 +66,7 @@ const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({
       </div>
       
       <Button 
-        onClick={handleGenerateCaptions} 
+        onClick={onGenerateCaptions} 
         variant="outline" 
         className="w-full mb-4"
         disabled={isGeneratingCaptions || !promptText}

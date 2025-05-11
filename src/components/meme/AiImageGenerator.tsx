@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Wand } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from '@/hooks/use-toast';
 
 interface AiImageGeneratorProps {
   promptText: string;
@@ -17,11 +18,29 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
   generatedImage,
   handleGenerateImage
 }) => {
+  const handleImageGeneration = () => {
+    if (!promptText) {
+      toast({
+        title: "Error",
+        description: "Please enter a prompt text first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    toast({
+      title: "Generating image...",
+      description: "This might take up to 45 seconds with Gemini AI",
+    });
+    
+    handleGenerateImage();
+  };
+
   return (
     <div>
       <div className="mb-4">
         <Button 
-          onClick={handleGenerateImage} 
+          onClick={handleImageGeneration} 
           disabled={isGeneratingAIImage || !promptText}
           className="w-full"
         >
@@ -34,7 +53,7 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
         <div className="flex flex-col items-center justify-center p-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-purple"></div>
           <p className="mt-4 text-sm text-muted-foreground">Creating your meme image with Gemini AI...</p>
-          <p className="mt-2 text-xs text-muted-foreground">This might take up to 30 seconds</p>
+          <p className="mt-2 text-xs text-muted-foreground">This might take up to 45 seconds</p>
         </div>
       )}
       

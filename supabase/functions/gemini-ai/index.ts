@@ -164,8 +164,31 @@ serve(async (req) => {
 
       console.log('Analyzing image:', imageUrl);
       
+      // Make sure to handle relative URLs properly by prepending the origin
+      let fullImageUrl = imageUrl;
+      if (imageUrl.startsWith('/')) {
+        // This is a relative URL, we need to make it absolute
+        // Use origin from request if available, or fallback to a default
+        try {
+          const url = new URL(req.url);
+          fullImageUrl = `${url.origin}${imageUrl}`;
+          console.log('Converted relative URL to absolute URL:', fullImageUrl);
+        } catch (e) {
+          console.error('Could not parse request URL:', e);
+          // Try to use the Supabase project URL as fallback
+          const supabaseUrl = Deno.env.get('SUPABASE_URL');
+          if (supabaseUrl) {
+            fullImageUrl = `${supabaseUrl}${imageUrl}`;
+            console.log('Using Supabase URL as base:', fullImageUrl);
+          } else {
+            throw new Error('Cannot analyze image: Unable to determine absolute URL');
+          }
+        }
+      }
+      
       // Fetch the image and convert to base64
-      const imageResponse = await fetch(imageUrl);
+      console.log('Fetching image from URL:', fullImageUrl);
+      const imageResponse = await fetch(fullImageUrl);
       if (!imageResponse.ok) {
         console.error(`Failed to fetch image: ${imageResponse.status}`);
         throw new Error(`Failed to fetch image: ${imageResponse.status}`);
@@ -281,7 +304,8 @@ serve(async (req) => {
       
       console.log(`Sending to Gemini for image generation with prompt: "${formattedPrompt}"`);
       
-      // The specific format needed for gemini-2.0-flash-preview-image-generation
+      // Using the correct format for the image generation API
+      // Important: models/gemini-2.0-flash-preview-image-generation requires specific formatting
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -295,7 +319,8 @@ serve(async (req) => {
                 { text: formattedPrompt }
               ]
             }
-          ]
+          ],
+          // No additional parameters for this model
         })
       });
 
@@ -306,30 +331,39 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      console.log('Gemini API response for image generation:', JSON.stringify(data));
+      console.log('Gemini API response structure:', JSON.stringify(Object.keys(data)));
+      console.log('Gemini API candidates structure:', JSON.stringify(data.candidates ? Object.keys(data.candidates[0]) : 'No candidates'));
       
-      // Extract the generated image data
+      // Extract the generated image data - careful debugging of the response structure
       try {
         const candidates = data.candidates;
         if (!candidates || candidates.length === 0) {
+          console.error('No candidates returned in the response');
+          console.error('Full response:', JSON.stringify(data));
           throw new Error('No candidates returned in the response');
         }
         
         const content = candidates[0].content;
         if (!content || !content.parts || content.parts.length === 0) {
+          console.error('No content parts found in the response');
+          console.error('Full content:', JSON.stringify(candidates[0]));
           throw new Error('No content parts found in the response');
         }
+        
+        // Debug the parts to see their structure
+        console.log('Parts structure:', JSON.stringify(content.parts.map(p => Object.keys(p))));
         
         // Look for the image part in the response (format is different in Gemini 2.0)
         const imagePart = content.parts.find(part => part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/'));
         
         if (!imagePart || !imagePart.inlineData) {
           console.error('No image data found in the response');
-          console.log('Response structure:', JSON.stringify(content.parts));
+          console.error('All parts:', JSON.stringify(content.parts));
           throw new Error('No image data found in the response');
         }
         
         console.log('Successfully extracted image data');
+        console.log('Image mime type:', imagePart.inlineData.mimeType);
         
         return new Response(JSON.stringify({ 
           imageData: `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}` 
@@ -338,7 +372,7 @@ serve(async (req) => {
         });
       } catch (e) {
         console.error('Error extracting image data from Gemini response:', e);
-        throw new Error('Failed to extract image data from response');
+        throw new Error(`Failed to extract image data: ${e.message}`);
       }
     }
     
