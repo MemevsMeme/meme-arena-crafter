@@ -7,7 +7,7 @@ import { Caption, Meme, Prompt, Battle, User } from './types';
  * We use simple type mappings to avoid TypeScript circular reference errors.
  */
 
-// Raw database row types to avoid recursive type issues
+// Raw database row types to match exactly what's in the database
 type RawPromptRow = {
   id: string;
   text: string;
@@ -16,9 +16,9 @@ type RawPromptRow = {
   active: boolean;
   start_date: string;
   end_date: string;
-  description?: string | null;
-  creator_id?: string | null;
-  is_community?: boolean | null;
+  description: string | null;
+  creator_id: string | null;
+  is_community: boolean | null;
 };
 
 type RawMemeRow = {
@@ -32,8 +32,8 @@ type RawMemeRow = {
   votes: number;
   created_at: string;
   tags: string[];
-  battle_id?: string | null;
-  is_battle_submission?: boolean | null;
+  battle_id: string | null;
+  is_battle_submission: boolean | null;
 };
 
 type RawBattleRow = {
@@ -46,8 +46,8 @@ type RawBattleRow = {
   start_time: string;
   end_time: string;
   status: string;
-  creator_id?: string | null;
-  is_community?: boolean | null;
+  creator_id: string | null;
+  is_community: boolean | null;
 };
 
 type RawProfileRow = {
@@ -66,24 +66,35 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
   try {
     const today = new Date();
     
-    const { data, error } = await supabase
+    // Use explicit select and avoid type inference
+    const result = await supabase
       .from('prompts')
-      .select()
+      .select('*')
       .eq('active', true)
       .lte('start_date', today.toISOString())
       .gte('end_date', today.toISOString())
       .single();
-
-    if (error) {
-      console.error('Error fetching active prompt:', error);
-      throw error;
+    
+    if (result.error) {
+      console.error('Error fetching active prompt:', result.error);
+      return null;
     }
 
-    // Return null if no data found
-    if (!data) return null;
+    if (!result.data) return null;
     
-    // Complete type disconnect with explicit "any" casting
-    const row = data as any;
+    // Cast to a simple object to break type recursion
+    const row = result.data as {
+      id: string;
+      text: string;
+      theme: string | null;
+      tags: string[];
+      active: boolean;
+      start_date: string;
+      end_date: string;
+      description: string | null;
+      creator_id: string | null;
+      is_community: boolean | null;
+    };
     
     return {
       id: row.id,
@@ -105,21 +116,31 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
 
 export const getProfile = async (userId: string): Promise<User | null> => {
   try {
-    const { data, error } = await supabase
+    const result = await supabase
       .from('profiles')
-      .select()
+      .select('*')
       .eq('id', userId)
       .single();
 
-    if (error) {
-      console.error('Error fetching profile:', error);
-      throw error;
+    if (result.error) {
+      console.error('Error fetching profile:', result.error);
+      return null;
     }
 
-    if (!data) return null;
+    if (!result.data) return null;
     
-    // Complete type disconnect with explicit "any" casting
-    const profile = data as any;
+    // Break type recursion by using a simple object
+    const profile = result.data as {
+      id: string;
+      username: string;
+      avatar_url: string | null;
+      meme_streak: number;
+      wins: number;
+      losses: number;
+      level: number;
+      xp: number;
+      created_at: string;
+    };
     
     return {
       id: profile.id,
@@ -150,19 +171,20 @@ export const updateProfile = async (userId: string, updates: any): Promise<User 
     if (updates.level !== undefined) dbUpdates.level = updates.level;
     if (updates.xp !== undefined) dbUpdates.xp = updates.xp;
 
-    const { data, error } = await supabase
+    const result = await supabase
       .from('profiles')
       .update(dbUpdates)
       .eq('id', userId)
-      .select()
-      .single();
+      .select('*');
 
-    if (error) {
-      console.error('Error updating profile:', error);
-      throw error;
+    if (result.error) {
+      console.error('Error updating profile:', result.error);
+      return null;
     }
 
-    if (!data) return null;
+    if (!result.data || result.data.length === 0) return null;
+    
+    const data = result.data[0];
     
     // Return transformed profile with complete disconnect from DB types
     return {
@@ -184,22 +206,25 @@ export const updateProfile = async (userId: string, updates: any): Promise<User 
 
 export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
   try {
-    const { data, error } = await supabase
+    const result = await supabase
       .from('memes')
-      .select()
+      .select('*')
       .eq('creator_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching memes by user ID:', error);
-      throw error;
+    if (result.error) {
+      console.error('Error fetching memes by user ID:', result.error);
+      return [];
     }
 
-    if (!data || !data.length) return [];
+    if (!result.data || !result.data.length) return [];
     
-    // Complete disconnect from Supabase types to avoid recursion
-    return data.map((item: any) => {
-      return {
+    // Create array to store transformed memes
+    const memes: Meme[] = [];
+    
+    // Process each meme individually to avoid type recursion
+    for (const item of result.data) {
+      memes.push({
         id: item.id,
         prompt: item.prompt || '',
         prompt_id: item.prompt_id || undefined,
@@ -212,8 +237,10 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
         tags: item.tags || [],
         isBattleSubmission: item.is_battle_submission === true,
         battleId: item.battle_id || undefined
-      };
-    });
+      });
+    }
+    
+    return memes;
   } catch (error) {
     console.error('Error in getMemesByUserId:', error);
     return [];
@@ -226,7 +253,7 @@ export const createProfile = async (profile: {
   avatarUrl?: string;
 }): Promise<User | null> => {
   try {
-    const { data, error } = await supabase
+    const result = await supabase
       .from('profiles')
       .insert({
         id: profile.id,
@@ -238,15 +265,16 @@ export const createProfile = async (profile: {
         level: 1,
         xp: 0
       })
-      .select()
-      .single();
+      .select('*');
 
-    if (error) {
-      console.error('Error creating profile:', error);
-      throw error;
+    if (result.error) {
+      console.error('Error creating profile:', result.error);
+      return null;
     }
 
-    if (!data) return null;
+    if (!result.data || result.data.length === 0) return null;
+    
+    const data = result.data[0];
     
     // Clean return type with no dependency on Supabase types
     return {
@@ -268,7 +296,7 @@ export const createProfile = async (profile: {
 
 export const getActiveBattles = async (limit: number = 20, offset: number = 0, filter: string = 'all'): Promise<Battle[]> => {
   try {
-    // Build query manually to avoid TypeScript type interference
+    // Create a query builder to avoid TypeScript type issues
     let query = supabase
       .from('battles')
       .select('*')
@@ -284,13 +312,13 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
     
     // Execute query
     const result = await query;
-    const battlesData = result.data || [];
-    const battlesError = result.error;
-
-    if (battlesError) {
-      console.error('Error fetching active battles:', battlesError);
-      throw battlesError;
+    
+    if (result.error) {
+      console.error('Error fetching active battles:', result.error);
+      return [];
     }
+    
+    const battlesData = result.data || [];
     
     if (battlesData.length === 0) {
       return [];
@@ -301,13 +329,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
     
     // Process each battle individually
     for (const rawBattle of battlesData) {
-      // Ensure we have an object and not something else
-      if (typeof rawBattle !== 'object' || rawBattle === null) {
-        console.error('Unexpected battle data format:', rawBattle);
-        continue;
-      }
-      
-      // Create a clean battle row object
+      // Create battle object
       const battleRow: RawBattleRow = {
         id: rawBattle.id,
         prompt_id: rawBattle.prompt_id,
@@ -331,40 +353,27 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .eq('id', battleRow.meme_one_id)
           .single();
           
-        if (memeResult.data) {
-          const memeRowData: RawMemeRow = {
-            id: memeResult.data.id,
-            prompt: memeResult.data.prompt,
-            prompt_id: memeResult.data.prompt_id,
-            image_url: memeResult.data.image_url,
-            ipfs_cid: memeResult.data.ipfs_cid,
-            caption: memeResult.data.caption,
-            creator_id: memeResult.data.creator_id,
-            votes: memeResult.data.votes,
-            created_at: memeResult.data.created_at,
-            tags: memeResult.data.tags || [],
-            battle_id: memeResult.data.battle_id,
-            is_battle_submission: memeResult.data.is_battle_submission
-          };
+        if (!memeResult.error && memeResult.data) {
+          const memeData = memeResult.data;
           
           memeOne = {
-            id: memeRowData.id,
-            prompt: memeRowData.prompt || '',
-            prompt_id: memeRowData.prompt_id || undefined,
-            imageUrl: memeRowData.image_url,
-            ipfsCid: memeRowData.ipfs_cid || '',
-            caption: memeRowData.caption,
-            creatorId: memeRowData.creator_id,
-            votes: memeRowData.votes,
-            createdAt: new Date(memeRowData.created_at),
-            tags: memeRowData.tags || [],
-            isBattleSubmission: memeRowData.is_battle_submission === true,
-            battleId: memeRowData.battle_id || undefined
+            id: memeData.id,
+            prompt: memeData.prompt || '',
+            prompt_id: memeData.prompt_id || undefined,
+            imageUrl: memeData.image_url,
+            ipfsCid: memeData.ipfs_cid || '',
+            caption: memeData.caption,
+            creatorId: memeData.creator_id,
+            votes: memeData.votes,
+            createdAt: new Date(memeData.created_at),
+            tags: memeData.tags || [],
+            isBattleSubmission: memeData.is_battle_submission === true,
+            battleId: memeData.battle_id || undefined
           };
         }
       }
       
-      // Process meme two with the same pattern
+      // Process meme two
       let memeTwo: Meme | undefined;
       if (battleRow.meme_two_id) {
         const memeResult = await supabase
@@ -373,35 +382,22 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .eq('id', battleRow.meme_two_id)
           .single();
           
-        if (memeResult.data) {
-          const memeRowData: RawMemeRow = {
-            id: memeResult.data.id,
-            prompt: memeResult.data.prompt,
-            prompt_id: memeResult.data.prompt_id,
-            image_url: memeResult.data.image_url,
-            ipfs_cid: memeResult.data.ipfs_cid,
-            caption: memeResult.data.caption,
-            creator_id: memeResult.data.creator_id,
-            votes: memeResult.data.votes,
-            created_at: memeResult.data.created_at,
-            tags: memeResult.data.tags || [],
-            battle_id: memeResult.data.battle_id,
-            is_battle_submission: memeResult.data.is_battle_submission
-          };
+        if (!memeResult.error && memeResult.data) {
+          const memeData = memeResult.data;
           
           memeTwo = {
-            id: memeRowData.id,
-            prompt: memeRowData.prompt || '',
-            prompt_id: memeRowData.prompt_id || undefined,
-            imageUrl: memeRowData.image_url,
-            ipfsCid: memeRowData.ipfs_cid || '',
-            caption: memeRowData.caption,
-            creatorId: memeRowData.creator_id,
-            votes: memeRowData.votes,
-            createdAt: new Date(memeRowData.created_at),
-            tags: memeRowData.tags || [],
-            isBattleSubmission: memeRowData.is_battle_submission === true,
-            battleId: memeRowData.battle_id || undefined
+            id: memeData.id,
+            prompt: memeData.prompt || '',
+            prompt_id: memeData.prompt_id || undefined,
+            imageUrl: memeData.image_url,
+            ipfsCid: memeData.ipfs_cid || '',
+            caption: memeData.caption,
+            creatorId: memeData.creator_id,
+            votes: memeData.votes,
+            createdAt: new Date(memeData.created_at),
+            tags: memeData.tags || [],
+            isBattleSubmission: memeData.is_battle_submission === true,
+            battleId: memeData.battle_id || undefined
           };
         }
       }
@@ -439,56 +435,36 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
     // Use explicit select to prevent TypeScript issues
     const result = await supabase
       .from('prompts')
-      .select('*') // Using explicit '*' instead of relying on type inference
+      .select('*')
       .eq('active', true)
       .eq('is_community', isCommunity)
       .order('start_date', { ascending: false })
       .range(offset, offset + limit - 1);
       
-    const { data, error } = result;
-
-    if (error) {
-      console.error('Error fetching prompts:', error);
-      throw error;
+    if (result.error) {
+      console.error('Error fetching prompts:', result.error);
+      return [];
     }
 
-    if (!data || !data.length) return [];
+    if (!result.data || !result.data.length) return [];
     
     // Create an empty array with explicit Prompt[] type
     const prompts: Prompt[] = [];
     
-    // Manually process each item without type inference
-    for (let i = 0; i < data.length; i++) {
-      // Extract raw data into simple object
-      const rawItem = {
-        id: data[i].id,
-        text: data[i].text,
-        theme: data[i].theme,
-        tags: data[i].tags || [],
-        active: data[i].active,
-        start_date: data[i].start_date,
-        end_date: data[i].end_date,
-        description: data[i].description,
-        creator_id: data[i].creator_id,
-        is_community: data[i].is_community
-      };
-      
-      // Create a prompt object with explicit values
-      const prompt: Prompt = {
-        id: rawItem.id,
-        text: rawItem.text,
-        theme: rawItem.theme || '',
-        tags: rawItem.tags || [],
-        active: rawItem.active,
-        startDate: new Date(rawItem.start_date),
-        endDate: new Date(rawItem.end_date),
-        description: rawItem.description || undefined,
-        creator_id: rawItem.creator_id || undefined,
-        is_community: rawItem.is_community === true
-      };
-      
-      // Add to array
-      prompts.push(prompt);
+    // Process each item individually to avoid type recursion
+    for (const item of result.data) {
+      prompts.push({
+        id: item.id,
+        text: item.text,
+        theme: item.theme || '',
+        tags: item.tags || [],
+        active: item.active,
+        startDate: new Date(item.start_date),
+        endDate: new Date(item.end_date),
+        description: item.description || undefined,
+        creator_id: item.creator_id || undefined,
+        is_community: item.is_community === true
+      });
     }
     
     return prompts;
@@ -529,22 +505,23 @@ export const createMeme = async (meme: {
 
     console.log('Sending to database:', dbMeme);
 
-    const { data, error } = await supabase
+    const result = await supabase
       .from('memes')
       .insert(dbMeme)
-      .select()
-      .single();
+      .select('*');
 
-    if (error) {
-      console.error('Error creating meme:', error);
-      throw error;
+    if (result.error) {
+      console.error('Error creating meme:', result.error);
+      throw result.error;
     }
 
-    console.log('Meme successfully saved to database:', data);
+    console.log('Meme successfully saved to database:', result.data);
     
-    if (!data) {
+    if (!result.data || result.data.length === 0) {
       throw new Error('No data returned from database after inserting meme');
     }
+    
+    const data = result.data[0];
     
     // Use explicitly typed object to break circular references
     return {
