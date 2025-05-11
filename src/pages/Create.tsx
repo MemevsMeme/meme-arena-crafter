@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import MemeGenerator from '@/components/meme/MemeGenerator';
@@ -12,6 +11,7 @@ import { getTodaysChallenge } from '@/lib/dailyChallenges';
 
 const Create = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +24,17 @@ const Create = () => {
     const fetchActivePrompt = async () => {
       setLoading(true);
       try {
-        // Try to get the prompt from the database first
+        // First check if prompt was passed via navigation state
+        const passedPrompt = location.state?.challengePrompt as Prompt | undefined;
+        
+        if (passedPrompt) {
+          console.log('Using prompt from navigation state:', passedPrompt);
+          setActivePrompt(passedPrompt);
+          setLoading(false);
+          return;
+        }
+        
+        // Otherwise try to get the prompt from the database
         const prompt = await getActivePrompt();
         
         if (prompt) {
@@ -54,7 +64,7 @@ const Create = () => {
     };
 
     fetchActivePrompt();
-  }, []);
+  }, [location.state]);
 
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);

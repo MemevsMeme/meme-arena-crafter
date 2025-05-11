@@ -60,7 +60,7 @@ const PromptOfTheDay = ({
             </span>
           ))}
         </div>
-        <Link to="/create">
+        <Link to="/create" state={{ challengePrompt: promptToShow }}>
           <Button className="gap-1 bg-white text-brand-purple hover:bg-white/90">
             Accept Challenge
             <ArrowRight className="h-4 w-4" />
