@@ -8,6 +8,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Create from "./pages/Create";
 import Battle from "./pages/Battle";
+import Battles from "./pages/Battles"; // New battles listing page
+import CreateBattle from "./pages/CreateBattle"; // New battle creation page
 import Profile from "./pages/Profile";
 import Leaderboard from "./pages/Leaderboard";
 import About from "./pages/About";
@@ -62,6 +64,12 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/battle/:id" element={<Battle />} />
+            <Route path="/battles" element={<Battles />} />
+            <Route path="/create-battle" element={
+              <ProtectedRoute>
+                <CreateBattle />
+              </ProtectedRoute>
+            } />
             <Route path="/profile/:id" element={<Profile />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/about" element={<About />} />

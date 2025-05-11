@@ -23,6 +23,8 @@ export interface Meme {
   votes: number;
   createdAt: Date;
   tags: string[];
+  isBattleSubmission?: boolean;
+  battleId?: string;
 }
 
 export interface Prompt {
@@ -33,6 +35,9 @@ export interface Prompt {
   active: boolean;
   startDate: Date;
   endDate: Date;
+  description?: string;
+  creator_id?: string;
+  is_community?: boolean;
 }
 
 export interface Battle {
@@ -48,6 +53,9 @@ export interface Battle {
   startTime: Date;
   endTime: Date;
   status: 'active' | 'completed' | 'cancelled';
+  is_community?: boolean;
+  creator_id?: string;
+  submissions?: Meme[];
 }
 
 export interface Vote {
@@ -115,6 +123,8 @@ export type Database = {
           votes: number;
           created_at: string;
           tags: string[];
+          battle_id: string | null;
+          is_battle_submission: boolean;
         };
         Insert: {
           id?: string;
@@ -127,6 +137,8 @@ export type Database = {
           votes?: number;
           created_at?: string;
           tags?: string[];
+          battle_id?: string | null;
+          is_battle_submission?: boolean;
         };
         Update: {
           id?: string;
@@ -139,6 +151,8 @@ export type Database = {
           votes?: number;
           created_at?: string;
           tags?: string[];
+          battle_id?: string | null;
+          is_battle_submission?: boolean;
         };
       };
       prompts: {
@@ -150,6 +164,9 @@ export type Database = {
           active: boolean;
           start_date: string;
           end_date: string;
+          description: string | null;
+          creator_id: string | null;
+          is_community: boolean;
         };
         Insert: {
           id?: string;
@@ -159,6 +176,9 @@ export type Database = {
           active?: boolean;
           start_date?: string;
           end_date?: string;
+          description?: string | null;
+          creator_id?: string | null;
+          is_community?: boolean;
         };
         Update: {
           id?: string;
@@ -168,6 +188,9 @@ export type Database = {
           active?: boolean;
           start_date?: string;
           end_date?: string;
+          description?: string | null;
+          creator_id?: string | null;
+          is_community?: boolean;
         };
       };
       battles: {
@@ -181,6 +204,8 @@ export type Database = {
           start_time: string;
           end_time: string;
           status: 'active' | 'completed' | 'cancelled';
+          creator_id: string | null;
+          is_community: boolean;
         };
         Insert: {
           id?: string;
@@ -192,6 +217,8 @@ export type Database = {
           start_time?: string;
           end_time?: string;
           status?: 'active' | 'completed' | 'cancelled';
+          creator_id?: string | null;
+          is_community?: boolean;
         };
         Update: {
           id?: string;
@@ -202,7 +229,9 @@ export type Database = {
           vote_count?: number;
           start_time?: string;
           end_time?: string;
-          status?: 'active' | 'completed' | 'cancelled';
+          status?: string;
+          creator_id?: string | null;
+          is_community?: boolean;
         };
       };
       votes: {

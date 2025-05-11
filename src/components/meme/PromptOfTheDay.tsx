@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { MOCK_PROMPTS } from '@/lib/constants';
+import { getTodaysChallenge } from '@/lib/dailyChallenges';
 
 interface PromptOfTheDayProps {
   prompt?: Prompt;
@@ -15,7 +16,7 @@ const PromptOfTheDay = ({
   prompt,
   isLoading = false 
 }: PromptOfTheDayProps) => {
-  const defaultPrompt = MOCK_PROMPTS[0];
+  const defaultPrompt = getTodaysChallenge(); // Use our daily challenge instead of mock data
 
   if (isLoading) {
     return (

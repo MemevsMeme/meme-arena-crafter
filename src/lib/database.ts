@@ -170,7 +170,9 @@ export async function getMemes(limit = 10, offset = 0): Promise<Meme[]> {
     creator: creatorProfiles[meme.creator_id],
     votes: meme.votes,
     createdAt: new Date(meme.created_at),
-    tags: meme.tags || []
+    tags: meme.tags || [],
+    isBattleSubmission: meme.is_battle_submission || false,
+    battleId: meme.battle_id || undefined
   }));
 }
 
@@ -231,7 +233,9 @@ export async function getMemesByUser(userId: string, limit = 10, offset = 0): Pr
     creator: creator,
     votes: meme.votes,
     createdAt: new Date(meme.created_at),
-    tags: meme.tags || []
+    tags: meme.tags || [],
+    isBattleSubmission: meme.is_battle_submission || false,
+    battleId: meme.battle_id || undefined
   }));
 }
 
@@ -263,7 +267,9 @@ export async function createMeme(meme: Partial<Meme>): Promise<Meme | null> {
     creator_id: meme.creatorId,
     votes: meme.votes || 0,
     created_at: meme.createdAt ? meme.createdAt.toISOString() : new Date().toISOString(),
-    tags: meme.tags || []
+    tags: meme.tags || [],
+    is_battle_submission: meme.isBattleSubmission || false,
+    battle_id: meme.battleId || null
   };
   
   console.log('Sending to database:', dbMeme);
@@ -288,7 +294,7 @@ export async function createMeme(meme: Partial<Meme>): Promise<Meme | null> {
   
   return {
     id: data.id,
-    prompt: data.prompt,
+    prompt: data.prompt || '',
     prompt_id: data.prompt_id,
     imageUrl: data.image_url,
     ipfsCid: data.ipfs_cid || '',
@@ -296,7 +302,9 @@ export async function createMeme(meme: Partial<Meme>): Promise<Meme | null> {
     creatorId: data.creator_id,
     votes: data.votes,
     createdAt: new Date(data.created_at),
-    tags: data.tags || []
+    tags: data.tags || [],
+    isBattleSubmission: data.is_battle_submission || false,
+    battleId: data.battle_id || undefined
   };
 }
 
@@ -327,7 +335,10 @@ export async function getActivePrompt(): Promise<Prompt | null> {
       tags: data.tags || [],
       active: data.active,
       startDate: new Date(data.start_date),
-      endDate: new Date(data.end_date)
+      endDate: new Date(data.end_date),
+      description: data.description || undefined,
+      creator_id: data.creator_id || undefined,
+      is_community: data.is_community || false
     };
   } catch (error) {
     console.error('Exception in getActivePrompt:', error);
@@ -335,32 +346,97 @@ export async function getActivePrompt(): Promise<Prompt | null> {
   }
 }
 
-export async function getPrompts(limit = 10, offset = 0): Promise<Prompt[]> {
-  const { data, error } = await supabase
+export async function getPrompts(limit = 10, offset = 0, communityOnly = false): Promise<Prompt[]> {
+  let query = supabase
     .from('prompts')
     .select('*')
-    .order('start_date', { ascending: false })
-    .range(offset, offset + limit - 1);
+    .order('start_date', { ascending: false });
+    
+  if (communityOnly) {
+    query = query.eq('is_community', true);
+  }
+  
+  const { data, error } = await query.range(offset, offset + limit - 1);
   
   if (error) {
     console.error('Error fetching prompts:', error);
     return [];
   }
   
-  return data as Prompt[];
+  return data.map(prompt => ({
+    id: prompt.id,
+    text: prompt.text,
+    theme: prompt.theme || '',
+    tags: prompt.tags || [],
+    active: prompt.active,
+    startDate: new Date(prompt.start_date),
+    endDate: new Date(prompt.end_date),
+    description: prompt.description || undefined,
+    creator_id: prompt.creator_id || undefined,
+    is_community: prompt.is_community || false
+  }));
+}
+
+// Create a prompt (for community battles)
+export async function createPrompt(prompt: Partial<Prompt>): Promise<Prompt | null> {
+  if (!prompt.text) {
+    console.error('Error creating prompt: text is required');
+    return null;
+  }
+  
+  const dbPrompt = {
+    text: prompt.text,
+    theme: prompt.theme || '',
+    tags: prompt.tags || [],
+    active: prompt.active !== undefined ? prompt.active : true,
+    start_date: prompt.startDate ? prompt.startDate.toISOString() : new Date().toISOString(),
+    end_date: prompt.endDate ? prompt.endDate.toISOString() : new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(),
+    description: prompt.description || '',
+    creator_id: prompt.creator_id || null,
+    is_community: prompt.is_community !== undefined ? prompt.is_community : true
+  };
+  
+  const { data, error } = await supabase
+    .from('prompts')
+    .insert([dbPrompt])
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error creating prompt:', error);
+    return null;
+  }
+  
+  return {
+    id: data.id,
+    text: data.text,
+    theme: data.theme || '',
+    tags: data.tags || [],
+    active: data.active,
+    startDate: new Date(data.start_date),
+    endDate: new Date(data.end_date),
+    description: data.description || undefined,
+    creator_id: data.creator_id || undefined,
+    is_community: data.is_community || false
+  };
 }
 
 // Battles
-export async function getActiveBattles(limit = 10, offset = 0): Promise<Battle[]> {
-  const { data, error } = await supabase
-    .from('battles')
-    .select(`
-      *,
-      meme_one:memes!meme_one_id(*),
-      meme_two:memes!meme_two_id(*),
-      prompt:prompts(*)
-    `)
-    .eq('status', 'active')
+export async function getActiveBattles(limit = 10, offset = 0, filter: 'all' | 'official' | 'community' = 'all'): Promise<Battle[]> {
+  let query = supabase.from('battles').select(`
+    *,
+    meme_one:memes!meme_one_id(*),
+    meme_two:memes!meme_two_id(*),
+    prompt:prompts(*)
+  `).eq('status', 'active');
+  
+  if (filter === 'official') {
+    query = query.eq('is_community', false);
+  } else if (filter === 'community') {
+    query = query.eq('is_community', true);
+  }
+  
+  const { data, error } = await query
     .order('start_time', { ascending: false })
     .range(offset, offset + limit - 1);
   
@@ -369,7 +445,7 @@ export async function getActiveBattles(limit = 10, offset = 0): Promise<Battle[]
     return [];
   }
   
-  return data as Battle[];
+  return data.map(battle => mapBattleFromDb(battle));
 }
 
 export async function getBattle(battleId: string): Promise<Battle | null> {
@@ -389,7 +465,133 @@ export async function getBattle(battleId: string): Promise<Battle | null> {
     return null;
   }
   
-  return data as Battle;
+  return mapBattleFromDb(data);
+}
+
+// Get battle submissions (all memes submitted for a battle)
+export async function getBattleSubmissions(battleId: string): Promise<Meme[]> {
+  const { data, error } = await supabase
+    .from('memes')
+    .select('*, creator:profiles(*)')
+    .eq('battle_id', battleId)
+    .eq('is_battle_submission', true)
+    .order('votes', { ascending: false });
+  
+  if (error) {
+    console.error('Error fetching battle submissions:', error);
+    return [];
+  }
+  
+  return data.map(submission => ({
+    id: submission.id,
+    prompt: submission.prompt || '',
+    prompt_id: submission.prompt_id,
+    imageUrl: submission.image_url,
+    ipfsCid: submission.ipfs_cid || '',
+    caption: submission.caption,
+    creatorId: submission.creator_id,
+    creator: submission.creator ? {
+      id: submission.creator.id,
+      username: submission.creator.username,
+      avatarUrl: submission.creator.avatar_url || '',
+      memeStreak: submission.creator.meme_streak,
+      wins: submission.creator.wins,
+      losses: submission.creator.losses,
+      level: submission.creator.level,
+      xp: submission.creator.xp,
+      createdAt: new Date(submission.creator.created_at)
+    } : undefined,
+    votes: submission.votes,
+    createdAt: new Date(submission.created_at),
+    tags: submission.tags || [],
+    isBattleSubmission: true,
+    battleId: submission.battle_id
+  }));
+}
+
+// Create a battle
+export async function createBattle(battle: Partial<Battle>): Promise<Battle | null> {
+  if (!battle.promptId) {
+    console.error('Error creating battle: promptId is required');
+    return null;
+  }
+  
+  // For initial creation, we need a prompt but may not have memes yet
+  const dbBattle = {
+    prompt_id: battle.promptId,
+    meme_one_id: battle.memeOneId || '00000000-0000-0000-0000-000000000000', // Temporary placeholder
+    meme_two_id: battle.memeTwoId || '00000000-0000-0000-0000-000000000000', // Temporary placeholder
+    start_time: battle.startTime ? battle.startTime.toISOString() : new Date().toISOString(),
+    end_time: battle.endTime ? battle.endTime.toISOString() : new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(),
+    status: battle.status || 'active',
+    creator_id: battle.creator_id || null,
+    is_community: battle.is_community !== undefined ? battle.is_community : true
+  };
+  
+  const { data, error } = await supabase
+    .from('battles')
+    .insert([dbBattle])
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error creating battle:', error);
+    return null;
+  }
+  
+  return {
+    id: data.id,
+    promptId: data.prompt_id || '',
+    memeOneId: data.meme_one_id,
+    memeTwoId: data.meme_two_id,
+    winnerId: data.winner_id || undefined,
+    voteCount: data.vote_count,
+    startTime: new Date(data.start_time),
+    endTime: new Date(data.end_time),
+    status: data.status as 'active' | 'completed' | 'cancelled',
+    creator_id: data.creator_id || undefined,
+    is_community: data.is_community || false
+  };
+}
+
+// Update battle with top memes
+export async function updateBattleTopMemes(battleId: string): Promise<Battle | null> {
+  // First get all submissions for this battle
+  const { data: submissions, error: submissionsError } = await supabase
+    .from('memes')
+    .select('*')
+    .eq('battle_id', battleId)
+    .eq('is_battle_submission', true)
+    .order('votes', { ascending: false })
+    .limit(2);
+  
+  if (submissionsError || !submissions || submissions.length < 2) {
+    console.error('Error fetching top submissions:', submissionsError || 'Not enough submissions');
+    return null;
+  }
+  
+  // Update the battle with the top two memes
+  const { data, error } = await supabase
+    .from('battles')
+    .update({
+      meme_one_id: submissions[0].id,
+      meme_two_id: submissions[1].id
+    })
+    .eq('id', battleId)
+    .select(`
+      *,
+      meme_one:memes!meme_one_id(*),
+      meme_two:memes!meme_two_id(*),
+      prompt:prompts(*)
+    `)
+    .single();
+  
+  if (error) {
+    console.error('Error updating battle with top memes:', error);
+    return null;
+  }
+  
+  return mapBattleFromDb(data);
 }
 
 // Votes
@@ -454,7 +656,10 @@ function mapBattleFromDb(battle: any): Battle {
       tags: battle.prompt.tags || [],
       active: battle.prompt.active,
       startDate: new Date(battle.prompt.start_date),
-      endDate: new Date(battle.prompt.end_date)
+      endDate: new Date(battle.prompt.end_date),
+      description: battle.prompt.description || undefined,
+      creator_id: battle.prompt.creator_id || undefined,
+      is_community: battle.prompt.is_community || false
     } : undefined,
     memeOneId: battle.meme_one_id,
     memeTwoId: battle.meme_two_id,
@@ -464,7 +669,9 @@ function mapBattleFromDb(battle: any): Battle {
     voteCount: battle.vote_count,
     startTime: new Date(battle.start_time),
     endTime: new Date(battle.end_time),
-    status: battle.status as 'active' | 'completed' | 'cancelled'
+    status: battle.status as 'active' | 'completed' | 'cancelled',
+    is_community: battle.is_community || false,
+    creator_id: battle.creator_id || undefined
   };
 }
 
@@ -480,6 +687,8 @@ function mapMemeFromDb(meme: any): Meme {
     creatorId: meme.creator_id,
     votes: meme.votes,
     createdAt: new Date(meme.created_at),
-    tags: meme.tags || []
+    tags: meme.tags || [],
+    isBattleSubmission: meme.is_battle_submission || false,
+    battleId: meme.battle_id || undefined
   };
 }
