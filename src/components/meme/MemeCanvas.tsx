@@ -49,6 +49,8 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   setTextPositions
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Add state to track the current drag position locally
+  const [dragPosition, setDragPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
 
   useEffect(() => {
     renderMemeToCanvas();
@@ -295,7 +297,10 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
             console.log(`Text element ${i} clicked:`, pos.text);
             setIsDragging(true);
             setDragIndex(i);
-            setDragStartPos({ x: mouseX, y: mouseY });
+            
+            // Store the current mouse position locally and in parent component
+            setDragPosition({x: mouseX, y: mouseY});
+            setDragStartPos({x: mouseX, y: mouseY});
             
             // Force a re-render with highlight
             const updatedPositions = [...textPositions];
@@ -317,9 +322,9 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       const mouseX = (e.clientX - rect.left) * scaleX;
       const mouseY = (e.clientY - rect.top) * scaleY;
       
-      // Calculate the delta movement
-      const dx = mouseX - setDragStartPos;
-      const dy = mouseY - setDragStartPos;
+      // Calculate the delta movement using our local state
+      const dx = mouseX - dragPosition.x;
+      const dy = mouseY - dragPosition.y;
       
       const updatedPositions = [...textPositions];
       const currentPos = updatedPositions[dragIndex];
@@ -335,7 +340,10 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       };
       
       setTextPositions(updatedPositions);
-      setDragStartPos({ x: mouseX, y: mouseY });
+      
+      // Update our local drag position and the parent component's position
+      setDragPosition({x: mouseX, y: mouseY});
+      setDragStartPos({x: mouseX, y: mouseY});
       
       // Re-render the canvas
       renderMemeToCanvas();
@@ -363,7 +371,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       window.removeEventListener('mouseup', handleMouseUp);
       console.log("Canvas drag event listeners removed");
     };
-  }, [isEditMode, textPositions, isDragging, dragIndex]);
+  }, [isEditMode, textPositions, isDragging, dragIndex, dragPosition]);
 
   return (
     <div className="relative border rounded overflow-hidden">
