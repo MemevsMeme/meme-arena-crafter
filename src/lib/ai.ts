@@ -25,23 +25,23 @@ export const generateCaption = async (prompt: string, style: string): Promise<st
     
     // Fallback captions if we don't get expected data format
     return [
-      `When ${prompt.toLowerCase()} but it actually works`,
-      `Nobody:\nAbsolutely nobody:\nMe: ${prompt}`,
-      `${prompt}? Story of my life.`
+      `When ${prompt ? prompt.toLowerCase() : 'trying'} but it actually works`,
+      `Nobody:\nAbsolutely nobody:\nMe: ${prompt || 'doing meme stuff'}`,
+      `${prompt || 'This meme'}? Story of my life.`
     ];
   } catch (error) {
     console.error('Error in generateCaption:', error);
     
     // Fallback captions in case of error
     return [
-      `When ${prompt.toLowerCase()} but it actually works`,
-      `Nobody:\nAbsolutely nobody:\nMe: ${prompt}`,
-      `${prompt}? Story of my life.`
+      `When ${prompt ? prompt.toLowerCase() : 'trying'} but it actually works`,
+      `Nobody:\nAbsolutely nobody:\nMe: ${prompt || 'doing meme stuff'}`,
+      `${prompt || 'This meme'}? Story of my life.`
     ];
   }
 };
 
-// Added new function to generate AI images
+// Updated to use the new Gemini image generation model
 export const generateMemeImage = async (prompt: string, style: string = 'meme'): Promise<string | null> => {
   console.log(`Generating AI image for prompt: "${prompt}" with style: ${style}`);
   
@@ -70,8 +70,13 @@ export const generateMemeImage = async (prompt: string, style: string = 'meme'):
   }
 };
 
-// Updated to use Gemini Vision API
+// Function to analyze meme images
 export const analyzeMemeImage = async (imageUrl: string): Promise<string[]> => {
+  if (!imageUrl) {
+    console.error('No image URL provided');
+    return ['funny', 'viral', 'trending']; // Default tags
+  }
+  
   console.log(`Analyzing image: ${imageUrl}`);
   
   try {

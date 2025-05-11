@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Wand } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface AiImageGeneratorProps {
   promptText: string;
@@ -32,7 +33,15 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
       {isGeneratingAIImage && (
         <div className="flex flex-col items-center justify-center p-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-purple"></div>
-          <p className="mt-4 text-sm text-muted-foreground">Creating your meme image...</p>
+          <p className="mt-4 text-sm text-muted-foreground">Creating your meme image with Gemini AI...</p>
+        </div>
+      )}
+      
+      {!isGeneratingAIImage && !generatedImage && (
+        <div className="aspect-square max-h-64 mx-auto mb-4 rounded-lg overflow-hidden bg-muted/30 flex items-center justify-center">
+          <p className="text-sm text-muted-foreground p-4 text-center">
+            Click the button above to generate an AI image based on your prompt
+          </p>
         </div>
       )}
       

@@ -5,6 +5,7 @@ import { WandSparkles } from 'lucide-react';
 import { CAPTION_STYLES } from '@/lib/constants';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface CaptionGeneratorProps {
   promptText: string;
@@ -55,7 +56,15 @@ const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({
         <WandSparkles className="ml-2 h-4 w-4" />
       </Button>
       
-      {generatedCaptions.length > 0 && (
+      {isGeneratingCaptions && (
+        <div className="space-y-2 max-h-60">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+        </div>
+      )}
+      
+      {!isGeneratingCaptions && generatedCaptions && generatedCaptions.length > 0 && (
         <div>
           <Label className="text-sm mb-2 block">Select a caption:</Label>
           <div className="space-y-2 max-h-60 overflow-y-auto">

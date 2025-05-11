@@ -79,7 +79,7 @@ serve(async (req) => {
 
       console.log(`Sending to Gemini API with formatted prompt: "${formattedPrompt}"`);
       
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ serve(async (req) => {
       
       console.log('Image converted to base64 for processing');
       
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro-vision:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-vision:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -279,8 +279,8 @@ serve(async (req) => {
       
       console.log(`Sending to Gemini for image generation with prompt: "${formattedPrompt}"`);
       
-      // Use Gemini 1.5 Flash for image generation
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      // Use the new gemini-2.0-flash-preview-image-generation model
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -289,20 +289,31 @@ serve(async (req) => {
           contents: [
             {
               parts: [
-                { 
-                  text: `Generate an image: ${formattedPrompt}. Create a funny meme-style image without any text overlay.` 
-                }
+                { text: formattedPrompt }
               ]
             }
           ],
           generationConfig: {
-            temperature: 0.8,
-            topP: 0.9,
-            maxOutputTokens: 2048
+            temperature: 0.9,
           },
-          "systemInstruction": {
-            "parts": [{ "text": "You are a meme image generator. Generate funny, creative meme-style images without any text overlay." }]
-          }
+          safety_settings: [
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            }
+          ]
         })
       });
 
@@ -318,18 +329,22 @@ serve(async (req) => {
       // Extract the generated image data
       try {
         const parts = data.candidates[0].content.parts;
-        const imagePart = parts.find((part: any) => part.inlineData && part.inlineData.mimeType.startsWith('image/'));
+        // Look for the image part in the response
+        const imageData = parts.find(part => 
+          part.inlineData && 
+          part.inlineData.mimeType && 
+          part.inlineData.mimeType.startsWith('image/')
+        );
         
-        if (!imagePart) {
+        if (!imageData) {
           console.error('No image data found in the response');
           throw new Error('No image data found in the response');
         }
         
-        const imageData = imagePart.inlineData.data;
         console.log('Successfully extracted image data');
         
         return new Response(JSON.stringify({ 
-          imageData: `data:${imagePart.inlineData.mimeType};base64,${imageData}` 
+          imageData: `data:${imageData.inlineData.mimeType};base64,${imageData.inlineData.data}` 
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
