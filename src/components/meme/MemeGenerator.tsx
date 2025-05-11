@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +47,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
   const [dragStartPos, setDragStartPos] = useState<{x: number, y: number}>({x: 0, y: 0});
   const [canvasSize, setCanvasSize] = useState<{width: number, height: number}>({width: 0, height: 0});
 
+  // Generate a preview when caption or template/image changes
   useEffect(() => {
     if ((caption || textPositions.length > 0) && (selectedTemplate || uploadedImage || generatedImage)) {
       setShowPreview(true);
@@ -77,18 +77,30 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       if (textPositions.length === 0) {
         setTextPositions([
           {
-            text: caption,
+            text: caption || 'Your text here',
             x: 50,
-            y: 85,
-            fontSize: 24,
+            y: 50,
+            fontSize: 32,
             maxWidth: 300,
             alignment: 'center',
             color: '#ffffff',
           }
         ]);
+      } else if (caption && textPositions.length > 0 && !textPositions[0].text) {
+        // Update first text element with caption if it exists
+        const updatedPositions = [...textPositions];
+        updatedPositions[0] = {...updatedPositions[0], text: caption};
+        setTextPositions(updatedPositions);
       }
     }
   }, [activeTab, selectedTemplate, uploadedImage, generatedImage, caption]);
+
+  // Update caption when first text position changes
+  useEffect(() => {
+    if (textPositions.length > 0 && textPositions[0].text && textPositions[0].text !== caption) {
+      setCaption(textPositions[0].text);
+    }
+  }, [textPositions]);
 
   // Update canvas event listeners for drag functionality
   useEffect(() => {
@@ -111,20 +123,48 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
         const textX = pos.x / 100 * canvas.width;
         const textY = pos.y / 100 * canvas.height;
         
-        // Simple hit test (can be improved with actual text dimensions)
-        const halfWidth = 100;  // Half of estimated text width
-        const halfHeight = pos.fontSize / 2;
-        
-        if (
-          mouseX >= textX - halfWidth && 
-          mouseX <= textX + halfWidth && 
-          mouseY >= textY - halfHeight && 
-          mouseY <= textY + halfHeight
-        ) {
-          setIsDragging(true);
-          setDragIndex(i);
-          setDragStartPos({ x: mouseX, y: mouseY });
-          break;
+        // Improved hit test with actual text dimensions
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Set appropriate font to measure text accurately
+          let fontStyle = '';
+          if (pos.isBold) fontStyle += 'bold ';
+          if (pos.isItalic) fontStyle += 'italic ';
+          ctx.font = `${fontStyle}${pos.fontSize}px Impact, sans-serif`;
+          
+          // Get text metrics for better hit testing
+          const metrics = ctx.measureText(pos.text);
+          const textWidth = Math.min(metrics.width, pos.maxWidth);
+          const textHeight = pos.fontSize;
+          
+          // Adjust based on alignment
+          let textXStart;
+          if (pos.alignment === 'left') {
+            textXStart = textX;
+          } else if (pos.alignment === 'right') {
+            textXStart = textX - textWidth;
+          } else {
+            textXStart = textX - textWidth / 2;
+          }
+          
+          // Perform hit test with accurate dimensions
+          if (
+            mouseX >= textXStart - 10 && 
+            mouseX <= textXStart + textWidth + 10 && 
+            mouseY >= textY - textHeight/2 - 10 && 
+            mouseY <= textY + textHeight/2 + 10
+          ) {
+            console.log(`Text element ${i} clicked:`, pos.text);
+            setIsDragging(true);
+            setDragIndex(i);
+            setDragStartPos({ x: mouseX, y: mouseY });
+            
+            // Force a re-render with highlight
+            const updatedPositions = [...textPositions];
+            setTextPositions(updatedPositions);
+            
+            break;
+          }
         }
       }
     };
@@ -139,6 +179,9 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       const mouseX = (e.clientX - rect.left) * scaleX;
       const mouseY = (e.clientY - rect.top) * scaleY;
       
+      console.log(`Dragging text ${dragIndex}, mouse position: ${mouseX}, ${mouseY}`);
+      
+      // Calculate the delta movement
       const dx = mouseX - dragStartPos.x;
       const dy = mouseY - dragStartPos.y;
       
@@ -163,8 +206,11 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
     };
     
     const handleMouseUp = () => {
-      setIsDragging(false);
-      setDragIndex(null);
+      if (isDragging) {
+        console.log(`Finished dragging text ${dragIndex}`);
+        setIsDragging(false);
+        setDragIndex(null);
+      }
     };
     
     // Add event listeners
@@ -172,11 +218,14 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
     
+    console.log("Canvas drag event listeners added");
+    
     // Cleanup on unmount
     return () => {
       canvas.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      console.log("Canvas drag event listeners removed");
     };
   }, [isEditMode, textPositions, isDragging, dragIndex]);
 
@@ -298,7 +347,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
     setCaption(text);
     
     // Also update the first text position if in edit mode
-    if (isEditMode && textPositions.length > 0) {
+    if (textPositions.length > 0) {
       const updatedPositions = [...textPositions];
       updatedPositions[0] = { ...updatedPositions[0], text };
       setTextPositions(updatedPositions);
@@ -347,15 +396,24 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
   };
 
   const handleTextPositionsChange = (positions: TextPosition[]) => {
+    console.log("Text positions updated:", positions);
     setTextPositions(positions);
   };
 
   const renderMemeToCanvas = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      console.log("Canvas ref is null");
+      return;
+    }
     
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      console.log("Could not get canvas context");
+      return;
+    }
+    
+    console.log("Rendering meme to canvas");
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -363,11 +421,14 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
     // Load image
     const img = new window.Image();
     img.crossOrigin = "anonymous";
+    
     img.onload = () => {
       // Set canvas dimensions to match image
       canvas.width = img.width;
       canvas.height = img.height;
       setCanvasSize({width: img.width, height: img.height});
+      
+      console.log(`Canvas dimensions set to ${canvas.width} x ${canvas.height}`);
       
       // Draw image
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -418,8 +479,10 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       }
       // In edit mode, use the text positions
       else {
-        textPositions.forEach((position) => {
+        console.log(`Rendering ${textPositions.length} text elements in edit mode`);
+        textPositions.forEach((position, index) => {
           if (position.text) {
+            console.log(`Drawing text: "${position.text}" at (${position.x}%, ${position.y}%)`);
             drawText(
               ctx,
               position.text,
@@ -432,9 +495,49 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
               position.isBold,
               position.isItalic
             );
+            
+            // Draw a visual indicator for the text element being dragged
+            if (isEditMode && dragIndex === index) {
+              ctx.strokeStyle = '#ff3366';
+              ctx.lineWidth = 2;
+              
+              // Get text metrics for proper highlight
+              let fontStyle = '';
+              if (position.isBold) fontStyle += 'bold ';
+              if (position.isItalic) fontStyle += 'italic ';
+              ctx.font = `${fontStyle}${position.fontSize}px Impact, sans-serif`;
+              const metrics = ctx.measureText(position.text);
+              const textWidth = Math.min(metrics.width, position.maxWidth);
+              const textHeight = position.fontSize;
+              
+              // Draw highlight rectangle
+              let rectX;
+              if (position.alignment === 'left') {
+                rectX = position.x / 100 * canvas.width;
+              } else if (position.alignment === 'right') {
+                rectX = position.x / 100 * canvas.width - textWidth;
+              } else {
+                rectX = position.x / 100 * canvas.width - textWidth / 2;
+              }
+              
+              const rectY = position.y / 100 * canvas.height - textHeight / 2;
+              ctx.strokeRect(rectX - 5, rectY - 5, textWidth + 10, textHeight + 10);
+            }
           }
         });
       }
+    };
+    
+    // Handle image loading errors
+    img.onerror = (e) => {
+      console.error("Error loading image:", e);
+      // Draw an error placeholder
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(0, 0, 400, 300);
+      ctx.fillStyle = '#ff0000';
+      ctx.font = '20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Error loading image', 200, 150);
     };
     
     let imageSrc = '';
@@ -446,6 +549,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
       imageSrc = generatedImage as string;
     }
     
+    console.log(`Loading image source: ${imageSrc.substring(0, 100)}...`);
     img.src = imageSrc;
   };
   
@@ -462,6 +566,8 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
     isBold: boolean = false,
     isItalic: boolean = false
   ) => {
+    if (!text) return; // Skip empty text
+    
     // Set font style
     let fontStyle = '';
     if (isBold) fontStyle += 'bold ';
@@ -471,7 +577,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
     ctx.textAlign = alignment;
     ctx.textBaseline = 'middle';
     
-    // Draw text stroke
+    // Draw text stroke (outline)
     ctx.strokeStyle = 'black';
     ctx.lineWidth = fontSize / 8;
     ctx.strokeText(text, x, y, maxWidth);
@@ -780,161 +886,3 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
           {generatedImage && (
             <div className="aspect-square max-h-64 mx-auto mb-4 rounded-lg overflow-hidden">
               <img
-                src={generatedImage}
-                alt="AI Generated"
-                className="w-full h-full object-contain"
-              />
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-      
-      <div className="flex flex-wrap gap-2 mb-4">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-1.5"
-          onClick={handleGenerateCaptions}
-          disabled={isGeneratingCaptions || !promptText}
-        >
-          <WandSparkles className="h-3.5 w-3.5" />
-          {isGeneratingCaptions ? 'Generating...' : 'Generate Caption Ideas'}
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-1.5"
-          onClick={handleAnalyzeImage}
-          disabled={isAnalyzingImage || (!selectedTemplate && !uploadedImage && !generatedImage)}
-        >
-          <Tag className="h-3.5 w-3.5" />
-          {isAnalyzingImage ? 'Analyzing...' : 'Analyze Image'}
-        </Button>
-
-        <Button
-          variant={isEditMode ? "default" : "outline"}
-          size="sm"
-          className={`flex items-center gap-1.5 ${isEditMode ? "bg-brand-purple" : ""}`}
-          onClick={() => setIsEditMode(!isEditMode)}
-        >
-          <LucideImage className="h-3.5 w-3.5" />
-          {isEditMode ? 'Simple Mode' : 'Advanced Editor'}
-        </Button>
-      </div>
-      
-      {imageTags.length > 0 && (
-        <div className="mb-4 p-3 bg-muted/50 rounded-md">
-          <Label className="text-xs text-muted-foreground">AI-Generated Tags:</Label>
-          <div className="flex flex-wrap gap-1.5 mt-1">
-            {imageTags.map((tag, idx) => (
-              <span key={idx} className="px-2 py-1 bg-background text-xs rounded-md border">
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {!isEditMode ? (
-        // Simple caption mode
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <Label htmlFor="caption">Caption</Label>
-          </div>
-          
-          {generatedCaptions.length > 0 && (
-            <div className="grid grid-cols-1 gap-2 mb-3">
-              {generatedCaptions.map((captionText, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  className="justify-start h-auto py-2 whitespace-pre-line text-left"
-                  onClick={() => handleSelectCaption(captionText)}
-                >
-                  {captionText}
-                </Button>
-              ))}
-            </div>
-          )}
-          
-          <Textarea
-            id="caption"
-            placeholder="Enter caption for your meme..."
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            className="h-24"
-          />
-        </div>
-      ) : (
-        // Advanced editor mode
-        <div className="mb-6">
-          <TextEditor 
-            textPositions={textPositions} 
-            onChange={handleTextPositionsChange} 
-            onRemoveText={handleRemoveTextElement}
-            onAddText={handleAddTextElement}
-          />
-        </div>
-      )}
-      
-      <div className="mb-6">
-        <Label className="mb-2 block">Caption Style</Label>
-        <div className="flex flex-wrap gap-2">
-          {CAPTION_STYLES.map((style) => (
-            <Button
-              key={style.id}
-              variant={selectedStyle === style.id ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedStyle(style.id)}
-              className={selectedStyle === style.id ? 'bg-brand-purple' : ''}
-            >
-              {style.name}
-            </Button>
-          ))}
-        </div>
-      </div>
-      
-      {showPreview && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <Label className="block">Preview</Label>
-            {isEditMode && (
-              <div className="text-xs flex items-center text-muted-foreground">
-                <Move className="h-3.5 w-3.5 mr-1" />
-                Drag text directly on image to position
-              </div>
-            )}
-          </div>
-          <div className="max-h-80 overflow-hidden flex justify-center rounded-lg border">
-            <canvas 
-              ref={canvasRef} 
-              className="max-w-full h-auto"
-            />
-          </div>
-        </div>
-      )}
-      
-      {/* Save button */}
-      <Button 
-        onClick={handleSaveMeme}
-        disabled={isCreatingMeme || isUploadingToIPFS}
-        className="w-full bg-brand-purple hover:bg-brand-purple/90"
-      >
-        {isCreatingMeme ? (
-          <>
-            {isUploadingToIPFS ? 'Uploading to IPFS...' : 'Creating Meme...'}
-            <div className="ml-2 animate-spin rounded-full h-4 w-4 border-2 border-b-transparent border-white"></div>
-          </>
-        ) : (
-          <>
-            Save Meme
-            <Save className="ml-2 h-4 w-4" />
-          </>
-        )}
-      </Button>
-    </div>
-  );
-};
-
-export default MemeGenerator;
