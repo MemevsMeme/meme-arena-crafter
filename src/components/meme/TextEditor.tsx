@@ -58,9 +58,21 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
   const handleFontSizeChange = (index: number, delta: number) => {
     const updated = [...textPositions];
-    const newSize = Math.max(10, Math.min(50, updated[index].fontSize + delta));
+    // Increase max font size to 100px
+    const newSize = Math.max(10, Math.min(100, updated[index].fontSize + delta));
     updated[index] = { ...updated[index], fontSize: newSize };
     onChange(updated);
+  };
+  
+  const handleFontSizeInput = (index: number, value: string) => {
+    const fontSize = parseInt(value, 10);
+    if (!isNaN(fontSize)) {
+      const updated = [...textPositions];
+      // Allow direct input of font size up to 100px
+      const newSize = Math.max(10, Math.min(100, fontSize));
+      updated[index] = { ...updated[index], fontSize: newSize };
+      onChange(updated);
+    }
   };
 
   const handleAlignmentChange = (index: number, alignment: 'left' | 'center' | 'right') => {
@@ -170,7 +182,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
             
             <div className="flex justify-between items-center">
               <div>
-                <Label className="text-xs block mb-1">Font Size</Label>
+                <Label className="text-xs block mb-1">Font Size (px)</Label>
                 <div className="flex items-center">
                   <Button
                     variant="outline"
@@ -180,7 +192,14 @@ const TextEditor: React.FC<TextEditorProps> = ({
                   >
                     <Minus className="h-3 w-3" />
                   </Button>
-                  <span className="mx-2 text-xs font-medium">{position.fontSize}px</span>
+                  <Input
+                    type="number"
+                    min={10}
+                    max={100}
+                    className="w-16 h-8 mx-1 text-center text-xs"
+                    value={position.fontSize}
+                    onChange={(e) => handleFontSizeInput(index, e.target.value)}
+                  />
                   <Button
                     variant="outline"
                     size="sm"
