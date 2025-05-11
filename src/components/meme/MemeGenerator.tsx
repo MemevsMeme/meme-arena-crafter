@@ -47,7 +47,6 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
   const [dragStartPos, setDragStartPos] = useState<{x: number, y: number}>({x: 0, y: 0});
   const [canvasSize, setCanvasSize] = useState<{width: number, height: number}>({width: 0, height: 0});
 
-  // Generate a preview when caption or template/image changes
   useEffect(() => {
     if ((caption || textPositions.length > 0) && (selectedTemplate || uploadedImage || generatedImage)) {
       setShowPreview(true);
@@ -88,7 +87,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
         ]);
       }
     }
-  }, [activeTab, selectedTemplate, uploadedImage, generatedImage]);
+  }, [activeTab, selectedTemplate, uploadedImage, generatedImage, caption]);
 
   // Update canvas event listeners for drag functionality
   useEffect(() => {
@@ -909,4 +908,6 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
           <div className="max-h-80 overflow-hidden flex justify-center rounded-lg border">
             <canvas 
               ref={canvasRef} 
-              className="max-w-
+              className="max-w-full h-auto"
+            />
+          </div>
