@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,9 +26,10 @@ interface MemeGeneratorProps {
   promptText?: string;
   promptId?: string;
   onSave?: (meme: { id: string; caption: string; imageUrl: string }) => void;
+  defaultEditMode?: boolean;
 }
 
-const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps) => {
+const MemeGenerator = ({ promptText = '', promptId, onSave, defaultEditMode = false }: MemeGeneratorProps) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('template');
   const [selectedTemplate, setSelectedTemplate] = useState(MEME_TEMPLATES[0]);
@@ -47,7 +47,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
   const [isUploadingToIPFS, setIsUploadingToIPFS] = useState(false);
   const [isGeneratingAIImage, setIsGeneratingAIImage] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(defaultEditMode);
   const [textPositions, setTextPositions] = useState<TextPosition[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
