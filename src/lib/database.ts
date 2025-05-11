@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Caption, Meme, Prompt, Battle, User } from './types';
 
