@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Caption, Meme, Prompt, Battle, User } from './types';
 
@@ -267,22 +268,43 @@ export const createProfile = async (profile: {
 
 export const getActiveBattles = async (limit: number = 20, offset: number = 0, filter: string = 'all'): Promise<Battle[]> => {
   try {
-    // First, get battles without JOIN to avoid type recursion issues
-    let query = supabase
-      .from('battles')
-      .select('*')
-      .eq('status', 'active')
-      .order('start_time', { ascending: false })
-      .range(offset, offset + limit - 1);
+    // COMPLETELY AVOID TYPE INFERENCE BY USING A MORE DIRECT APPROACH
+    const queryObject: any = {
+      select: '*',
+      from: 'battles',
+      where: [['status', 'eq', 'active']],
+      order: [['start_time', {ascending: false}]],
+      range: [offset, offset + limit - 1]
+    };
     
     if (filter === 'community') {
-      query = query.eq('is_community', true);
+      queryObject.where.push(['is_community', 'eq', true]);
     } else if (filter === 'official') {
-      query = query.eq('is_community', false);
+      queryObject.where.push(['is_community', 'eq', false]);
     }
-
-    // Execute the query as a plain object to avoid TypeScript type inference issues
-    const { data: battlesData, error: battlesError } = await query;
+    
+    // Manual query building to avoid TypeScript type inference issues
+    let query = supabase
+      .from(queryObject.from)
+      .select(queryObject.select);
+    
+    // Apply conditions
+    for (const condition of queryObject.where) {
+      query = query.eq(condition[0], condition[2]);
+    }
+    
+    // Apply ordering
+    for (const [column, direction] of queryObject.order) {
+      query = query.order(column, direction);
+    }
+    
+    // Apply range
+    query = query.range(queryObject.range[0], queryObject.range[1]);
+    
+    // Execute query and get data as plain object
+    const result = await query;
+    const battlesData = result.data;
+    const battlesError = result.error;
 
     if (battlesError) {
       console.error('Error fetching active battles:', battlesError);
@@ -293,73 +315,75 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
       return [];
     }
 
+    // Create a clean array to hold the transformed battles
     const transformedBattles: Battle[] = [];
     
-    // Process each battle separately and completely break type chains
+    // Process each battle individually to avoid type recursion
     for (const rawBattle of battlesData) {
-      // Cast to any to avoid type inference
-      const battleRow = rawBattle as any;
+      // We use an explicit Object.assign to break any type connections
+      const battleRow = Object.assign({}, rawBattle) as RawBattleRow;
       
-      // Get meme one if it exists
+      // Process meme one
       let memeOne: Meme | undefined;
       if (battleRow.meme_one_id) {
-        const { data: memeOneData } = await supabase
+        const memeResult = await supabase
           .from('memes')
           .select('*')
           .eq('id', battleRow.meme_one_id)
           .single();
-        
-        if (memeOneData) {
-          const memeRow = memeOneData as any;
+          
+        if (memeResult.data) {
+          // Use Object.assign to create a clean object
+          const memeRowData = Object.assign({}, memeResult.data) as RawMemeRow;
           
           memeOne = {
-            id: memeRow.id,
-            prompt: memeRow.prompt || '',
-            prompt_id: memeRow.prompt_id || undefined,
-            imageUrl: memeRow.image_url,
-            ipfsCid: memeRow.ipfs_cid || '',
-            caption: memeRow.caption,
-            creatorId: memeRow.creator_id,
-            votes: memeRow.votes,
-            createdAt: new Date(memeRow.created_at),
-            tags: memeRow.tags || [],
-            isBattleSubmission: memeRow.is_battle_submission === true,
-            battleId: memeRow.battle_id || undefined
+            id: memeRowData.id,
+            prompt: memeRowData.prompt || '',
+            prompt_id: memeRowData.prompt_id || undefined,
+            imageUrl: memeRowData.image_url,
+            ipfsCid: memeRowData.ipfs_cid || '',
+            caption: memeRowData.caption,
+            creatorId: memeRowData.creator_id,
+            votes: memeRowData.votes,
+            createdAt: new Date(memeRowData.created_at),
+            tags: memeRowData.tags || [],
+            isBattleSubmission: memeRowData.is_battle_submission === true,
+            battleId: memeRowData.battle_id || undefined
           };
         }
       }
       
-      // Get meme two if it exists
+      // Process meme two with the same pattern
       let memeTwo: Meme | undefined;
       if (battleRow.meme_two_id) {
-        const { data: memeTwoData } = await supabase
+        const memeResult = await supabase
           .from('memes')
           .select('*')
           .eq('id', battleRow.meme_two_id)
           .single();
-        
-        if (memeTwoData) {
-          const memeRow = memeTwoData as any;
+          
+        if (memeResult.data) {
+          const memeRowData = Object.assign({}, memeResult.data) as RawMemeRow;
           
           memeTwo = {
-            id: memeRow.id,
-            prompt: memeRow.prompt || '',
-            prompt_id: memeRow.prompt_id || undefined,
-            imageUrl: memeRow.image_url,
-            ipfsCid: memeRow.ipfs_cid || '',
-            caption: memeRow.caption,
-            creatorId: memeRow.creator_id,
-            votes: memeRow.votes,
-            createdAt: new Date(memeRow.created_at),
-            tags: memeRow.tags || [],
-            isBattleSubmission: memeRow.is_battle_submission === true,
-            battleId: memeRow.battle_id || undefined
+            id: memeRowData.id,
+            prompt: memeRowData.prompt || '',
+            prompt_id: memeRowData.prompt_id || undefined,
+            imageUrl: memeRowData.image_url,
+            ipfsCid: memeRowData.ipfs_cid || '',
+            caption: memeRowData.caption,
+            creatorId: memeRowData.creator_id,
+            votes: memeRowData.votes,
+            createdAt: new Date(memeRowData.created_at),
+            tags: memeRowData.tags || [],
+            isBattleSubmission: memeRowData.is_battle_submission === true,
+            battleId: memeRowData.battle_id || undefined
           };
         }
       }
 
-      // Transform battle with explicit boolean casting and no type dependencies
-      transformedBattles.push({
+      // Create a battle object with explicit property assignments
+      const battle: Battle = {
         id: battleRow.id,
         promptId: battleRow.prompt_id || '',
         memeOneId: battleRow.meme_one_id,
@@ -373,7 +397,10 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
         status: battleRow.status as 'active' | 'completed' | 'cancelled',
         is_community: battleRow.is_community === true,
         creator_id: battleRow.creator_id || undefined
-      });
+      };
+      
+      // Add the battle to our array
+      transformedBattles.push(battle);
     }
 
     return transformedBattles;
@@ -385,14 +412,16 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
 
 export const getPrompts = async (limit: number = 10, offset: number = 0, isCommunity: boolean = false): Promise<Prompt[]> => {
   try {
-    // Use a more explicit query approach to avoid type inference issues
-    const { data, error } = await supabase
+    // Use a plain JavaScript object approach to avoid type reference issues
+    const fetchedData: any = await supabase
       .from('prompts')
       .select('*')
       .eq('active', true)
       .eq('is_community', isCommunity)
       .order('start_date', { ascending: false })
       .range(offset, offset + limit - 1);
+      
+    const { data, error } = fetchedData;
 
     if (error) {
       console.error('Error fetching prompts:', error);
@@ -401,12 +430,16 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
 
     if (!data || !data.length) return [];
     
-    // Map data to Prompt objects without relying on TypeScript type inference
+    // Create an empty array with explicit Prompt[] type
     const prompts: Prompt[] = [];
     
-    for (const item of data) {
-      const rawItem = item as any;
-      prompts.push({
+    // Manually process each item without type inference
+    for (let i = 0; i < data.length; i++) {
+      // Use Object.assign to create a clean object
+      const rawItem = Object.assign({}, data[i]) as RawPromptRow;
+      
+      // Create a prompt object with explicit values
+      const prompt: Prompt = {
         id: rawItem.id,
         text: rawItem.text,
         theme: rawItem.theme || '',
@@ -417,7 +450,10 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
         description: rawItem.description || undefined,
         creator_id: rawItem.creator_id || undefined,
         is_community: rawItem.is_community === true
-      });
+      };
+      
+      // Add to array
+      prompts.push(prompt);
     }
     
     return prompts;
