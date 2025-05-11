@@ -37,6 +37,7 @@ serve(async (req) => {
 
           console.log(`Sending to Gemini with prompt: "${formattedPrompt}"`);
 
+          // Using gemini-2.0-flash model for text generation as specified
           const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
@@ -103,6 +104,11 @@ serve(async (req) => {
           
           console.log(`Sending to Gemini for image generation with prompt: "${formattedPrompt}"`);
           console.log(`API Key exists: ${!!GEMINI_API_KEY}`); 
+          
+          if (!GEMINI_API_KEY) {
+            console.error("GEMINI_API_KEY is not set");
+            throw new Error("API Key not configured");
+          }
           
           // Use Gemini 2.0 Flash Preview Image Generation model for image generation
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${GEMINI_API_KEY}`;
@@ -205,6 +211,7 @@ serve(async (req) => {
 
           console.log(`Analyzing image: ${imageUrl}`);
 
+          // Using gemini-2.0-pro-vision model for image analysis as specified
           const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro-vision:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
