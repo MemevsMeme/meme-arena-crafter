@@ -82,7 +82,7 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
     // Return null if no data found
     if (!data) return null;
     
-    // Directly use raw data without complex type casting
+    // Explicitly cast to our raw type to avoid deep type instantiation
     const row = data as RawPromptRow;
     
     return {
@@ -118,7 +118,7 @@ export const getProfile = async (userId: string): Promise<User | null> => {
 
     if (!data) return null;
     
-    // Use simple casting to raw type
+    // Explicitly cast to our raw type
     const profile = data as RawProfileRow;
     
     return {
@@ -164,6 +164,7 @@ export const updateProfile = async (userId: string, updates: any): Promise<User 
 
     if (!data) return null;
     
+    // Return transformed profile with explicit type conversions
     return {
       id: data.id,
       username: data.username,
@@ -196,8 +197,8 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
 
     if (!data || !data.length) return [];
     
-    // Transform array data with explicit type
-    return data.map(item => {
+    // Transform array data with explicit type casting to avoid deep instantiation
+    return data.map((item: any) => {
       const meme = item as RawMemeRow;
       return {
         id: meme.id,
@@ -248,6 +249,7 @@ export const createProfile = async (profile: {
 
     if (!data) return null;
     
+    // Return explicitly typed profile
     return {
       id: data.id,
       username: data.username,
@@ -296,8 +298,8 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
     
     // Process each battle separately to avoid deep instantiation
     for (const battle of battlesData) {
-      // Explicitly type battle data
-      const battleRow = battle as RawBattleRow;
+      // Use type assertion to break the circular reference
+      const battleRow = battle as unknown as RawBattleRow;
       
       // Get meme one if it exists
       let memeOne: Meme | undefined;
@@ -309,7 +311,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
         
         if (memeOneData) {
-          const memeRow = memeOneData as RawMemeRow;
+          const memeRow = memeOneData as unknown as RawMemeRow;
           
           memeOne = {
             id: memeRow.id,
@@ -338,7 +340,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
         
         if (memeTwoData) {
-          const memeRow = memeTwoData as RawMemeRow;
+          const memeRow = memeTwoData as unknown as RawMemeRow;
           
           memeTwo = {
             id: memeRow.id,
@@ -399,9 +401,9 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
 
     if (!data || !data.length) return [];
     
-    // Transform with explicit typing
-    return data.map(item => {
-      const promptRow = item as RawPromptRow;
+    // Transform with explicit type casting to avoid deep instantiation
+    return data.map((item: any) => {
+      const promptRow = item as unknown as RawPromptRow;
       
       return {
         id: promptRow.id,
@@ -470,7 +472,7 @@ export const createMeme = async (meme: {
       throw new Error('No data returned from database after inserting meme');
     }
     
-    const memeRow = data as RawMemeRow;
+    const memeRow = data as unknown as RawMemeRow;
     
     // Return formatted meme object
     return {
