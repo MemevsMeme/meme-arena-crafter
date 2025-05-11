@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Plus, Minus, Trash2 } from 'lucide-react';
+import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Plus, Minus, Trash2, Type, StretchHorizontal } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export interface TextPosition {
   text: string;
@@ -15,6 +16,8 @@ export interface TextPosition {
   color?: string;
   isBold?: boolean;
   isItalic?: boolean;
+  fontFamily?: string;
+  stretch?: number;
 }
 
 interface TextEditorProps {
@@ -23,6 +26,16 @@ interface TextEditorProps {
   onRemoveText?: (index: number) => void;
   onAddText?: () => void;
 }
+
+const FONT_OPTIONS = [
+  { value: 'Impact', label: 'Impact (Meme)' },
+  { value: 'Arial', label: 'Arial' },
+  { value: 'Helvetica', label: 'Helvetica' },
+  { value: 'Georgia', label: 'Georgia' },
+  { value: 'Comic Sans MS', label: 'Comic Sans' },
+  { value: 'Courier New', label: 'Courier New' },
+  { value: 'Times New Roman', label: 'Times New Roman' }
+];
 
 const TextEditor: React.FC<TextEditorProps> = ({ 
   textPositions, 
@@ -58,8 +71,8 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
   const handleFontSizeChange = (index: number, delta: number) => {
     const updated = [...textPositions];
-    // Increase max font size to 100px
-    const newSize = Math.max(10, Math.min(100, updated[index].fontSize + delta));
+    // Increase max font size to 150px
+    const newSize = Math.max(10, Math.min(150, updated[index].fontSize + delta));
     updated[index] = { ...updated[index], fontSize: newSize };
     onChange(updated);
   };
@@ -68,8 +81,8 @@ const TextEditor: React.FC<TextEditorProps> = ({
     const fontSize = parseInt(value, 10);
     if (!isNaN(fontSize)) {
       const updated = [...textPositions];
-      // Allow direct input of font size up to 100px
-      const newSize = Math.max(10, Math.min(100, fontSize));
+      // Allow direct input of font size up to 150px
+      const newSize = Math.max(10, Math.min(150, fontSize));
       updated[index] = { ...updated[index], fontSize: newSize };
       onChange(updated);
     }
@@ -87,6 +100,21 @@ const TextEditor: React.FC<TextEditorProps> = ({
       ...updated[index], 
       [style]: !updated[index][style] 
     };
+    onChange(updated);
+  };
+
+  const handleFontFamilyChange = (index: number, fontFamily: string) => {
+    const updated = [...textPositions];
+    updated[index] = { ...updated[index], fontFamily };
+    onChange(updated);
+  };
+
+  const handleStretchChange = (index: number, delta: number) => {
+    const updated = [...textPositions];
+    // Set stretch between 0.5 and 2.0 (50% to 200%)
+    const currentStretch = updated[index].stretch || 1.0;
+    const newStretch = Math.max(0.5, Math.min(2.0, currentStretch + delta));
+    updated[index] = { ...updated[index], stretch: newStretch };
     onChange(updated);
   };
 
@@ -179,15 +207,34 @@ const TextEditor: React.FC<TextEditorProps> = ({
                 />
               </div>
             </div>
+
+            <div className="mb-3">
+              <Label className="text-xs block mb-1">Font Family</Label>
+              <Select 
+                value={position.fontFamily || 'Impact'} 
+                onValueChange={(value) => handleFontFamilyChange(index, value)}
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Select font" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FONT_OPTIONS.map((font) => (
+                    <SelectItem key={font.value} value={font.value}>
+                      <span style={{ fontFamily: font.value }}>{font.label}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             
-            <div className="flex justify-between items-center">
+            <div className="grid grid-cols-2 gap-4 mb-2">
               <div>
                 <Label className="text-xs block mb-1">Font Size (px)</Label>
                 <div className="flex items-center">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleFontSizeChange(index, -2)}
+                    onClick={() => handleFontSizeChange(index, -5)}
                     className="h-8 px-2"
                   >
                     <Minus className="h-3 w-3" />
@@ -195,7 +242,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
                   <Input
                     type="number"
                     min={10}
-                    max={100}
+                    max={150}
                     className="w-16 h-8 mx-1 text-center text-xs"
                     value={position.fontSize}
                     onChange={(e) => handleFontSizeInput(index, e.target.value)}
@@ -203,7 +250,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleFontSizeChange(index, 2)}
+                    onClick={() => handleFontSizeChange(index, 5)}
                     className="h-8 px-2"
                   >
                     <Plus className="h-3 w-3" />
@@ -211,6 +258,35 @@ const TextEditor: React.FC<TextEditorProps> = ({
                 </div>
               </div>
               
+              <div>
+                <Label className="text-xs block mb-1">Text Stretch</Label>
+                <div className="flex items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleStretchChange(index, -0.1)}
+                    title="Compress text"
+                    className="h-8 px-2"
+                  >
+                    <StretchHorizontal className="h-3 w-3 rotate-90" />
+                  </Button>
+                  <div className="w-16 h-8 mx-1 flex items-center justify-center text-xs">
+                    {Math.round((position.stretch || 1) * 100)}%
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleStretchChange(index, 0.1)}
+                    title="Expand text"
+                    className="h-8 px-2"
+                  >
+                    <StretchHorizontal className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center mb-2">
               <div>
                 <Label className="text-xs block mb-1">Color</Label>
                 <Input
@@ -220,42 +296,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
                   className="h-8 w-16 p-1"
                 />
               </div>
-            </div>
-            
-            <div className="flex justify-between mt-2">
-              <div>
-                <Label className="text-xs block mb-1">Alignment</Label>
-                <div className="flex border rounded-md overflow-hidden">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleAlignmentChange(index, 'left')}
-                    className={`h-8 rounded-none ${position.alignment === 'left' ? 'bg-brand-purple text-white' : ''}`}
-                  >
-                    <AlignLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleAlignmentChange(index, 'center')}
-                    className={`h-8 rounded-none ${position.alignment === 'center' || !position.alignment ? 'bg-brand-purple text-white' : ''}`}
-                  >
-                    <AlignCenter className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleAlignmentChange(index, 'right')}
-                    className={`h-8 rounded-none ${position.alignment === 'right' ? 'bg-brand-purple text-white' : ''}`}
-                  >
-                    <AlignRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              
+
               <div>
                 <Label className="text-xs block mb-1">Style</Label>
                 <div className="flex border rounded-md overflow-hidden">
@@ -278,6 +319,39 @@ const TextEditor: React.FC<TextEditorProps> = ({
                     <Italic className="h-4 w-4" />
                   </Button>
                 </div>
+              </div>
+            </div>
+            
+            <div>
+              <Label className="text-xs block mb-1">Alignment</Label>
+              <div className="flex border rounded-md overflow-hidden">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleAlignmentChange(index, 'left')}
+                  className={`h-8 rounded-none ${position.alignment === 'left' ? 'bg-brand-purple text-white' : ''}`}
+                >
+                  <AlignLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleAlignmentChange(index, 'center')}
+                  className={`h-8 rounded-none ${position.alignment === 'center' || !position.alignment ? 'bg-brand-purple text-white' : ''}`}
+                >
+                  <AlignCenter className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleAlignmentChange(index, 'right')}
+                  className={`h-8 rounded-none ${position.alignment === 'right' ? 'bg-brand-purple text-white' : ''}`}
+                >
+                  <AlignRight className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>

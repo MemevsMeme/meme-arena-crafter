@@ -28,6 +28,8 @@ interface TextPosition {
   color?: string;
   isBold?: boolean;
   isItalic?: boolean;
+  fontFamily?: string;
+  stretch?: number;
 }
 
 const MemeCanvas: React.FC<MemeCanvasProps> = ({
@@ -55,7 +57,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     renderMemeToCanvas();
   }, [caption, selectedTemplate, uploadedImage, generatedImage, textPositions, isDragging, dragIndex]);
 
-  // Improved helper function to draw text with better legibility
+  // Enhanced text drawing function with support for font family and stretch
   const drawText = (
     ctx: CanvasRenderingContext2D,
     text: string,
@@ -66,46 +68,61 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     alignment: 'left' | 'center' | 'right' = 'center',
     color: string = '#ffffff',
     isBold: boolean = false,
-    isItalic: boolean = false
+    isItalic: boolean = false,
+    fontFamily: string = 'Impact',
+    stretch: number = 1.0
   ) => {
     if (!text) return; // Skip empty text
+    
+    // Save context state to restore later
+    ctx.save();
+    
+    // Apply horizontal scaling for text stretching
+    ctx.setTransform(
+      stretch, // Horizontal scaling
+      0,       // Horizontal skewing
+      0,       // Vertical skewing
+      1,       // Vertical scaling
+      x,       // Horizontal position
+      y        // Vertical position
+    );
+    
+    // Convert coordinates for proper text positioning after transform
+    const adjX = 0; // X is now 0 because we translated in the transform
+    const adjY = 0; // Y is now 0 because we translated in the transform
     
     // Set font style
     let fontStyle = '';
     if (isBold) fontStyle += 'bold ';
     if (isItalic) fontStyle += 'italic ';
     
-    // Use a more visible font combination - Impact is standard for memes but fall back to sans-serif
-    ctx.font = `${fontStyle}${fontSize}px Impact, Arial, sans-serif`;
+    // Create font string with chosen font family and fallbacks
+    ctx.font = `${fontStyle}${fontSize}px ${fontFamily}, Impact, Arial, sans-serif`;
     ctx.textAlign = alignment;
     ctx.textBaseline = 'middle';
     
-    // Improved text stroke (outline) for better legibility
-    // Draw multiple strokes for a thicker effect
-    ctx.lineJoin = 'round'; // Rounded corners for better appearance
+    // Draw multiple strokes for better text legibility
+    ctx.lineJoin = 'round'; // Rounded corners
     
-    // First pass - wider black stroke
+    // Thicker outline for better contrast
     ctx.strokeStyle = 'black';
-    ctx.lineWidth = fontSize / 6;
-    ctx.strokeText(text, x, y, maxWidth);
+    ctx.lineWidth = fontSize / 5;
+    ctx.strokeText(text, adjX, adjY, maxWidth / stretch);
     
-    // Second pass - thinner black stroke for definition
-    ctx.lineWidth = fontSize / 10;
-    ctx.strokeText(text, x, y, maxWidth);
+    // Add second pass with thinner stroke
+    ctx.lineWidth = fontSize / 8;
+    ctx.strokeText(text, adjX, adjY, maxWidth / stretch);
     
-    // Draw text fill with slight shadow
+    // Draw text fill with enhanced shadow for better readability
     ctx.fillStyle = color;
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-    ctx.shadowBlur = 2;
-    ctx.shadowOffsetX = 1;
-    ctx.shadowOffsetY = 1;
-    ctx.fillText(text, x, y, maxWidth);
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = Math.min(4, fontSize / 6);
+    ctx.shadowOffsetX = Math.min(2, fontSize / 12);
+    ctx.shadowOffsetY = Math.min(2, fontSize / 12);
+    ctx.fillText(text, adjX, adjY, maxWidth / stretch);
     
-    // Reset shadow for subsequent drawing operations
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
+    // Restore context to original state
+    ctx.restore();
   };
 
   const renderMemeToCanvas = () => {
@@ -167,7 +184,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
           });
         } else {
           // Default position for uploaded/generated images - center bottom
-          const fontSize = Math.max(16, Math.min(canvas.width / 15, 36));
+          const fontSize = Math.max(24, Math.min(canvas.width / 12, 48));
           const lineHeight = fontSize * 1.2;
           const totalHeight = lines.length * lineHeight;
           
@@ -201,7 +218,9 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
               position.alignment || 'center',
               position.color || '#ffffff',
               position.isBold,
-              position.isItalic
+              position.isItalic,
+              position.fontFamily || 'Impact',
+              position.stretch || 1.0
             );
             
             // Draw a visual indicator for the text element being dragged
@@ -213,9 +232,12 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
               let fontStyle = '';
               if (position.isBold) fontStyle += 'bold ';
               if (position.isItalic) fontStyle += 'italic ';
-              ctx.font = `${fontStyle}${position.fontSize}px Impact, sans-serif`;
+              ctx.font = `${fontStyle}${position.fontSize}px ${position.fontFamily || 'Impact'}, sans-serif`;
+              
+              // Account for text stretching in the highlight box
               const metrics = ctx.measureText(position.text);
-              const textWidth = Math.min(metrics.width, position.maxWidth);
+              const stretchFactor = position.stretch || 1.0;
+              const textWidth = Math.min(metrics.width * stretchFactor, position.maxWidth);
               const textHeight = position.fontSize;
               
               // Draw highlight rectangle
@@ -288,11 +310,12 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
           let fontStyle = '';
           if (pos.isBold) fontStyle += 'bold ';
           if (pos.isItalic) fontStyle += 'italic ';
-          ctx.font = `${fontStyle}${pos.fontSize}px Impact, sans-serif`;
+          ctx.font = `${fontStyle}${pos.fontSize}px ${pos.fontFamily || 'Impact'}, sans-serif`;
           
           // Get text metrics for better hit testing
           const metrics = ctx.measureText(pos.text);
-          const textWidth = Math.min(metrics.width, pos.maxWidth);
+          const stretchFactor = pos.stretch || 1.0;
+          const textWidth = Math.min(metrics.width * stretchFactor, pos.maxWidth);
           const textHeight = pos.fontSize;
           
           // Adjust based on alignment
@@ -399,7 +422,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
         style={{ maxHeight: '500px', objectFit: 'contain' }}
       />
       {isEditMode && (
-        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+        <div className="absolute bottom-2 right-2 bg-black/90 text-white text-xs px-2 py-1 rounded">
           Edit Mode: Drag text to reposition
         </div>
       )}
