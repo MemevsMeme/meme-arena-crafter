@@ -195,13 +195,13 @@ export const MOCK_USERS: User[] = [
   }
 ];
 
-// Mock data for memes
+// Update mock memes to use local image URLs instead of external ones
 export const MOCK_MEMES: Meme[] = [
   {
     id: "meme1",
     prompt: "When you accidentally deploy to production on a Friday afternoon",
     prompt_id: "prompt1",
-    imageUrl: "https://imgflip.com/s/meme/246013478/Accidental-production-deploy.jpg",
+    imageUrl: "/placeholder.svg",
     ipfsCid: "cid1",
     caption: "Oops! Time for a weekend of hotfixes.",
     creatorId: "user1",
@@ -215,7 +215,7 @@ export const MOCK_MEMES: Meme[] = [
     id: "meme2",
     prompt: "When the junior dev says 'I'm sure it'll work'",
     prompt_id: "prompt1",
-    imageUrl: "https://imgflip.com/s/meme/131947643/I-Guarantee-It.jpg",
+    imageUrl: "/placeholder.svg",
     ipfsCid: "cid2",
     caption: "Famous last words...",
     creatorId: "user2",
@@ -229,7 +229,7 @@ export const MOCK_MEMES: Meme[] = [
     id: "meme3",
     prompt: "How I feel after finally understanding promises in JavaScript",
     prompt_id: "prompt2",
-    imageUrl: "https://imgflip.com/s/meme/93895088/Mocking-Spongebob.jpg",
+    imageUrl: "/placeholder.svg",
     ipfsCid: "cid3",
     caption: "sO tHiS iS hOw YoU hAnDlE aSync cOdE",
     creatorId: "user3",
@@ -243,7 +243,7 @@ export const MOCK_MEMES: Meme[] = [
     id: "meme4",
     prompt: "When the code you wrote 6 months ago suddenly breaks",
     prompt_id: "prompt2",
-    imageUrl: "https://imgflip.com/s/meme/181913649/Woman-Yelling-At-Cat.jpg",
+    imageUrl: "/placeholder.svg",
     ipfsCid: "cid4",
     caption: "I don't even remember writing this!",
     creatorId: "user4",
@@ -257,7 +257,7 @@ export const MOCK_MEMES: Meme[] = [
     id: "meme5",
     prompt: "When your code compiles without errors on the first try",
     prompt_id: "prompt3",
-    imageUrl: "https://imgflip.com/s/meme/148909832/Surprised-Pikachu.jpg",
+    imageUrl: "/placeholder.svg",
     ipfsCid: "cid5",
     caption: "Is this real life?",
     creatorId: "user5",
@@ -270,7 +270,7 @@ export const MOCK_MEMES: Meme[] = [
     id: "meme6",
     prompt: "How I feel when the client asks for 'just one small change'",
     prompt_id: "prompt3",
-    imageUrl: "https://imgflip.com/s/meme/177543370/Running-Away-Balloon.jpg",
+    imageUrl: "/placeholder.svg",
     ipfsCid: "cid6",
     caption: "Here we go again...",
     creatorId: "user1",
@@ -283,7 +283,7 @@ export const MOCK_MEMES: Meme[] = [
     id: "meme7",
     prompt: "When you spend hours debugging and the problem was a missing semicolon",
     prompt_id: "prompt4",
-    imageUrl: "https://imgflip.com/s/meme/80715927/Feels-bad-man.jpg",
+    imageUrl: "/placeholder.svg",
     ipfsCid: "cid7",
     caption: "I need a break...",
     creatorId: "user2",
@@ -296,7 +296,7 @@ export const MOCK_MEMES: Meme[] = [
     id: "meme8",
     prompt: "When the manager asks if the project will be done on time",
     prompt_id: "prompt4",
-    imageUrl: "https://imgflip.com/s/meme/101721547/Laughing-Leo.jpg",
+    imageUrl: "/placeholder.svg",
     ipfsCid: "cid8",
     caption: "Sure, boss. No problem!",
     creatorId: "user3",
@@ -309,7 +309,7 @@ export const MOCK_MEMES: Meme[] = [
     id: "meme9",
     prompt: "When you try to explain coding to someone who isn't a programmer",
     prompt_id: "prompt5",
-    imageUrl: "https://imgflip.com/s/meme/61579/Laughing.jpg",
+    imageUrl: "/placeholder.svg",
     ipfsCid: "cid9",
     caption: "It's simple, really...",
     creatorId: "user4",
@@ -322,7 +322,7 @@ export const MOCK_MEMES: Meme[] = [
     id: "meme10",
     prompt: "When you Google a problem and the first result is your own question from 5 years ago",
     prompt_id: "prompt5",
-    imageUrl: "https://imgflip.com/s/meme/222409736/I-Am-The-Senate.jpg",
+    imageUrl: "/placeholder.svg",
     ipfsCid: "cid10",
     caption: "I've been expecting you...",
     creatorId: "user5",
@@ -333,7 +333,7 @@ export const MOCK_MEMES: Meme[] = [
   }
 ];
 
-// Mock data for prompts
+// Update MOCK_PROMPTS to include description
 export const MOCK_PROMPTS: Prompt[] = [
   {
     id: "prompt1",
@@ -392,7 +392,7 @@ export const MOCK_PROMPTS: Prompt[] = [
   }
 ];
 
-// Update MOCK_BATTLES to include is_community
+// Update MOCK_BATTLES to include is_community and creator_id
 export const MOCK_BATTLES: Battle[] = [
   {
     id: "battle1",
