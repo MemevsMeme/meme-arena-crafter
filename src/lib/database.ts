@@ -82,8 +82,8 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
     // Return null if no data found
     if (!data) return null;
     
-    // Use type assertion with unknown as intermediate step to completely break the type chain
-    const row = data as unknown as RawPromptRow;
+    // Complete type disconnect with explicit "any" casting
+    const row = data as any;
     
     return {
       id: row.id,
@@ -118,8 +118,8 @@ export const getProfile = async (userId: string): Promise<User | null> => {
 
     if (!data) return null;
     
-    // Use type assertion with unknown as intermediate step
-    const profile = data as unknown as RawProfileRow;
+    // Complete type disconnect with explicit "any" casting
+    const profile = data as any;
     
     return {
       id: profile.id,
@@ -198,22 +198,20 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
     if (!data || !data.length) return [];
     
     // Complete disconnect from Supabase types to avoid recursion
-    return data.map((item) => {
-      // Two-step casting to completely break type chain
-      const meme = item as unknown as RawMemeRow;
+    return data.map((item: any) => {
       return {
-        id: meme.id,
-        prompt: meme.prompt || '',
-        prompt_id: meme.prompt_id || undefined,
-        imageUrl: meme.image_url,
-        ipfsCid: meme.ipfs_cid || '',
-        caption: meme.caption,
-        creatorId: meme.creator_id,
-        votes: meme.votes,
-        createdAt: new Date(meme.created_at),
-        tags: meme.tags || [],
-        isBattleSubmission: meme.is_battle_submission === true,
-        battleId: meme.battle_id || undefined
+        id: item.id,
+        prompt: item.prompt || '',
+        prompt_id: item.prompt_id || undefined,
+        imageUrl: item.image_url,
+        ipfsCid: item.ipfs_cid || '',
+        caption: item.caption,
+        creatorId: item.creator_id,
+        votes: item.votes,
+        createdAt: new Date(item.created_at),
+        tags: item.tags || [],
+        isBattleSubmission: item.is_battle_submission === true,
+        battleId: item.battle_id || undefined
       };
     });
   } catch (error) {
@@ -299,8 +297,8 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
     
     // Process each battle separately and completely break type chains
     for (const battle of battlesData) {
-      // Two-step casting to break the circular reference
-      const battleRow = battle as unknown as RawBattleRow;
+      // Use explicit "any" typing to break circular references
+      const battleRow = battle as any;
       
       // Get meme one if it exists
       let memeOne: Meme | undefined;
@@ -312,8 +310,8 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
         
         if (memeOneData) {
-          // Two-step casting
-          const memeRow = memeOneData as unknown as RawMemeRow;
+          // Use explicit "any" typing
+          const memeRow = memeOneData as any;
           
           memeOne = {
             id: memeRow.id,
@@ -342,8 +340,8 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
         
         if (memeTwoData) {
-          // Two-step casting
-          const memeRow = memeTwoData as unknown as RawMemeRow;
+          // Use explicit "any" typing
+          const memeRow = memeTwoData as any;
           
           memeTwo = {
             id: memeRow.id,
@@ -405,21 +403,18 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
     if (!data || !data.length) return [];
     
     // Complete type disconnect to avoid circular references
-    return data.map((item) => {
-      // Two-step casting to break type chains
-      const promptRow = item as unknown as RawPromptRow;
-      
+    return data.map((item: any) => {
       return {
-        id: promptRow.id,
-        text: promptRow.text,
-        theme: promptRow.theme || '',
-        tags: promptRow.tags || [],
-        active: promptRow.active,
-        startDate: new Date(promptRow.start_date),
-        endDate: new Date(promptRow.end_date),
-        description: promptRow.description || undefined,
-        creator_id: promptRow.creator_id || undefined,
-        is_community: promptRow.is_community === true
+        id: item.id,
+        text: item.text,
+        theme: item.theme || '',
+        tags: item.tags || [],
+        active: item.active,
+        startDate: new Date(item.start_date),
+        endDate: new Date(item.end_date),
+        description: item.description || undefined,
+        creator_id: item.creator_id || undefined,
+        is_community: item.is_community === true
       };
     });
   } catch (error) {
@@ -476,8 +471,8 @@ export const createMeme = async (meme: {
       throw new Error('No data returned from database after inserting meme');
     }
     
-    // Two-step casting for complete type disconnect
-    const memeRow = data as unknown as RawMemeRow;
+    // Use explicit "any" typing to break circular references
+    const memeRow = data as any;
     
     // Return formatted meme object with no type dependencies
     return {
