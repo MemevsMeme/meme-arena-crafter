@@ -24,9 +24,9 @@ const Battles = () => {
       if (filter === 'all') {
         return MOCK_BATTLES;
       } else if (filter === 'official') {
-        return MOCK_BATTLES.filter(b => !b.is_community);
+        return MOCK_BATTLES.filter(b => b.is_community === false);
       } else {
-        return MOCK_BATTLES.filter(b => b.is_community);
+        return MOCK_BATTLES.filter(b => b.is_community === true);
       }
     }
   });
@@ -39,9 +39,9 @@ const Battles = () => {
       // return getPrompts(10, 0, filter === 'community');
       
       if (filter === 'community') {
-        return MOCK_PROMPTS.filter(p => p.is_community);
+        return MOCK_PROMPTS.filter(p => p.is_community === true);
       } else if (filter === 'official') {
-        return MOCK_PROMPTS.filter(p => !p.is_community);
+        return MOCK_PROMPTS.filter(p => p.is_community === false);
       } else {
         return MOCK_PROMPTS;
       }
@@ -74,7 +74,7 @@ const Battles = () => {
             {battles && battles.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {battles.map(battle => (
-                  <BattleCard key={battle.id} battle={battle} />
+                  <BattleCard key={battle.id} battle={battle as BattleType} />
                 ))}
               </div>
             ) : (
