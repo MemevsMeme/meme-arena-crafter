@@ -70,13 +70,7 @@ serve(async (req) => {
             throw new Error('No candidates in response');
           }
 
-          const captions = data.candidates.map(candidate => {
-            if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-              console.error('Invalid candidate format:', candidate);
-              return 'Could not generate caption';
-            }
-            return candidate.content.parts[0].text;
-          });
+          const captions = data.candidates[0].content.parts.map(part => part.text).join('\n').split('\n').filter(Boolean);
 
           return new Response(
             JSON.stringify({ captions }),
@@ -108,13 +102,13 @@ serve(async (req) => {
           }
           
           console.log(`Sending to Gemini for image generation with prompt: "${formattedPrompt}"`);
-          console.log(`API Key exists: ${!!GEMINI_API_KEY}`); // Log if key exists, not the actual key
+          console.log(`API Key exists: ${!!GEMINI_API_KEY}`); 
           
           // Use Gemini 2.0 Flash Preview Image Generation model for image generation
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${GEMINI_API_KEY}`;
           console.log(`Using API URL: ${apiUrl}`);
           
-          // Using the correct format for Gemini 2.0 Flash Preview Image Generation
+          // Using the correct format for Gemini 2.0 Flash Preview Image Generation with required responseModalities
           const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
@@ -136,7 +130,7 @@ serve(async (req) => {
                 temperature: 0.7,
                 topK: 32,
                 topP: 1,
-                responseModalities: ["TEXT", "IMAGE"]
+                responseModalities: ["TEXT", "IMAGE"]  // Required to ensure image output
               }
             })
           });
