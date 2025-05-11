@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -911,3 +912,29 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
               className="max-w-full h-auto"
             />
           </div>
+        </div>
+      )}
+      
+      {/* Save button */}
+      <Button 
+        onClick={handleSaveMeme}
+        disabled={isCreatingMeme || isUploadingToIPFS}
+        className="w-full bg-brand-purple hover:bg-brand-purple/90"
+      >
+        {isCreatingMeme ? (
+          <>
+            {isUploadingToIPFS ? 'Uploading to IPFS...' : 'Creating Meme...'}
+            <div className="ml-2 animate-spin rounded-full h-4 w-4 border-2 border-b-transparent border-white"></div>
+          </>
+        ) : (
+          <>
+            Save Meme
+            <Save className="ml-2 h-4 w-4" />
+          </>
+        )}
+      </Button>
+    </div>
+  );
+};
+
+export default MemeGenerator;
