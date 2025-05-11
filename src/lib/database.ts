@@ -362,23 +362,23 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
     }
 
     // Create an array to hold battles
-    const transformedBattles: Battle[] = [];
+    const battles: Battle[] = [];
     
-    // Process each battle
-    for (const rawData of battlesData) {
-      // Create typed battle row
+    // Process each battle manually without recursive types
+    for (const item of battlesData) {
+      // Create a proper battle row with all expected fields
       const battleRow: RawBattleRow = {
-        id: rawData.id,
-        prompt_id: rawData.prompt_id,
-        meme_one_id: rawData.meme_one_id,
-        meme_two_id: rawData.meme_two_id,
-        winner_id: rawData.winner_id,
-        vote_count: rawData.vote_count,
-        start_time: rawData.start_time,
-        end_time: rawData.end_time,
-        status: rawData.status,
-        creator_id: rawData.creator_id,
-        is_community: !!rawData.is_community
+        id: item.id,
+        prompt_id: item.prompt_id,
+        meme_one_id: item.meme_one_id,
+        meme_two_id: item.meme_two_id,
+        winner_id: item.winner_id,
+        vote_count: item.vote_count,
+        start_time: item.start_time,
+        end_time: item.end_time,
+        status: item.status,
+        creator_id: item.creator_id,
+        is_community: !!item.is_community
       };
       
       // Fetch meme one
@@ -391,34 +391,19 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
           
         if (!memeError && memeData) {
-          const memeRow: RawMemeRow = {
-            id: memeData.id,
-            prompt: memeData.prompt,
-            prompt_id: memeData.prompt_id,
-            image_url: memeData.image_url,
-            ipfs_cid: memeData.ipfs_cid,
-            caption: memeData.caption,
-            creator_id: memeData.creator_id,
-            votes: memeData.votes,
-            created_at: memeData.created_at,
-            tags: memeData.tags || [],
-            battle_id: memeData.battle_id,
-            is_battle_submission: !!memeData.is_battle_submission
-          };
-          
           memeOne = {
-            id: memeRow.id,
-            prompt: memeRow.prompt || '',
-            prompt_id: memeRow.prompt_id || undefined,
-            imageUrl: memeRow.image_url,
-            ipfsCid: memeRow.ipfs_cid || '',
-            caption: memeRow.caption,
-            creatorId: memeRow.creator_id,
-            votes: memeRow.votes,
-            createdAt: new Date(memeRow.created_at),
-            tags: memeRow.tags || [],
-            isBattleSubmission: memeRow.is_battle_submission,
-            battleId: memeRow.battle_id || undefined
+            id: memeData.id,
+            prompt: memeData.prompt || '',
+            prompt_id: memeData.prompt_id || undefined,
+            imageUrl: memeData.image_url,
+            ipfsCid: memeData.ipfs_cid || '',
+            caption: memeData.caption,
+            creatorId: memeData.creator_id,
+            votes: memeData.votes,
+            createdAt: new Date(memeData.created_at),
+            tags: memeData.tags || [],
+            isBattleSubmission: !!memeData.is_battle_submission,
+            battleId: memeData.battle_id || undefined
           };
         }
       }
@@ -433,40 +418,25 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
           
         if (!memeError && memeData) {
-          const memeRow: RawMemeRow = {
-            id: memeData.id,
-            prompt: memeData.prompt,
-            prompt_id: memeData.prompt_id,
-            image_url: memeData.image_url,
-            ipfs_cid: memeData.ipfs_cid,
-            caption: memeData.caption,
-            creator_id: memeData.creator_id,
-            votes: memeData.votes,
-            created_at: memeData.created_at,
-            tags: memeData.tags || [],
-            battle_id: memeData.battle_id,
-            is_battle_submission: !!memeData.is_battle_submission
-          };
-          
           memeTwo = {
-            id: memeRow.id,
-            prompt: memeRow.prompt || '',
-            prompt_id: memeRow.prompt_id || undefined,
-            imageUrl: memeRow.image_url,
-            ipfsCid: memeRow.ipfs_cid || '',
-            caption: memeRow.caption,
-            creatorId: memeRow.creator_id,
-            votes: memeRow.votes,
-            createdAt: new Date(memeRow.created_at),
-            tags: memeRow.tags || [],
-            isBattleSubmission: memeRow.is_battle_submission,
-            battleId: memeRow.battle_id || undefined
+            id: memeData.id,
+            prompt: memeData.prompt || '',
+            prompt_id: memeData.prompt_id || undefined,
+            imageUrl: memeData.image_url,
+            ipfsCid: memeData.ipfs_cid || '',
+            caption: memeData.caption,
+            creatorId: memeData.creator_id,
+            votes: memeData.votes,
+            createdAt: new Date(memeData.created_at),
+            tags: memeData.tags || [],
+            isBattleSubmission: !!memeData.is_battle_submission,
+            battleId: memeData.battle_id || undefined
           };
         }
       }
 
-      // Create battle object
-      transformedBattles.push({
+      // Create battle object directly using our defined types
+      battles.push({
         id: battleRow.id,
         promptId: battleRow.prompt_id || '',
         memeOneId: battleRow.meme_one_id,
@@ -483,7 +453,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
       });
     }
 
-    return transformedBattles;
+    return battles;
   } catch (error) {
     console.error('Error in getActiveBattles:', error);
     return [];
