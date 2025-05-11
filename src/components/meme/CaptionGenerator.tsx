@@ -39,7 +39,7 @@ const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({
     
     toast({
       title: "Generating captions...",
-      description: "This might take a few seconds with Gemini AI",
+      description: "This might take a few seconds with Gemini 2.0",
     });
     
     handleGenerateCaptions();

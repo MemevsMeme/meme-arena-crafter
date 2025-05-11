@@ -30,7 +30,7 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
     
     toast({
       title: "Generating image...",
-      description: "This might take up to 45 seconds with Gemini AI",
+      description: "This might take up to 45 seconds with Google's Imagen model",
     });
     
     handleGenerateImage();
@@ -52,7 +52,7 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
       {isGeneratingAIImage && (
         <div className="flex flex-col items-center justify-center p-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-purple"></div>
-          <p className="mt-4 text-sm text-muted-foreground">Creating your meme image with Gemini AI...</p>
+          <p className="mt-4 text-sm text-muted-foreground">Creating your meme image with Google's Imagen...</p>
           <p className="mt-2 text-xs text-muted-foreground">This might take up to 45 seconds</p>
         </div>
       )}

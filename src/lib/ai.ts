@@ -41,7 +41,7 @@ export const generateCaption = async (prompt: string, style: string): Promise<st
   }
 };
 
-// Using Gemini 2.0 image generation model
+// Using Google's Imagen model through the Gemini API
 export const generateMemeImage = async (prompt: string, style: string = 'meme'): Promise<string | null> => {
   console.log(`Generating AI image for prompt: "${prompt}" with style: ${style}`);
   
