@@ -41,7 +41,7 @@ export const generateCaption = async (prompt: string, style: string): Promise<st
   }
 };
 
-// Using Google's Imagen model through the Gemini API
+// Using Gemini 2.0 Flash Preview Image Generation model
 export const generateMemeImage = async (prompt: string, style: string = 'meme'): Promise<string | null> => {
   console.log(`Generating AI image for prompt: "${prompt}" with style: ${style}`);
   
@@ -70,7 +70,7 @@ export const generateMemeImage = async (prompt: string, style: string = 'meme'):
   }
 };
 
-// Function to analyze meme images
+// Function to analyze meme images using Gemini 2.0 Pro Vision
 export const analyzeMemeImage = async (imageUrl: string): Promise<string[]> => {
   if (!imageUrl) {
     console.error('No image URL provided');

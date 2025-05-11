@@ -79,7 +79,7 @@ serve(async (req) => {
 
       console.log(`Sending to Gemini API with formatted prompt: "${formattedPrompt}"`);
       
-      // Use Gemini 2.0 model
+      // Use Gemini 2.0 Flash model for text generation
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -168,7 +168,6 @@ serve(async (req) => {
       let fullImageUrl = imageUrl;
       if (imageUrl.startsWith('/')) {
         // This is a relative URL, we need to make it absolute
-        // Use origin from request if available, or fallback to a default
         try {
           const url = new URL(req.url);
           fullImageUrl = `${url.origin}${imageUrl}`;
@@ -202,7 +201,7 @@ serve(async (req) => {
       
       console.log('Image converted to base64 for processing');
       
-      // Use Gemini 2.0 model
+      // Use Gemini 2.0 Pro Vision model for image analysis
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro-vision:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -304,11 +303,11 @@ serve(async (req) => {
       
       console.log(`Sending to Gemini for image generation with prompt: "${formattedPrompt}"`);
       
-      // Updated API endpoint for gemini-pro-vision model
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagegeneration@002:generateContent?key=${GEMINI_API_KEY}`;
+      // Use Gemini 2.0 Flash Preview Image Generation model for image generation
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${GEMINI_API_KEY}`;
       console.log(`Using API URL: ${apiUrl}`);
       
-      // Using the correct format for the Imagen model
+      // Using the correct format for Gemini 2.0 Flash Preview Image Generation
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -327,7 +326,7 @@ serve(async (req) => {
             temperature: 0.7,
             topK: 32,
             topP: 1,
-            responseMimeType: "image/png",
+            responseModalities: ["TEXT", "IMAGE"]
           }
         })
       });
@@ -361,9 +360,8 @@ serve(async (req) => {
         // Debug the parts to see their structure
         console.log('Parts structure:', JSON.stringify(content.parts.map(p => Object.keys(p))));
         
-        // Look for the image part in the response (format is different in Imagen)
-        const imagePart = content.parts.find(part => 
-          part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/'));
+        // Look for the image part in the response (format is different in Gemini 2.0)
+        const imagePart = content.parts.find(part => part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/'));
         
         if (!imagePart || !imagePart.inlineData) {
           console.error('No image data found in the response');
