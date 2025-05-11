@@ -40,49 +40,34 @@ export const generateCaption = async (prompt: string, style: string): Promise<st
   }
 };
 
-// Using mock image generation since the Supabase function seems to be failing
 export const generateMemeImage = async (prompt: string, style: string = 'meme'): Promise<string | null> => {
   console.log(`Generating AI image for prompt: "${prompt}" with style: ${style}`);
   
   try {
-    // First attempt with Supabase function
-    try {
-      const { data, error } = await supabase.functions.invoke('gemini-ai', {
-        body: {
-          type: 'generate-image',
-          prompt,
-          style
-        }
-      });
-  
-      if (!error && data && data.imageData) {
-        console.log('Image data received successfully. Data starts with:', data.imageData.substring(0, 50) + '...');
-        return data.imageData; // This will be a base64 data URL
+    // Call the Supabase function for image generation
+    const { data, error } = await supabase.functions.invoke('gemini-ai', {
+      body: {
+        type: 'generate-image',
+        prompt,
+        style
       }
-    } catch (functionError) {
-      console.error('Supabase function error:', functionError);
-      // Continue to fallback
+    });
+
+    if (error) {
+      console.error('Supabase function error:', error);
+      throw error;
     }
-    
-    // Fallback to local placeholder images if the function fails
-    console.log('Using fallback image due to function error');
-    
-    // Use one of the available local meme templates as a fallback
-    const templates = [
-      '/Drake-Hotline-Bling.jpg',
-      '/Distracted-Boyfriend.jpg',
-      '/Two-Buttons.jpg',
-      '/expanding brain.png',
-      '/Change-My-Mind-tilt-corrected-meme-2.jpg'
-    ];
-    
-    // Select a random template
-    const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
-    return randomTemplate;
-    
+
+    if (data && data.imageData) {
+      console.log('Image data received successfully. Data starts with:', data.imageData.substring(0, 50) + '...');
+      return data.imageData; // This will be a base64 data URL
+    } else {
+      console.error('No image data received from API');
+      throw new Error('No image data received');
+    }
   } catch (error) {
     console.error('Error in generateMemeImage:', error);
-    return '/placeholder.svg'; // Default fallback
+    throw error; // Let the component handle the error
   }
 };
 

@@ -21,24 +21,20 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
   handleGenerateImage,
   onSaveAsTemplate
 }) => {
-  const [isLocalFallback, setIsLocalFallback] = useState(false);
-  
   const handleImageGeneration = () => {
     if (!promptText) {
-      toast("Error: Please enter a prompt text first");
+      toast("Please enter a prompt text first");
       return;
     }
     
-    toast("Generating image... Using local templates as fallback due to API limitations");
-    
-    setIsLocalFallback(false);
+    toast("Generating image with AI...");
     handleGenerateImage();
   };
 
   const handleSaveAsTemplate = () => {
     if (generatedImage && onSaveAsTemplate) {
       onSaveAsTemplate(generatedImage, promptText);
-      toast("Success: Image saved as template");
+      toast("Image saved as template");
     }
   };
 
@@ -85,25 +81,15 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
             />
           </div>
           
-          {generatedImage.startsWith('data:') ? (
-            // Only show save template button for actual AI generated images
-            onSaveAsTemplate && (
-              <Button 
-                onClick={handleSaveAsTemplate} 
-                variant="outline" 
-                className="mt-2"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Save as Template
-              </Button>
-            )
-          ) : (
-            <Alert variant="destructive" className="mt-2">
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              <AlertDescription className="text-xs">
-                Using a template image as fallback due to AI service limitations
-              </AlertDescription>
-            </Alert>
+          {generatedImage.startsWith('data:') && onSaveAsTemplate && (
+            <Button 
+              onClick={handleSaveAsTemplate} 
+              variant="outline" 
+              className="mt-2"
+            >
+              <Save className="mr-2 h-4 w-4" />
+              Save as Template
+            </Button>
           )}
         </div>
       )}

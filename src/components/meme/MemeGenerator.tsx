@@ -179,7 +179,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave, defaultEditMode = fa
       console.error('Error generating image:', error);
       toast({
         title: "Error",
-        description: "Failed to generate image",
+        description: "Failed to generate image. API may be temporarily unavailable.",
         variant: "destructive"
       });
     } finally {
