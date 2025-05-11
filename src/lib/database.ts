@@ -83,18 +83,7 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
     if (!result.data) return null;
     
     // Cast to a simple object to break type recursion
-    const row = result.data as {
-      id: string;
-      text: string;
-      theme: string | null;
-      tags: string[];
-      active: boolean;
-      start_date: string;
-      end_date: string;
-      description: string | null;
-      creator_id: string | null;
-      is_community: boolean | null;
-    };
+    const row = result.data as RawPromptRow;
     
     return {
       id: row.id,
@@ -130,17 +119,7 @@ export const getProfile = async (userId: string): Promise<User | null> => {
     if (!result.data) return null;
     
     // Break type recursion by using a simple object
-    const profile = result.data as {
-      id: string;
-      username: string;
-      avatar_url: string | null;
-      meme_streak: number;
-      wins: number;
-      losses: number;
-      level: number;
-      xp: number;
-      created_at: string;
-    };
+    const profile = result.data as RawProfileRow;
     
     return {
       id: profile.id,
@@ -184,7 +163,7 @@ export const updateProfile = async (userId: string, updates: any): Promise<User 
 
     if (!result.data || result.data.length === 0) return null;
     
-    const data = result.data[0];
+    const data = result.data[0] as RawProfileRow;
     
     // Return transformed profile with complete disconnect from DB types
     return {
@@ -223,7 +202,7 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
     const memes: Meme[] = [];
     
     // Process each meme individually to avoid type recursion
-    for (const item of result.data) {
+    for (const item of result.data as RawMemeRow[]) {
       memes.push({
         id: item.id,
         prompt: item.prompt || '',
@@ -274,7 +253,7 @@ export const createProfile = async (profile: {
 
     if (!result.data || result.data.length === 0) return null;
     
-    const data = result.data[0];
+    const data = result.data[0] as RawProfileRow;
     
     // Clean return type with no dependency on Supabase types
     return {
@@ -328,7 +307,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
     const transformedBattles: Battle[] = [];
     
     // Process each battle individually
-    for (const rawBattle of battlesData) {
+    for (const rawBattle of battlesData as RawBattleRow[]) {
       // Create battle object
       const battleRow: RawBattleRow = {
         id: rawBattle.id,
@@ -354,7 +333,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
           
         if (!memeResult.error && memeResult.data) {
-          const memeData = memeResult.data;
+          const memeData = memeResult.data as RawMemeRow;
           
           memeOne = {
             id: memeData.id,
@@ -383,7 +362,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
           
         if (!memeResult.error && memeResult.data) {
-          const memeData = memeResult.data;
+          const memeData = memeResult.data as RawMemeRow;
           
           memeTwo = {
             id: memeData.id,
@@ -452,7 +431,7 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
     const prompts: Prompt[] = [];
     
     // Process each item individually to avoid type recursion
-    for (const item of result.data) {
+    for (const item of result.data as RawPromptRow[]) {
       prompts.push({
         id: item.id,
         text: item.text,
@@ -521,7 +500,7 @@ export const createMeme = async (meme: {
       throw new Error('No data returned from database after inserting meme');
     }
     
-    const data = result.data[0];
+    const data = result.data[0] as RawMemeRow;
     
     // Use explicitly typed object to break circular references
     return {
