@@ -306,14 +306,11 @@ const MemeGenerator = ({ promptText = '', promptId, onSave, defaultEditMode = fa
       return;
     }
     
-    // Check if we have either simple caption or text elements
-    const hasCaption = !!caption;
-    const hasTextElements = textPositions.some(pos => !!pos.text);
-    
-    if ((!hasCaption && !hasTextElements) || (!activeTab.includes('template') && !uploadedImage && !generatedImage)) {
+    // Check if we have an image but don't require caption
+    if ((!activeTab.includes('template') && !uploadedImage && !generatedImage)) {
       toast({
         title: "Error",
-        description: "Please add both image and caption/text",
+        description: "Please select or generate an image first",
         variant: "destructive"
       });
       return;
@@ -393,7 +390,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave, defaultEditMode = fa
       const memeTitle = isEditMode && textPositions.length > 0 && textPositions[0].text
         ? (textPositions[0].text.substring(0, 30) || 'Untitled') + '...'
         : (caption ? (caption.substring(0, 30) + '...') : 'Untitled Meme');
-        
+      
       const ipfsResult = await uploadFileToIPFS(memeFile, `Meme: ${memeTitle}`);
       setIsUploadingToIPFS(false);
       
@@ -401,7 +398,7 @@ const MemeGenerator = ({ promptText = '', promptId, onSave, defaultEditMode = fa
       
       console.log('IPFS upload result:', ipfsResult);
       
-      // Get the final caption text (combine all text positions if in edit mode)
+      // Get the final caption text (combine all text positions if in edit mode or use empty string if no text)
       const finalCaption = isEditMode && textPositions.length > 0
         ? textPositions.map(pos => pos.text || '').filter(Boolean).join('\n')
         : caption || '';

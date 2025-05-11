@@ -34,6 +34,7 @@ const SaveActions: React.FC<SaveActionsProps> = ({
         onClick={handleSaveMeme}
         disabled={isCreatingMeme || isUploadingToIPFS}
         className="flex-1"
+        title="Create meme with or without text"
       >
         {isCreatingMeme ? (
           <>

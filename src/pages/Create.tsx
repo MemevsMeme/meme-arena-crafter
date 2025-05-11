@@ -119,7 +119,7 @@ const Create = () => {
               <ul className="space-y-3 text-sm">
                 <li className="flex gap-2">
                   <span className="text-brand-purple font-bold">1.</span>
-                  <span>Keep your captions concise and punchy</span>
+                  <span>Keep your captions concise and punchy (or leave blank for image-only memes)</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-brand-purple font-bold">2.</span>
