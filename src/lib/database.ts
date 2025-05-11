@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Caption, Meme, Prompt, Battle, User } from './types';
 
@@ -269,20 +268,21 @@ export const createProfile = async (profile: {
 export const getActiveBattles = async (limit: number = 20, offset: number = 0, filter: string = 'all'): Promise<Battle[]> => {
   try {
     // First, get battles without JOIN to avoid type recursion issues
-    let battleQuery = supabase
+    let query = supabase
       .from('battles')
-      .select()
+      .select('*')
       .eq('status', 'active')
       .order('start_time', { ascending: false })
       .range(offset, offset + limit - 1);
     
     if (filter === 'community') {
-      battleQuery = battleQuery.eq('is_community', true);
+      query = query.eq('is_community', true);
     } else if (filter === 'official') {
-      battleQuery = battleQuery.eq('is_community', false);
+      query = query.eq('is_community', false);
     }
 
-    const { data: battlesData, error: battlesError } = await battleQuery;
+    // Execute the query as a plain object to avoid TypeScript type inference issues
+    const { data: battlesData, error: battlesError } = await query;
 
     if (battlesError) {
       console.error('Error fetching active battles:', battlesError);
@@ -296,21 +296,20 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
     const transformedBattles: Battle[] = [];
     
     // Process each battle separately and completely break type chains
-    for (const battle of battlesData) {
-      // Use explicit "any" typing to break circular references
-      const battleRow = battle as any;
+    for (const rawBattle of battlesData) {
+      // Cast to any to avoid type inference
+      const battleRow = rawBattle as any;
       
       // Get meme one if it exists
       let memeOne: Meme | undefined;
       if (battleRow.meme_one_id) {
         const { data: memeOneData } = await supabase
           .from('memes')
-          .select()
+          .select('*')
           .eq('id', battleRow.meme_one_id)
           .single();
         
         if (memeOneData) {
-          // Use explicit "any" typing
           const memeRow = memeOneData as any;
           
           memeOne = {
@@ -335,12 +334,11 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
       if (battleRow.meme_two_id) {
         const { data: memeTwoData } = await supabase
           .from('memes')
-          .select()
+          .select('*')
           .eq('id', battleRow.meme_two_id)
           .single();
         
         if (memeTwoData) {
-          // Use explicit "any" typing
           const memeRow = memeTwoData as any;
           
           memeTwo = {
@@ -387,9 +385,10 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
 
 export const getPrompts = async (limit: number = 10, offset: number = 0, isCommunity: boolean = false): Promise<Prompt[]> => {
   try {
+    // Use a more explicit query approach to avoid type inference issues
     const { data, error } = await supabase
       .from('prompts')
-      .select()
+      .select('*')
       .eq('active', true)
       .eq('is_community', isCommunity)
       .order('start_date', { ascending: false })
@@ -402,21 +401,26 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
 
     if (!data || !data.length) return [];
     
-    // Complete type disconnect to avoid circular references
-    return data.map((item: any) => {
-      return {
-        id: item.id,
-        text: item.text,
-        theme: item.theme || '',
-        tags: item.tags || [],
-        active: item.active,
-        startDate: new Date(item.start_date),
-        endDate: new Date(item.end_date),
-        description: item.description || undefined,
-        creator_id: item.creator_id || undefined,
-        is_community: item.is_community === true
-      };
-    });
+    // Map data to Prompt objects without relying on TypeScript type inference
+    const prompts: Prompt[] = [];
+    
+    for (const item of data) {
+      const rawItem = item as any;
+      prompts.push({
+        id: rawItem.id,
+        text: rawItem.text,
+        theme: rawItem.theme || '',
+        tags: rawItem.tags || [],
+        active: rawItem.active,
+        startDate: new Date(rawItem.start_date),
+        endDate: new Date(rawItem.end_date),
+        description: rawItem.description || undefined,
+        creator_id: rawItem.creator_id || undefined,
+        is_community: rawItem.is_community === true
+      });
+    }
+    
+    return prompts;
   } catch (error) {
     console.error('Error in getPrompts:', error);
     return [];
