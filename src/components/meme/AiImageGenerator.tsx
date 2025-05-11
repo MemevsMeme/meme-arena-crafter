@@ -25,18 +25,11 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
   
   const handleImageGeneration = () => {
     if (!promptText) {
-      toast({
-        title: "Error",
-        description: "Please enter a prompt text first",
-        variant: "destructive"
-      });
+      toast("Error: Please enter a prompt text first");
       return;
     }
     
-    toast({
-      title: "Generating image...",
-      description: "Using local templates as fallback due to API limitations",
-    });
+    toast("Generating image... Using local templates as fallback due to API limitations");
     
     setIsLocalFallback(false);
     handleGenerateImage();
@@ -45,10 +38,7 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
   const handleSaveAsTemplate = () => {
     if (generatedImage && onSaveAsTemplate) {
       onSaveAsTemplate(generatedImage, promptText);
-      toast({
-        title: "Success",
-        description: "Image saved as template"
-      });
+      toast("Success: Image saved as template");
     }
   };
 
@@ -108,7 +98,7 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
               </Button>
             )
           ) : (
-            <Alert variant="warning" className="mt-2">
+            <Alert variant="destructive" className="mt-2">
               <AlertTriangle className="h-4 w-4 mr-2" />
               <AlertDescription className="text-xs">
                 Using a template image as fallback due to AI service limitations

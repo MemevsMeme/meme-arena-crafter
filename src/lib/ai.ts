@@ -115,7 +115,11 @@ export const analyzeMemeImage = async (imageUrl: string): Promise<string[]> => {
     }
     
     // Fallback tags if we don't get expected data format
-    return ['funny', 'viral', 'trending', prompt ? prompt.toLowerCase() : 'meme'];
+    const fallbackTags = ['funny', 'viral', 'trending'];
+    if (prompt && typeof prompt === 'string') {
+      fallbackTags.push(prompt.toLowerCase());
+    }
+    return fallbackTags;
   } catch (error) {
     console.error('Error in analyzeMemeImage:', error);
     
