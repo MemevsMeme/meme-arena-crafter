@@ -1,20 +1,68 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Caption, Meme, Prompt, Battle, User } from './types';
-import { Database } from '@/integrations/supabase/types';
 
-// Type for Supabase database row
-type PromptRow = Database['public']['Tables']['prompts']['Row'];
-type MemeRow = Database['public']['Tables']['memes']['Row'];
-type BattleRow = Database['public']['Tables']['battles']['Row'];
-type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+// Simple type definitions to avoid deep recursion
+// Instead of using the full Database types which may cause circular references
+type SimplePromptRow = {
+  id: string;
+  text: string;
+  theme: string | null;
+  tags: string[];
+  active: boolean;
+  start_date: string;
+  end_date: string;
+  description?: string | null;
+  creator_id?: string | null;
+  is_community?: boolean | null;
+};
+
+type SimpleMemeRow = {
+  id: string;
+  prompt: string | null;
+  prompt_id: string | null;
+  image_url: string;
+  ipfs_cid: string | null;
+  caption: string;
+  creator_id: string;
+  votes: number;
+  created_at: string;
+  tags: string[];
+  battle_id?: string | null;
+  is_battle_submission?: boolean | null;
+};
+
+type SimpleBattleRow = {
+  id: string;
+  prompt_id: string | null;
+  meme_one_id: string;
+  meme_two_id: string;
+  winner_id: string | null;
+  vote_count: number;
+  start_time: string;
+  end_time: string;
+  status: string;
+  creator_id?: string | null;
+  is_community?: boolean | null;
+};
+
+type SimpleProfileRow = {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  meme_streak: number;
+  wins: number;
+  losses: number;
+  level: number;
+  xp: number;
+  created_at: string;
+};
 
 export const getActivePrompt = async (): Promise<Prompt | null> => {
   try {
     const today = new Date();
     const formattedDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
 
-    // Use explicit type annotation and avoid deep type recursion
+    // Use our simplified type instead of the deep Database type
     const { data, error } = await supabase
       .from('prompts')
       .select()
@@ -29,8 +77,8 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
     // Transform data to match Prompt interface with explicit null/undefined checks
     if (!data) return null;
     
-    // Cast to any to avoid type errors since we're manually checking properties
-    const row = data as any;
+    // Use our simplified type for more straightforward handling
+    const row = data as unknown as SimplePromptRow;
     
     return {
       id: row.id,
@@ -65,16 +113,19 @@ export const getProfile = async (userId: string): Promise<User | null> => {
 
     if (!data) return null;
     
+    // Cast to our simplified type
+    const profile = data as unknown as SimpleProfileRow;
+    
     return {
-      id: data.id,
-      username: data.username,
-      avatarUrl: data.avatar_url || '',
-      memeStreak: data.meme_streak,
-      wins: data.wins,
-      losses: data.losses,
-      level: data.level,
-      xp: data.xp,
-      createdAt: new Date(data.created_at)
+      id: profile.id,
+      username: profile.username,
+      avatarUrl: profile.avatar_url || '',
+      memeStreak: profile.meme_streak,
+      wins: profile.wins,
+      losses: profile.losses,
+      level: profile.level,
+      xp: profile.xp,
+      createdAt: new Date(profile.created_at)
     };
   } catch (error) {
     console.error('Error in getProfile:', error);
@@ -142,8 +193,8 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
     
     // Transform data to match Meme interface - safely handling potentially missing fields
     return data.map(meme => {
-      // Cast to any to safely access potentially missing properties
-      const memeData = meme as any;
+      // Cast to our simplified type
+      const memeData = meme as unknown as SimpleMemeRow;
       
       return {
         id: memeData.id,
@@ -157,7 +208,7 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
         createdAt: new Date(memeData.created_at),
         tags: memeData.tags || [],
         // Explicitly handle fields that may not exist in older database records
-        isBattleSubmission: memeData.is_battle_submission !== undefined ? Boolean(memeData.is_battle_submission) : false,
+        isBattleSubmission: typeof memeData.is_battle_submission !== undefined ? Boolean(memeData.is_battle_submission) : false,
         battleId: memeData.battle_id || undefined
       };
     });
@@ -244,8 +295,8 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
     
     // Process each battle separately
     for (const battle of battlesData) {
-      // Cast to any to safely access potentially missing properties
-      const battleData = battle as any;
+      // Cast to our simplified type
+      const battleData = battle as unknown as SimpleBattleRow;
       
       // Get meme one if it exists
       let memeOne: Meme | undefined;
@@ -257,8 +308,8 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
         
         if (memeOneData) {
-          // Cast to access potentially missing properties
-          const meme = memeOneData as any;
+          // Cast to our simplified type
+          const meme = memeOneData as unknown as SimpleMemeRow;
           
           // Transform memeOneData with safe handling of potentially missing fields
           memeOne = {
@@ -290,8 +341,8 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
         
         if (memeTwoData) {
-          // Cast to access potentially missing properties
-          const meme = memeTwoData as any;
+          // Cast to our simplified type
+          const meme = memeTwoData as unknown as SimpleMemeRow;
           
           memeTwo = {
             id: meme.id,
@@ -359,8 +410,8 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
     
     // Transform data safely with explicit checks for fields that may be missing
     return data.map(prompt => {
-      // Cast to any to safely access potentially missing properties
-      const promptData = prompt as any;
+      // Cast to our simplified type
+      const promptData = prompt as unknown as SimplePromptRow;
       
       return {
         id: promptData.id,
@@ -430,8 +481,8 @@ export const createMeme = async (meme: {
       throw new Error('No data returned from database after inserting meme');
     }
     
-    // Cast to any to safely access potentially missing properties
-    const memeData = data as any;
+    // Cast to our simplified type
+    const memeData = data as unknown as SimpleMemeRow;
     
     // Transform the database response to match the expected format with camelCase properties
     return {
