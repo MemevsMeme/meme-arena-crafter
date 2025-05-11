@@ -909,4 +909,4 @@ const MemeGenerator = ({ promptText = '', promptId, onSave }: MemeGeneratorProps
           <div className="max-h-80 overflow-hidden flex justify-center rounded-lg border">
             <canvas 
               ref={canvasRef} 
-              className={`max-w-
+              className="max-w-
