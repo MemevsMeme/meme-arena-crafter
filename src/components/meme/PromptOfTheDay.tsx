@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
-import { MOCK_PROMPTS } from '@/lib/constants';
 import { getTodaysChallenge } from '@/lib/dailyChallenges';
 
 interface PromptOfTheDayProps {
@@ -16,7 +15,8 @@ const PromptOfTheDay = ({
   prompt,
   isLoading = false 
 }: PromptOfTheDayProps) => {
-  const defaultPrompt = getTodaysChallenge(); // Use our daily challenge instead of mock data
+  // Always get a default prompt from our local challenges in case the database query fails
+  const defaultPrompt = getTodaysChallenge();
 
   if (isLoading) {
     return (
@@ -35,10 +35,11 @@ const PromptOfTheDay = ({
     );
   }
 
-  // If no prompt is provided, use a default placeholder
+  // If no prompt is provided from the database, use our local default
   const promptToShow = prompt || defaultPrompt;
 
   if (!promptToShow) {
+    // This should rarely happen since we have a local fallback
     return (
       <div className="prompt-card bg-muted">
         <h3 className="text-lg font-medium mb-1">No Active Prompt</h3>

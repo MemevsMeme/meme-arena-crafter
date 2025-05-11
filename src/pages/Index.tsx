@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MOCK_MEMES, MOCK_BATTLES, MOCK_PROMPTS } from '@/lib/constants';
 import { Battle, Meme, Prompt } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
+import { getTodaysChallenge } from '@/lib/dailyChallenges';
 
 const Index = () => {
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
@@ -31,17 +32,22 @@ const Index = () => {
           .eq('active', true)
           .order('start_date', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle(); // Use maybeSingle instead of single
           
         if (error) {
           console.error('Error fetching active prompt:', error);
-          return null;
+          return getTodaysChallenge(); // Fallback to local challenge
+        }
+        
+        if (!data) {
+          console.log('No active prompt found, using local challenge');
+          return getTodaysChallenge(); // Fallback to local challenge
         }
         
         return data as unknown as Prompt;
       } catch (error) {
         console.error('Failed to fetch active prompt:', error);
-        return null;
+        return getTodaysChallenge(); // Fallback to local challenge
       }
     },
   });
@@ -56,7 +62,10 @@ const Index = () => {
           <div className="lg:col-span-1 flex flex-col gap-6">
             <section>
               <h2 className="text-2xl font-heading mb-3">Today's Challenge</h2>
-              <PromptOfTheDay prompt={activePrompt || MOCK_PROMPTS[0]} isLoading={promptLoading} />
+              <PromptOfTheDay 
+                prompt={activePrompt || MOCK_PROMPTS[0]} 
+                isLoading={promptLoading} 
+              />
               
               <div className="mt-4">
                 <h3 className="font-heading text-lg mb-2">Previous Prompts</h3>

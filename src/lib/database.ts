@@ -73,14 +73,17 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
       .eq('active', true)
       .lte('start_date', today.toISOString())
       .gte('end_date', today.toISOString())
-      .single();
+      .maybeSingle(); // Use maybeSingle() instead of single() to avoid errors when no row is found
     
     if (error) {
       console.error('Error fetching active prompt:', error);
       return null;
     }
 
-    if (!data) return null;
+    if (!data) {
+      console.log('No active prompt found in database');
+      return null;
+    }
     
     // Convert to our app model
     return {

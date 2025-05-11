@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -7,6 +8,7 @@ import { getActivePrompt } from '@/lib/database';
 import { Prompt } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { getTodaysChallenge } from '@/lib/dailyChallenges';
 
 const Create = () => {
   const navigate = useNavigate();
@@ -22,14 +24,28 @@ const Create = () => {
     const fetchActivePrompt = async () => {
       setLoading(true);
       try {
+        // Try to get the prompt from the database first
         const prompt = await getActivePrompt();
-        setActivePrompt(prompt);
+        
+        if (prompt) {
+          setActivePrompt(prompt);
+        } else {
+          // If no prompt from database, use our daily challenge as fallback
+          const fallbackPrompt = getTodaysChallenge();
+          console.log('Using fallback prompt:', fallbackPrompt);
+          setActivePrompt(fallbackPrompt);
+        }
       } catch (error) {
         console.error('Error fetching active prompt:', error);
+        // Use the fallback prompt on error
+        const fallbackPrompt = getTodaysChallenge();
+        console.log('Using fallback prompt after error:', fallbackPrompt);
+        setActivePrompt(fallbackPrompt);
+        
         toast({
-          title: "Error",
-          description: "Failed to load today's challenge",
-          variant: "destructive"
+          title: "Notice",
+          description: "Using today's default challenge",
+          variant: "default"
         });
       } finally {
         setLoading(false);
@@ -105,7 +121,7 @@ const Create = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <MemeGenerator 
-              promptText={activePrompt?.text || ''} 
+              promptText={activePrompt?.text || 'Create a funny meme!'} 
               promptId={activePrompt?.id}
               onSave={handleMemeSave}
               defaultEditMode={defaultEditMode}
