@@ -1,5 +1,141 @@
 import { Battle, Prompt, Meme, User } from './types';
 
+// Application name
+export const APP_NAME = "MemeVsMeme";
+
+// Caption style options
+export const CAPTION_STYLES = [
+  { id: "funny", name: "Funny" },
+  { id: "dark", name: "Dark Humor" },
+  { id: "wholesome", name: "Wholesome" },
+  { id: "sarcastic", name: "Sarcastic" },
+  { id: "nerdy", name: "Nerdy" },
+  { id: "dad-joke", name: "Dad Joke" }
+];
+
+// Meme templates
+export const MEME_TEMPLATES = [
+  {
+    id: "drake",
+    name: "Drake Hotline Bling",
+    url: "/Drake-Hotline-Bling.jpg",
+    textPositions: [
+      {
+        x: 50,
+        y: 25,
+        fontSize: 24,
+        maxWidth: 200,
+        alignment: "center"
+      },
+      {
+        x: 50,
+        y: 75,
+        fontSize: 24,
+        maxWidth: 200,
+        alignment: "center"
+      }
+    ]
+  },
+  {
+    id: "distracted-boyfriend",
+    name: "Distracted Boyfriend",
+    url: "/Distracted-Boyfriend.jpg",
+    textPositions: [
+      {
+        x: 25,
+        y: 15,
+        fontSize: 20,
+        maxWidth: 150,
+        alignment: "center"
+      },
+      {
+        x: 50,
+        y: 15,
+        fontSize: 20,
+        maxWidth: 150,
+        alignment: "center"
+      },
+      {
+        x: 75,
+        y: 15,
+        fontSize: 20,
+        maxWidth: 150,
+        alignment: "center"
+      }
+    ]
+  },
+  {
+    id: "two-buttons",
+    name: "Two Buttons",
+    url: "/Two-Buttons.jpg",
+    textPositions: [
+      {
+        x: 30,
+        y: 12,
+        fontSize: 16,
+        maxWidth: 100,
+        alignment: "center"
+      },
+      {
+        x: 70,
+        y: 12,
+        fontSize: 16,
+        maxWidth: 100,
+        alignment: "center"
+      }
+    ]
+  },
+  {
+    id: "change-my-mind",
+    name: "Change My Mind",
+    url: "/Change-My-Mind-tilt-corrected-meme-2.jpg",
+    textPositions: [
+      {
+        x: 50,
+        y: 25,
+        fontSize: 24,
+        maxWidth: 300,
+        alignment: "center"
+      }
+    ]
+  },
+  {
+    id: "expanding-brain",
+    name: "Expanding Brain",
+    url: "/expanding brain.png",
+    textPositions: [
+      {
+        x: 75,
+        y: 12.5,
+        fontSize: 16,
+        maxWidth: 150,
+        alignment: "center"
+      },
+      {
+        x: 75,
+        y: 37.5,
+        fontSize: 16,
+        maxWidth: 150,
+        alignment: "center"
+      },
+      {
+        x: 75,
+        y: 62.5,
+        fontSize: 16,
+        maxWidth: 150,
+        alignment: "center"
+      },
+      {
+        x: 75,
+        y: 87.5,
+        fontSize: 16,
+        maxWidth: 150,
+        alignment: "center"
+      }
+    ]
+  }
+];
+
 // Mock data for users
 export const MOCK_USERS: User[] = [
   {
