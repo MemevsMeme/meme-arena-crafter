@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -42,7 +43,7 @@ const Create = () => {
         
         if (prompt) {
           console.log('Active prompt from DB:', prompt);
-          setActivePrompt(prompt);
+          setActivePrompt(prompt); // Now setting the resolved value, not a Promise
         } else {
           // If no prompt from database, use our daily challenge as fallback
           const fallbackPrompt = getTodaysChallenge();
