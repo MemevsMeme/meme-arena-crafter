@@ -8,11 +8,10 @@ import MemeCard from '@/components/meme/MemeCard';
 import BattleCard from '@/components/battle/BattleCard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Battle, Meme, Prompt } from '@/lib/types';
 import { getActivePrompt, getActiveBattles, getTrendingMemes, getNewestMemes } from '@/lib/database';
-import { getTodaysChallenge } from '@/lib/dailyChallenges';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { getFallbackChallenge } from '@/lib/dailyChallenges';
 
 const Index = () => {
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
@@ -28,13 +27,13 @@ const Index = () => {
         
         if (!prompt) {
           console.log('No active prompt found, using local challenge');
-          return getTodaysChallenge(); // Fallback to local challenge
+          return getFallbackChallenge(); // Fallback to local challenge
         }
         
         return prompt;
       } catch (error) {
         console.error('Failed to fetch active prompt:', error);
-        return getTodaysChallenge(); // Fallback to local challenge
+        return getFallbackChallenge(); // Fallback to local challenge
       }
     },
   });

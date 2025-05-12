@@ -80,10 +80,38 @@ export type Database = {
           },
         ]
       }
+      daily_challenges: {
+        Row: {
+          created_at: string | null
+          day_of_year: number
+          id: string
+          tags: string[] | null
+          text: string
+          theme: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_year: number
+          id?: string
+          tags?: string[] | null
+          text: string
+          theme?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          day_of_year?: number
+          id?: string
+          tags?: string[] | null
+          text?: string
+          theme?: string | null
+        }
+        Relationships: []
+      }
       memes: {
         Row: {
           battle_id: string | null
           caption: string
+          challenge_day: number | null
           created_at: string
           creator_id: string
           id: string
@@ -98,6 +126,7 @@ export type Database = {
         Insert: {
           battle_id?: string | null
           caption: string
+          challenge_day?: number | null
           created_at?: string
           creator_id: string
           id?: string
@@ -112,6 +141,7 @@ export type Database = {
         Update: {
           battle_id?: string | null
           caption?: string
+          challenge_day?: number | null
           created_at?: string
           creator_id?: string
           id?: string
@@ -180,6 +210,7 @@ export type Database = {
         Row: {
           active: boolean
           creator_id: string | null
+          daily_challenge_id: string | null
           description: string | null
           end_date: string
           id: string
@@ -192,6 +223,7 @@ export type Database = {
         Insert: {
           active?: boolean
           creator_id?: string | null
+          daily_challenge_id?: string | null
           description?: string | null
           end_date?: string
           id?: string
@@ -204,6 +236,7 @@ export type Database = {
         Update: {
           active?: boolean
           creator_id?: string | null
+          daily_challenge_id?: string | null
           description?: string | null
           end_date?: string
           id?: string
@@ -213,7 +246,15 @@ export type Database = {
           text?: string
           theme?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "prompts_daily_challenge_id_fkey"
+            columns: ["daily_challenge_id"]
+            isOneToOne: false
+            referencedRelation: "daily_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       votes: {
         Row: {

@@ -1,7 +1,8 @@
 
 import { Prompt } from './types';
+import { getDailyChallenge, getCurrentDayOfYear } from './database';
 
-// 365 daily meme challenges that rotate throughout the year
+// 365 daily meme challenges that rotate throughout the year - now used as fallback
 export const DAILY_CHALLENGES: Prompt[] = [
   // January
   {
@@ -331,16 +332,29 @@ export const DAILY_CHALLENGES: Prompt[] = [
 ];
 
 // Function to get today's challenge based on day of year
-export function getTodaysChallenge(): Prompt {
+export async function getTodaysChallenge(): Promise<Prompt> {
+  // First try to get the challenge from the database
+  try {
+    const dbChallenge = await getDailyChallenge();
+    if (dbChallenge) {
+      console.log('Got daily challenge from database:', dbChallenge);
+      return dbChallenge;
+    }
+  } catch (error) {
+    console.error('Error getting daily challenge from database:', error);
+  }
+  
+  // If database query fails, fall back to local challenges
+  return getFallbackChallenge();
+}
+
+// Fallback function that uses local data
+export function getFallbackChallenge(): Prompt {
   // Get current date
   const now = new Date();
   
   // Calculate day of year (0-364)
-  const start = new Date(now.getFullYear(), 0, 0);
-  const diff = (now.getTime() - start.getTime()) + 
-      ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);
-  const oneDay = 1000 * 60 * 60 * 24;
-  const dayOfYear = Math.floor(diff / oneDay) - 1;
+  const dayOfYear = getCurrentDayOfYear();
   
   // Use modulo to ensure we always have a valid index even if array is smaller than 365
   const index = dayOfYear % DAILY_CHALLENGES.length;

@@ -130,7 +130,8 @@ const mapDbMemeToMeme = (dbMeme): Meme => {
     createdAt: dbMeme.created_at,
     tags: dbMeme.tags,
     isBattleSubmission: dbMeme.is_battle_submission,
-    battleId: dbMeme.battle_id
+    battleId: dbMeme.battle_id,
+    challengeDay: dbMeme.challenge_day
   };
 };
 
@@ -242,7 +243,8 @@ export const createMeme = async (meme) => {
       created_at: meme.createdAt || new Date().toISOString(),
       tags: meme.tags || [],
       battle_id: meme.battleId || meme.battle_id,
-      is_battle_submission: meme.isBattleSubmission || meme.is_battle_submission || false
+      is_battle_submission: meme.isBattleSubmission || meme.is_battle_submission || false,
+      challenge_day: meme.challengeDay || getCurrentDayOfYear()
     };
 
     const { data, error } = await supabase
@@ -378,7 +380,8 @@ const mapDbPromptToPrompt = (dbPrompt): Prompt => {
     startDate: new Date(dbPrompt.start_date),
     endDate: new Date(dbPrompt.end_date),
     description: dbPrompt.description,
-    active: dbPrompt.active
+    active: dbPrompt.active,
+    daily_challenge_id: dbPrompt.daily_challenge_id
   };
 };
 
@@ -410,6 +413,62 @@ export const getPromptById = async (promptId: string) => {
  */
 export const getActivePrompt = async () => {
   try {
+    // First try to find a prompt based on today's day of year
+    const dayOfYear = getCurrentDayOfYear();
+    
+    // Start by checking if we have a daily challenge for today
+    const { data: dailyChallengeData, error: dailyChallengeError } = await supabase
+      .from('daily_challenges')
+      .select('*')
+      .eq('day_of_year', dayOfYear)
+      .single();
+    
+    if (dailyChallengeError) {
+      console.error('Error fetching daily challenge:', dailyChallengeError);
+    } else if (dailyChallengeData) {
+      console.log('Found daily challenge for today:', dailyChallengeData);
+      
+      // Check if we already have a prompt linked to this challenge
+      const { data: linkedPromptData, error: linkedPromptError } = await supabase
+        .from('prompts')
+        .select('*')
+        .eq('daily_challenge_id', dailyChallengeData.id)
+        .lt('start_date', new Date().toISOString())
+        .gt('end_date', new Date().toISOString())
+        .single();
+      
+      if (!linkedPromptError && linkedPromptData) {
+        console.log('Found linked prompt:', linkedPromptData);
+        return mapDbPromptToPrompt(linkedPromptData);
+      }
+      
+      // Create a new prompt linked to this challenge
+      const newPrompt = {
+        text: dailyChallengeData.text,
+        theme: dailyChallengeData.theme,
+        tags: dailyChallengeData.tags,
+        active: true,
+        start_date: new Date().toISOString(),
+        end_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+        daily_challenge_id: dailyChallengeData.id,
+        is_community: false
+      };
+      
+      const { data: createdPrompt, error: createError } = await supabase
+        .from('prompts')
+        .insert([newPrompt])
+        .select('*')
+        .single();
+      
+      if (createError) {
+        console.error('Error creating prompt from daily challenge:', createError);
+      } else {
+        console.log('Created new prompt from daily challenge:', createdPrompt);
+        return mapDbPromptToPrompt(createdPrompt);
+      }
+    }
+    
+    // Fallback to normal active prompt check
     const { data, error } = await supabase
       .from('prompts')
       .select('*')
@@ -445,8 +504,9 @@ export const createPrompt = async (prompt) => {
       start_date: prompt.startDate || new Date().toISOString(),
       end_date: prompt.endDate || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       description: prompt.description,
-      creator_id: prompt.creatorId,
-      is_community: prompt.isCommunity || false
+      creator_id: prompt.creatorId || prompt.creator_id,
+      is_community: prompt.isCommunity || prompt.is_community || false,
+      daily_challenge_id: prompt.dailyChallengeId || prompt.daily_challenge_id
     };
 
     const { data, error } = await supabase
@@ -465,6 +525,58 @@ export const createPrompt = async (prompt) => {
     console.error('Error in createPrompt:', error);
     return null;
   }
+};
+
+/**
+ * Get today's daily challenge
+ */
+export const getDailyChallenge = async () => {
+  try {
+    const dayOfYear = getCurrentDayOfYear();
+    
+    const { data, error } = await supabase
+      .from('daily_challenges')
+      .select('*')
+      .eq('day_of_year', dayOfYear)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching daily challenge:', error);
+      return null;
+    }
+    
+    // Transform daily challenge into a prompt format
+    if (data) {
+      return {
+        id: `daily-${data.id}`,
+        text: data.text,
+        theme: data.theme,
+        tags: data.tags || [],
+        active: true,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+        is_community: false,
+        daily_challenge_id: data.id,
+        challengeDay: data.day_of_year
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error in getDailyChallenge:', error);
+    return null;
+  }
+};
+
+/**
+ * Get current day of year (1-366)
+ */
+export const getCurrentDayOfYear = () => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now.getTime() - start.getTime();
+  const oneDay = 1000 * 60 * 60 * 24;
+  return Math.floor(diff / oneDay);
 };
 
 /**
