@@ -2,9 +2,12 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 
+// Update the type definition to make it more specific
+export type BattleFilterType = 'all' | 'official' | 'community';
+
 interface BattleFilterProps {
-  activeFilter: 'all' | 'official' | 'community';
-  onFilterChange: (filter: 'all' | 'official' | 'community') => void;
+  activeFilter: BattleFilterType;
+  onFilterChange: (filter: BattleFilterType) => void;
 }
 
 const BattleFilter: React.FC<BattleFilterProps> = ({ activeFilter, onFilterChange }) => {

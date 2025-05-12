@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Caption, Meme, Prompt, Battle, User } from './types';
 import { Database } from '@/integrations/supabase/types';
+import { BattleFilterType } from '@/components/battle/BattleFilter';
 
 /**
  * This file handles database operations through the Supabase client.
@@ -271,7 +272,7 @@ export const createProfile = async (profile: {
   }
 };
 
-export const getActiveBattles = async (limit: number = 20, offset: number = 0, filter: string = 'all'): Promise<Battle[]> => {
+export const getActiveBattles = async (limit: number = 20, offset: number = 0, filter: BattleFilterType = 'all'): Promise<Battle[]> => {
   try {
     // Build the query
     let query = supabase
