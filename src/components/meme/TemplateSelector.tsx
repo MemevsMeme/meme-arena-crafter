@@ -11,6 +11,13 @@ interface TemplateSelectorProps {
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, setSelectedTemplate }) => {
   const [previewTemplate, setPreviewTemplate] = useState<any>(null);
+  
+  // Initialize selectedTemplate if it's null
+  React.useEffect(() => {
+    if (!selectedTemplate && MEME_TEMPLATES.length > 0) {
+      setSelectedTemplate(MEME_TEMPLATES[0]);
+    }
+  }, [selectedTemplate, setSelectedTemplate]);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
@@ -18,7 +25,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, s
         <div
           key={template.id}
           className={`aspect-square rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
-            selectedTemplate.id === template.id
+            selectedTemplate && selectedTemplate.id === template.id
               ? 'border-brand-purple shadow-lg scale-105'
               : 'border-transparent hover:border-muted hover:scale-102'
           }`}
@@ -32,7 +39,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, s
               alt={template.name}
               className="w-full h-full object-cover"
             />
-            {selectedTemplate.id === template.id && (
+            {selectedTemplate && selectedTemplate.id === template.id && (
               <div className="absolute inset-0 bg-brand-purple/20 flex items-center justify-center">
                 <span className="bg-brand-purple text-white text-xs px-2 py-1 rounded">Selected</span>
               </div>

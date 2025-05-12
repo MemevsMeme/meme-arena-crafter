@@ -8,6 +8,7 @@ import { Prompt } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { getTodaysChallenge } from '@/lib/dailyChallenges';
+import { MEME_TEMPLATES } from '@/lib/constants';
 
 const Create = () => {
   const navigate = useNavigate();
@@ -17,8 +18,10 @@ const Create = () => {
   const [loading, setLoading] = useState(true);
   const [createdMeme, setCreatedMeme] = useState<{ id: string; caption: string; imageUrl: string } | null>(null);
   
-  // Add state for default edit mode
+  // Update defaultEditMode to be false
   const [defaultEditMode] = useState<boolean>(false);
+  // Add state for default template
+  const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
 
   useEffect(() => {
     const fetchActivePrompt = async () => {
@@ -136,6 +139,7 @@ const Create = () => {
               promptId={activePrompt?.id}
               onSave={handleMemeSave}
               defaultEditMode={defaultEditMode}
+              defaultTemplate={defaultTemplate}
             />
           </div>
           

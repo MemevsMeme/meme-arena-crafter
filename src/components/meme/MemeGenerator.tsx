@@ -21,19 +21,21 @@ interface MemeGeneratorProps {
   promptId?: string;
   onSave?: (meme: { id: string; caption: string; imageUrl: string }) => void;
   defaultEditMode?: boolean;
+  defaultTemplate?: any; // Add defaultTemplate prop
 }
 
 const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   promptText,
   promptId,
   onSave,
-  defaultEditMode = false
+  defaultEditMode = false,
+  defaultTemplate = null // Default to null if not provided
 }) => {
   const { user } = useAuth();
   
   // State variables for templates
   const [activeTab, setActiveTab] = useState('template');
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(defaultTemplate);
   
   // State variables for uploaded/generated images
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
