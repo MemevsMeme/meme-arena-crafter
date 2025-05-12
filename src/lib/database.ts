@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Battle, Meme, Prompt, User } from './types';
 import { BattleFilterType } from '@/components/battle/BattleFilter';
@@ -131,6 +130,29 @@ const mapDbMemeToMeme = (dbMeme): Meme => {
     tags: dbMeme.tags,
     isBattleSubmission: dbMeme.is_battle_submission,
     battleId: dbMeme.battle_id
+  };
+};
+
+/**
+ * Map DB battle to camelCase battle
+ */
+const mapDbBattleToBattle = (dbBattle): Battle => {
+  if (!dbBattle) return null;
+  
+  return {
+    id: dbBattle.id,
+    promptId: dbBattle.prompt_id,
+    memeOneId: dbBattle.meme_one_id,
+    memeTwoId: dbBattle.meme_two_id,
+    winnerId: dbBattle.winner_id,
+    creatorId: dbBattle.creator_id,
+    startTime: dbBattle.start_time,
+    endTime: dbBattle.end_time,
+    status: dbBattle.status,
+    voteCount: dbBattle.vote_count,
+    isCommunity: dbBattle.is_community,
+    memeOne: null, // These will be populated separately
+    memeTwo: null
   };
 };
 
@@ -301,11 +323,31 @@ export const getAllPrompts = async () => {
       return [];
     }
 
-    return data;
+    return data.map(mapDbPromptToPrompt);
   } catch (error) {
     console.error('Error in getAllPrompts:', error);
     return [];
   }
+};
+
+/**
+ * Map DB prompt to camelCase prompt
+ */
+const mapDbPromptToPrompt = (dbPrompt): Prompt => {
+  if (!dbPrompt) return null;
+  
+  return {
+    id: dbPrompt.id,
+    text: dbPrompt.text,
+    theme: dbPrompt.theme,
+    tags: dbPrompt.tags,
+    isCommunity: dbPrompt.is_community,
+    creatorId: dbPrompt.creator_id,
+    startDate: dbPrompt.start_date,
+    endDate: dbPrompt.end_date,
+    description: dbPrompt.description,
+    active: dbPrompt.active
+  };
 };
 
 /**
@@ -324,7 +366,7 @@ export const getPromptById = async (promptId: string) => {
       return null;
     }
 
-    return data;
+    return mapDbPromptToPrompt(data);
   } catch (error) {
     console.error('Error in getPromptById:', error);
     return null;
@@ -350,7 +392,7 @@ export const getActivePrompt = async () => {
       return null;
     }
 
-    return data;
+    return mapDbPromptToPrompt(data);
   } catch (error) {
     console.error('Error in getActivePrompt:', error);
     return null;
@@ -373,7 +415,7 @@ export const createPrompt = async (prompt) => {
       return null;
     }
 
-    return data;
+    return mapDbPromptToPrompt(data);
   } catch (error) {
     console.error('Error in createPrompt:', error);
     return null;
@@ -397,7 +439,7 @@ export const updatePrompt = async (promptId: string, updates: any) => {
       return null;
     }
 
-    return data;
+    return mapDbPromptToPrompt(data);
   } catch (error) {
     console.error('Error in updatePrompt:', error);
     return null;
@@ -494,6 +536,174 @@ export const upvoteMeme = async (userId: string, memeId: string) => {
 };
 
 /**
+ * Get battle by ID - combine battle data with meme data
+ */
+export const getBattleById = async (battleId: string) => {
+  try {
+    // Get battle data
+    const { data: battleData, error: battleError } = await supabase
+      .from('battles')
+      .select('*')
+      .eq('id', battleId)
+      .single();
+
+    if (battleError) {
+      console.error('Error fetching battle:', battleError);
+      return null;
+    }
+
+    if (!battleData) {
+      return null;
+    }
+
+    // Get meme one
+    const { data: memeOneData } = await supabase
+      .from('memes')
+      .select('*')
+      .eq('id', battleData.meme_one_id)
+      .single();
+
+    // Get meme two
+    const { data: memeTwoData } = await supabase
+      .from('memes')
+      .select('*')
+      .eq('id', battleData.meme_two_id)
+      .single();
+
+    // Map to camelCase
+    const battle = mapDbBattleToBattle(battleData);
+    
+    // Add memes to the battle object
+    if (memeOneData) {
+      battle.memeOne = mapDbMemeToMeme(memeOneData);
+    }
+    
+    if (memeTwoData) {
+      battle.memeTwo = mapDbMemeToMeme(memeTwoData);
+    }
+
+    return battle;
+  } catch (error) {
+    console.error('Error in getBattleById:', error);
+    return null;
+  }
+};
+
+/**
+ * Cast a vote for a battle meme
+ */
+export const castVote = async (battleId: string, memeId: string, userId: string) => {
+  try {
+    // Check if the user has already voted in this battle
+    const { data: existingVote, error: checkError } = await supabase
+      .from('votes')
+      .select('id, meme_id')
+      .eq('battle_id', battleId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking existing vote:', checkError);
+      return { success: false, error: checkError };
+    }
+
+    // If there's an existing vote, update it
+    if (existingVote) {
+      // If voting for the same meme, do nothing
+      if (existingVote.meme_id === memeId) {
+        return { success: true, message: 'Vote already exists' };
+      }
+      
+      // Otherwise, update the vote
+      const { error: updateError } = await supabase
+        .from('votes')
+        .update({ meme_id: memeId })
+        .eq('id', existingVote.id);
+
+      if (updateError) {
+        console.error('Error updating vote:', updateError);
+        return { success: false, error: updateError };
+      }
+    } else {
+      // If no existing vote, create a new one
+      const { error: insertError } = await supabase
+        .from('votes')
+        .insert({
+          user_id: userId,
+          meme_id: memeId,
+          battle_id: battleId
+        });
+
+      if (insertError) {
+        console.error('Error creating vote:', insertError);
+        return { success: false, error: insertError };
+      }
+    }
+
+    // Update battle vote count
+    const { data: votes, error: countError } = await supabase
+      .from('votes')
+      .select('id')
+      .eq('battle_id', battleId);
+
+    if (!countError) {
+      await supabase
+        .from('battles')
+        .update({ vote_count: votes.length })
+        .eq('id', battleId);
+    }
+
+    // Update meme votes
+    await updateMemeBattleVotes(battleId);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in castVote:', error);
+    return { success: false, error };
+  }
+};
+
+/**
+ * Update meme votes based on battle votes
+ */
+const updateMemeBattleVotes = async (battleId: string) => {
+  try {
+    const battle = await getBattleById(battleId);
+    if (!battle) return;
+
+    // Count votes for meme one
+    const { data: memeOneVotes, error: memeOneError } = await supabase
+      .from('votes')
+      .select('id')
+      .eq('battle_id', battleId)
+      .eq('meme_id', battle.memeOneId);
+
+    if (!memeOneError && battle.memeOne) {
+      await supabase
+        .from('memes')
+        .update({ votes: memeOneVotes.length })
+        .eq('id', battle.memeOneId);
+    }
+
+    // Count votes for meme two
+    const { data: memeTwoVotes, error: memeTwoError } = await supabase
+      .from('votes')
+      .select('id')
+      .eq('battle_id', battleId)
+      .eq('meme_id', battle.memeTwoId);
+
+    if (!memeTwoError && battle.memeTwo) {
+      await supabase
+        .from('memes')
+        .update({ votes: memeTwoVotes.length })
+        .eq('id', battle.memeTwoId);
+    }
+  } catch (error) {
+    console.error('Error in updateMemeBattleVotes:', error);
+  }
+};
+
+/**
  * Get active battle prompts
  */
 export const getActiveBattles = async (filter: BattleFilterType = 'all') => {
@@ -518,7 +728,7 @@ export const getActiveBattles = async (filter: BattleFilterType = 'all') => {
       return [];
     }
 
-    return data;
+    return data.map(mapDbBattleToBattle);
   } catch (error) {
     console.error('Error in getActiveBattles:', error);
     return [];
