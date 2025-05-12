@@ -1,44 +1,55 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-// Update the type definition to make it more specific
-export type BattleFilterType = 'all' | 'official' | 'community';
+export type BattleFilterType = 'all' | 'community' | 'official';
 
 interface BattleFilterProps {
   activeFilter: BattleFilterType;
   onFilterChange: (filter: BattleFilterType) => void;
 }
 
-const BattleFilter: React.FC<BattleFilterProps> = ({ activeFilter, onFilterChange }) => {
+const BattleFilter = ({ activeFilter, onFilterChange }: BattleFilterProps) => {
   return (
-    <div className="inline-flex p-1 rounded-md bg-muted">
-      <Button
-        variant={activeFilter === 'all' ? 'default' : 'ghost'}
-        size="sm"
+    <div className="flex flex-wrap gap-2">
+      <FilterButton 
+        active={activeFilter === 'all'} 
         onClick={() => onFilterChange('all')}
-        className={activeFilter === 'all' ? '' : 'hover:bg-background/50'}
       >
         All Battles
-      </Button>
-      <Button
-        variant={activeFilter === 'official' ? 'default' : 'ghost'}
-        size="sm"
-        onClick={() => onFilterChange('official')}
-        className={activeFilter === 'official' ? '' : 'hover:bg-background/50'}
-      >
-        Official
-      </Button>
-      <Button
-        variant={activeFilter === 'community' ? 'default' : 'ghost'}
-        size="sm"
+      </FilterButton>
+      <FilterButton 
+        active={activeFilter === 'community'} 
         onClick={() => onFilterChange('community')}
-        className={activeFilter === 'community' ? '' : 'hover:bg-background/50'}
       >
-        Community
-      </Button>
+        Community Battles
+      </FilterButton>
+      <FilterButton 
+        active={activeFilter === 'official'} 
+        onClick={() => onFilterChange('official')}
+      >
+        Official Battles
+      </FilterButton>
     </div>
   );
 };
+
+const FilterButton = ({ active, onClick, children }: { 
+  active: boolean; 
+  onClick: () => void; 
+  children: React.ReactNode 
+}) => (
+  <Button
+    variant={active ? "default" : "outline"}
+    size="sm"
+    onClick={onClick}
+    className={cn(
+      active ? "bg-brand-purple hover:bg-brand-purple/90" : "",
+    )}
+  >
+    {children}
+  </Button>
+);
 
 export default BattleFilter;
