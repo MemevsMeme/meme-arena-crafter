@@ -12,7 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { TagsInput } from '@/components/ui/tags-input';
 import { createPrompt } from '@/lib/database';
 
@@ -53,7 +53,7 @@ const CreateBattle = () => {
         theme: values.tags.join(', '),
         tags: values.tags,
         description: values.description,
-        isCommunity: true,  // Mark as community-created
+        is_community: true,  // Fixed property name to match type definition
         creatorId: user.id,
         startDate: new Date(),
         endDate: new Date(new Date().setDate(new Date().getDate() + 7))  // 7 days from now
