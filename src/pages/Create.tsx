@@ -43,19 +43,23 @@ const Create = () => {
         
         if (prompt) {
           console.log('Active prompt from DB:', prompt);
-          setActivePrompt(prompt); // Now setting the resolved value, not a Promise
+          setActivePrompt(prompt);
         } else {
           // If no prompt from database, use our daily challenge as fallback
-          const fallbackPrompt = getTodaysChallenge();
+          const fallbackPrompt = await getTodaysChallenge();
           console.log('Using fallback prompt:', fallbackPrompt);
           setActivePrompt(fallbackPrompt);
         }
       } catch (error) {
         console.error('Error fetching active prompt:', error);
         // Use the fallback prompt on error
-        const fallbackPrompt = getTodaysChallenge();
-        console.log('Using fallback prompt after error:', fallbackPrompt);
-        setActivePrompt(fallbackPrompt);
+        try {
+          const fallbackPrompt = await getTodaysChallenge();
+          console.log('Using fallback prompt after error:', fallbackPrompt);
+          setActivePrompt(fallbackPrompt);
+        } catch (fallbackError) {
+          console.error('Error getting fallback prompt:', fallbackError);
+        }
         
         toast({
           title: "Notice",
