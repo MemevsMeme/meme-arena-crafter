@@ -30,13 +30,13 @@ const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({
   const onGenerateCaptions = () => {
     if (!promptText) {
       toast("Please enter a prompt text first", {
-        description: "A prompt is needed to generate captions",
+        description: "A prompt is needed to generate captions"
       });
       return;
     }
     
     toast("Generating captions...", {
-      description: "This might take a few seconds with Gemini 2.0",
+      description: "This might take a few seconds with Gemini 2.0"
     });
     
     handleGenerateCaptions();

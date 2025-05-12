@@ -13,7 +13,7 @@ import UserAvatar from '@/components/ui/UserAvatar';
 
 const Profile = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
   const [memes, setMemes] = useState<Meme[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,9 +23,9 @@ const Profile = () => {
     const fetchProfileData = async () => {
       setLoading(true);
       
-      // If viewing own profile, use the cached userProfile
-      if (isOwnProfile && userProfile) {
-        setProfile(userProfile);
+      // If viewing own profile, use the cached user
+      if (isOwnProfile && user) {
+        setProfile(user);
       } else if (id) {
         const profileData = await getProfile(id);
         setProfile(profileData);
@@ -40,7 +40,7 @@ const Profile = () => {
     };
     
     fetchProfileData();
-  }, [id, isOwnProfile, userProfile]);
+  }, [id, isOwnProfile, user]);
 
   if (loading) {
     return (

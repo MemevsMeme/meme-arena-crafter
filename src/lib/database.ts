@@ -331,6 +331,37 @@ export const getAllPrompts = async () => {
 };
 
 /**
+ * Get prompts - Filter by community or official
+ */
+export const getPrompts = async (limit: number = 10, offset: number = 0, isCommunity: boolean | null = null) => {
+  try {
+    let query = supabase
+      .from('prompts')
+      .select('*')
+      .order('start_date', { ascending: false })
+      .limit(limit)
+      .range(offset, offset + limit - 1);
+
+    // Apply community filter if specified
+    if (isCommunity !== null) {
+      query = query.eq('is_community', isCommunity);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching prompts:', error);
+      return [];
+    }
+
+    return data.map(mapDbPromptToPrompt);
+  } catch (error) {
+    console.error('Error in getPrompts:', error);
+    return [];
+  }
+};
+
+/**
  * Map DB prompt to camelCase prompt
  */
 const mapDbPromptToPrompt = (dbPrompt): Prompt => {
@@ -343,8 +374,8 @@ const mapDbPromptToPrompt = (dbPrompt): Prompt => {
     tags: dbPrompt.tags,
     isCommunity: dbPrompt.is_community,
     creatorId: dbPrompt.creator_id,
-    startDate: dbPrompt.start_date,
-    endDate: dbPrompt.end_date,
+    startDate: new Date(dbPrompt.start_date),
+    endDate: new Date(dbPrompt.end_date),
     description: dbPrompt.description,
     active: dbPrompt.active
   };
@@ -404,9 +435,22 @@ export const getActivePrompt = async () => {
  */
 export const createPrompt = async (prompt) => {
   try {
+    // Convert camelCase to snake_case
+    const dbPrompt = {
+      text: prompt.text,
+      theme: prompt.theme,
+      tags: prompt.tags || [],
+      active: prompt.active || false,
+      start_date: prompt.startDate || new Date().toISOString(),
+      end_date: prompt.endDate || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      description: prompt.description,
+      creator_id: prompt.creatorId,
+      is_community: prompt.isCommunity || false
+    };
+
     const { data, error } = await supabase
       .from('prompts')
-      .insert([prompt])
+      .insert([dbPrompt])
       .select('*')
       .single();
 
@@ -427,9 +471,21 @@ export const createPrompt = async (prompt) => {
  */
 export const updatePrompt = async (promptId: string, updates: any) => {
   try {
+    // Convert camelCase to snake_case
+    const dbUpdates = {};
+    if (updates.text !== undefined) dbUpdates['text'] = updates.text;
+    if (updates.theme !== undefined) dbUpdates['theme'] = updates.theme;
+    if (updates.tags !== undefined) dbUpdates['tags'] = updates.tags;
+    if (updates.active !== undefined) dbUpdates['active'] = updates.active;
+    if (updates.startDate !== undefined) dbUpdates['start_date'] = updates.startDate;
+    if (updates.endDate !== undefined) dbUpdates['end_date'] = updates.endDate;
+    if (updates.description !== undefined) dbUpdates['description'] = updates.description;
+    if (updates.creatorId !== undefined) dbUpdates['creator_id'] = updates.creatorId;
+    if (updates.isCommunity !== undefined) dbUpdates['is_community'] = updates.isCommunity;
+
     const { data, error } = await supabase
       .from('prompts')
-      .update(updates)
+      .update(dbUpdates)
       .eq('id', promptId)
       .select('*')
       .single();
@@ -704,15 +760,17 @@ const updateMemeBattleVotes = async (battleId: string) => {
 };
 
 /**
- * Get active battle prompts
+ * Get active battles
  */
-export const getActiveBattles = async (filter: BattleFilterType = 'all') => {
+export const getActiveBattles = async (limit: number = 20, offset: number = 0, filter: BattleFilterType = 'all') => {
   try {
     let query = supabase
       .from('battles')
       .select('*')
       .eq('status', 'active')
-      .order('start_time', { ascending: false });
+      .order('start_time', { ascending: false })
+      .limit(limit)
+      .range(offset, offset + limit - 1);
 
     // Apply filter if not 'all'
     if (filter === 'official') {

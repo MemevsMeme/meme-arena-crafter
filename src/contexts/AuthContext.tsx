@@ -13,6 +13,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   loading: boolean;
   userLoading: boolean;
+  updateUserProfile: (updates: any) => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -106,6 +107,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const updateUserProfile = async (updates: any) => {
+    if (!user?.id) return null;
+    
+    const updatedProfile = await updateProfile(user.id, updates);
+    if (updatedProfile) {
+      setUser(updatedProfile as User);
+    }
+    return updatedProfile as User | null;
+  };
+
   const value = {
     user,
     session,
@@ -114,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     loading,
     userLoading,
+    updateUserProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

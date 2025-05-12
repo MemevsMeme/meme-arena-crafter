@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import UserAvatar from '@/components/ui/UserAvatar';
 
 const Navbar = () => {
-  const { user, userProfile, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const unreadNotifications = 3; // This will be dynamic in the future
 
   const handleSignOut = async () => {
@@ -65,8 +65,8 @@ const Navbar = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full" aria-label="Profile">
-                    {userProfile ? (
-                      <UserAvatar user={userProfile} size="sm" showUsername={false} linkToProfile={false} />
+                    {user ? (
+                      <UserAvatar user={user} size="sm" showUsername={false} linkToProfile={false} />
                     ) : (
                       <img
                         src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=default"

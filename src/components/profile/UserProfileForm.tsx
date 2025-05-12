@@ -9,9 +9,9 @@ import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const UserProfileForm = () => {
-  const { userProfile, updateUserProfile } = useAuth();
-  const [username, setUsername] = useState(userProfile?.username || '');
-  const [avatarUrl, setAvatarUrl] = useState(userProfile?.avatarUrl || '');
+  const { user, updateUserProfile } = useAuth();
+  const [username, setUsername] = useState(user?.username || '');
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
   const [isLoading, setIsLoading] = useState(false);
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +43,7 @@ const UserProfileForm = () => {
     setAvatarUrl(newAvatarUrl);
   };
   
-  if (!userProfile) {
+  if (!user) {
     return (
       <Card>
         <CardContent className="p-8">
@@ -87,19 +87,19 @@ const UserProfileForm = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="border rounded-md p-3">
                 <p className="text-sm text-muted-foreground">Level</p>
-                <p className="text-2xl font-semibold">{userProfile.level}</p>
+                <p className="text-2xl font-semibold">{user.level}</p>
               </div>
               <div className="border rounded-md p-3">
                 <p className="text-sm text-muted-foreground">XP</p>
-                <p className="text-2xl font-semibold">{userProfile.xp}</p>
+                <p className="text-2xl font-semibold">{user.xp}</p>
               </div>
               <div className="border rounded-md p-3">
                 <p className="text-sm text-muted-foreground">Wins</p>
-                <p className="text-2xl font-semibold">{userProfile.wins}</p>
+                <p className="text-2xl font-semibold">{user.wins}</p>
               </div>
               <div className="border rounded-md p-3">
                 <p className="text-sm text-muted-foreground">Losses</p>
-                <p className="text-2xl font-semibold">{userProfile.losses}</p>
+                <p className="text-2xl font-semibold">{user.losses}</p>
               </div>
             </div>
           </div>
