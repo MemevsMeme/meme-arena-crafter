@@ -1,648 +1,511 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MEME_TEMPLATES, CAPTION_STYLES } from '@/lib/constants';
-import { Image as LucideImage, Upload, Wand, Save, AlertCircle, WandSparkles, Tag, Database } from 'lucide-react';
+import TemplateSelector from '@/components/meme/TemplateSelector';
+import MemeCanvas from '@/components/meme/MemeCanvas';
+import ImageUploader from '@/components/meme/ImageUploader';
+import AiImageGenerator from '@/components/meme/AiImageGenerator';
+import CaptionGenerator from '@/components/meme/CaptionGenerator';
+import TextEditor from '@/components/meme/TextEditor';
+import SaveActions from '@/components/meme/SaveActions';
+import { detectGif } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
+import { createMeme } from '@/lib/database';
+import { uploadFileToIPFS, pinUrlToIPFS } from '@/lib/ipfs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { createMeme } from '@/lib/database';
-import { generateCaption, analyzeMemeImage, generateMemeImage, isAnimatedGif } from '@/lib/ai';
-import { uploadFileToIPFS } from '@/lib/ipfs';
-import TextEditor, { TextPosition } from './TextEditor';
-import TemplateSelector from './TemplateSelector';
-import ImageUploader from './ImageUploader';
-import AiImageGenerator from './AiImageGenerator';
-import CaptionGenerator from './CaptionGenerator';
-import ImageAnalyzer from './ImageAnalyzer';
-import SaveActions from './SaveActions';
-import MemeCanvas from './MemeCanvas';
+import { v4 as uuidv4 } from 'uuid';
 
 interface MemeGeneratorProps {
-  promptText?: string;
+  promptText: string;
   promptId?: string;
   onSave?: (meme: { id: string; caption: string; imageUrl: string }) => void;
   defaultEditMode?: boolean;
 }
 
-const MemeGenerator = ({ promptText = '', promptId, onSave, defaultEditMode = false }: MemeGeneratorProps) => {
+interface TextPosition {
+  text: string;
+  x: number;
+  y: number;
+  fontSize: number;
+  maxWidth: number;
+  alignment?: 'left' | 'center' | 'right';
+  color?: string;
+  isBold?: boolean;
+  isItalic?: boolean;
+  fontFamily?: string;
+  stretch?: number;
+}
+
+const MemeGenerator: React.FC<MemeGeneratorProps> = ({
+  promptText,
+  promptId,
+  onSave,
+  defaultEditMode = false
+}) => {
   const { user } = useAuth();
+  
+  // State variables for templates
   const [activeTab, setActiveTab] = useState('template');
-  const [selectedTemplate, setSelectedTemplate] = useState(MEME_TEMPLATES[0]);
-  const [caption, setCaption] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  
+  // State variables for uploaded/generated images
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [file, setFile] = useState<File | null>(null);
-  const [isGif, setIsGif] = useState(false);
-  const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false);
-  const [generatedCaptions, setGeneratedCaptions] = useState<string[]>([]);
-  const [selectedStyle, setSelectedStyle] = useState(CAPTION_STYLES[0].id);
-  const [isCreatingMeme, setIsCreatingMeme] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
-  const [imageTags, setImageTags] = useState<string[]>([]);
-  const [isUploadingToIPFS, setIsUploadingToIPFS] = useState(false);
-  const [isGeneratingAIImage, setIsGeneratingAIImage] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [isEditMode, setIsEditMode] = useState(defaultEditMode);
-  const [textPositions, setTextPositions] = useState<TextPosition[]>([]);
+  const [isGif, setIsGif] = useState(false);
+  
+  // State variables for text
+  const [caption, setCaption] = useState<string>('');
+  const [isEditMode, setIsEditMode] = useState<boolean>(defaultEditMode);
+  const [textPositions, setTextPositions] = useState<TextPosition[]>([
+    {
+      text: '',
+      x: 50, // Center horizontally (percentage)
+      y: 85, // Near bottom (percentage)
+      fontSize: 36,
+      maxWidth: 300,
+      alignment: 'center',
+      color: '#ffffff',
+      isBold: true,
+      fontFamily: 'Impact'
+    }
+  ]);
+  
+  // State variables for canvas
+  const [canvasSize, setCanvasSize] = useState<{width: number, height: number}>({
+    width: 600,
+    height: 600
+  });
+  
+  // State variables for drag functionality
   const [isDragging, setIsDragging] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragStartPos, setDragStartPos] = useState<{x: number, y: number}>({x: 0, y: 0});
-  const [canvasSize, setCanvasSize] = useState<{width: number, height: number}>({width: 0, height: 0});
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Generate a preview when caption or template/image changes
-  useEffect(() => {
-    if ((caption || textPositions.length > 0) && (selectedTemplate || uploadedImage || generatedImage)) {
-      setShowPreview(true);
-    } else {
-      setShowPreview(false);
-    }
-  }, [caption, selectedTemplate, uploadedImage, generatedImage, textPositions]);
-
-  // Initialize text positions from template
-  useEffect(() => {
-    if (activeTab === 'template' && selectedTemplate) {
-      // Convert template positions to text positions
-      const initialPositions = selectedTemplate.textPositions.map((pos: any, index: number) => ({
-        text: index === 0 ? caption : '',  // Only set caption for the first position
-        x: pos.x,
-        y: pos.y,
-        fontSize: pos.fontSize,
-        maxWidth: pos.maxWidth,
-        alignment: 'center' as const,
-        color: '#ffffff',
-      }));
-      
-      setTextPositions(initialPositions);
-    } else if ((activeTab === 'upload' || activeTab === 'ai-generated') && (uploadedImage || generatedImage)) {
-      // For custom uploads, start with one centered text element if none exist
-      if (textPositions.length === 0) {
-        setTextPositions([
-          {
-            text: caption || 'Your text here',
-            x: 50,
-            y: 50,
-            fontSize: 32,
-            maxWidth: 300,
-            alignment: 'center',
-            color: '#ffffff',
-          }
-        ]);
-      } else if (caption && textPositions.length > 0 && !textPositions[0].text) {
-        // Update first text element with caption if it exists
-        const updatedPositions = [...textPositions];
-        updatedPositions[0] = {...updatedPositions[0], text: caption};
-        setTextPositions(updatedPositions);
-      }
-    }
-  }, [activeTab, selectedTemplate, uploadedImage, generatedImage, caption]);
-
-  // Update caption when first text position changes
-  useEffect(() => {
-    if (textPositions.length > 0 && textPositions[0].text && textPositions[0].text !== caption) {
-      setCaption(textPositions[0].text);
-    }
-  }, [textPositions]);
-
-  const handleGenerateCaptions = async () => {
-    if (!promptText) {
-      toast({
-        title: "Error",
-        description: "Please enter a prompt text first",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsGeneratingCaptions(true);
-    
-    try {
-      // Use the Gemini API to generate captions
-      const captions = await generateCaption(promptText, selectedStyle);
-      setGeneratedCaptions(captions);
-      
-      if (captions.length === 0) {
-        toast({
-          title: "Error",
-          description: "Couldn't generate captions. Please try again.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error generating captions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate captions",
-        variant: "destructive"
-      });
-    } finally {
-      setIsGeneratingCaptions(false);
-    }
-  };
-
-  const handleGenerateImage = async () => {
-    if (!promptText) {
-      toast({
-        title: "Error",
-        description: "Please enter a prompt text first",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsGeneratingAIImage(true);
-    setActiveTab('ai-generated');
-    
-    try {
-      // Use the Gemini API to generate an image
-      const imageData = await generateMemeImage(promptText, selectedStyle);
-      
-      if (imageData) {
-        setGeneratedImage(imageData);
-        toast({
-          title: "Success",
-          description: "AI image generated successfully!",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Couldn't generate image. Please try again.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error generating image:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate image. API may be temporarily unavailable.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsGeneratingAIImage(false);
-    }
-  };
   
-  const handleAnalyzeImage = async () => {
-    const imageUrl = activeTab === 'template' 
-      ? selectedTemplate?.url 
-      : (activeTab === 'ai-generated' ? generatedImage : uploadedImage);
-    
-    if (!imageUrl) {
-      toast({
-        title: "Error",
-        description: "Please select or upload an image first",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsAnalyzingImage(true);
-    
-    try {
-      const tags = await analyzeMemeImage(imageUrl);
-      setImageTags(tags);
-      
-      toast({
-        title: "Success",
-        description: `Image analyzed successfully. Tags: ${tags.join(', ')}`,
-      });
-    } catch (error) {
-      console.error('Error analyzing image:', error);
-      toast({
-        title: "Error",
-        description: "Failed to analyze image",
-        variant: "destructive"
-      });
-    } finally {
-      setIsAnalyzingImage(false);
-    }
-  };
+  // State variables for saving the meme
+  const [isCreatingMeme, setIsCreatingMeme] = useState(false);
+  const [isUploadingToIPFS, setIsUploadingToIPFS] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
-  const handleSelectCaption = (text: string) => {
-    setCaption(text);
-    
-    // Also update the first text position if in edit mode
-    if (textPositions.length > 0) {
-      const updatedPositions = [...textPositions];
-      updatedPositions[0] = { ...updatedPositions[0], text };
-      setTextPositions(updatedPositions);
-    }
-  };
-
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setFile(file);
-      
-      // Check if it's an animated GIF
-      if (file.type === 'image/gif') {
-        const animated = await isAnimatedGif(file);
-        setIsGif(animated);
-        console.log(`File is ${animated ? 'an animated' : 'a static'} GIF`);
-      } else {
-        setIsGif(false);
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setUploadedImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleAddTextElement = () => {
+  // Add text handler
+  const handleAddText = () => {
     const newPosition: TextPosition = {
-      text: '',
+      text: 'New text',
       x: 50,
       y: 50,
-      fontSize: 24,
-      maxWidth: 200,
+      fontSize: 30,
+      maxWidth: 300,
       alignment: 'center',
       color: '#ffffff',
+      isBold: true,
+      fontFamily: 'Impact'
     };
     
     setTextPositions([...textPositions, newPosition]);
-  };
-
-  const handleRemoveTextElement = (index: number) => {
-    const updated = textPositions.filter((_, i) => i !== index);
-    setTextPositions(updated);
-  };
-
-  const handleTextPositionsChange = (positions: TextPosition[]) => {
-    console.log("Text positions updated:", positions);
-    setTextPositions(positions);
-  };
-  
-  // Helper function to convert a data URL to a File
-  const dataURLtoFile = (dataurl: string, filename: string): File => {
-    const arr = dataurl.split(',');
-    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
     
-    while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
+    // Enter edit mode when adding text
+    if (!isEditMode) {
+      setIsEditMode(true);
     }
-    
-    return new File([u8arr], filename, { type: mime });
   };
   
-  // Function to save the meme
+  // Image upload handler
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Check if it's a GIF
+    const isGifImage = file.type === 'image/gif';
+    setIsGif(isGifImage);
+    
+    // Create object URL for preview
+    const url = URL.createObjectURL(file);
+    setUploadedImage(url);
+    setActiveTab('upload');
+    
+    // Reset template selection and AI generated image
+    setSelectedTemplate(null);
+    setGeneratedImage(null);
+    
+    // Create a default caption from the prompt if no caption yet
+    if (!caption && promptText) {
+      setCaption(promptText);
+    }
+  };
+  
+  // Handler for setting captions
+  const handleSetCaption = (newCaption: string) => {
+    setCaption(newCaption);
+    
+    // Also update the first text position in edit mode
+    if (textPositions.length > 0) {
+      const updatedPositions = [...textPositions];
+      updatedPositions[0] = {
+        ...updatedPositions[0],
+        text: newCaption
+      };
+      setTextPositions(updatedPositions);
+    }
+  };
+  
+  // Handler for saving the meme
   const handleSaveMeme = async () => {
     if (!user) {
       toast({
-        title: "Error",
-        description: "You must be logged in to create memes",
+        title: "You need to be logged in",
+        description: "Please login to create memes",
         variant: "destructive"
       });
       return;
     }
     
-    // Check if we have an image but don't require caption
-    if ((!activeTab.includes('template') && !uploadedImage && !generatedImage)) {
-      toast({
-        title: "Error",
-        description: "Please select or generate an image first",
-        variant: "destructive"
-      });
-      return;
+    if (isCreatingMeme) {
+      return; // Prevent multiple clicks
     }
-    
-    setIsCreatingMeme(true);
     
     try {
-      console.log('Starting meme creation process...');
-      console.log('User ID:', user.id);
+      setIsCreatingMeme(true);
       
-      let memeFile: File;
-      let fileName: string;
+      // Get the active image source
+      let imageSource: string | null = null;
       
-      // For animated GIFs, we don't render to canvas, we use the original file
-      if (isGif && file) {
-        fileName = `meme_${Date.now()}.gif`;
-        memeFile = new File([file], fileName, { type: 'image/gif' });
-      } else {
-        // For static images, render the meme on canvas
-        const canvas = canvasRef.current;
-        if (!canvas) throw new Error('Canvas not available');
-        
-        // Convert canvas to blob
-        const blob = await new Promise<Blob>((resolve, reject) => {
-          canvas.toBlob((blob) => {
-            if (blob) resolve(blob);
-            else reject(new Error('Failed to create blob from canvas'));
-          }, 'image/png');
+      if (activeTab === 'template' && selectedTemplate) {
+        imageSource = selectedTemplate.url;
+      } else if (activeTab === 'upload' && uploadedImage) {
+        imageSource = uploadedImage;
+      } else if (activeTab === 'ai-generated' && generatedImage) {
+        imageSource = generatedImage;
+      }
+      
+      if (!imageSource) {
+        toast({
+          title: "No image selected",
+          description: "Please select or upload an image first",
+          variant: "destructive"
         });
+        setIsCreatingMeme(false);
+        return;
+      }
+      
+      console.log('Saving meme with image source:', imageSource.substring(0, 30) + '...');
+      
+      // Render the meme with text onto a canvas
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        throw new Error('Could not get canvas context');
+      }
+      
+      // Load the image onto a hidden canvas
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => {
+          // Set canvas dimensions to match image
+          canvas.width = img.width;
+          canvas.height = img.height;
+          
+          // Draw image
+          ctx.drawImage(img, 0, 0, img.width, img.height);
+          
+          // Add caption text if not a GIF (for GIFs text will be added during display)
+          if (!isGif) {
+            if (isEditMode) {
+              // Draw all text positions in edit mode
+              textPositions.forEach(position => {
+                if (position.text) {
+                  // Setup font and style
+                  let fontStyle = '';
+                  if (position.isBold) fontStyle += 'bold ';
+                  if (position.isItalic) fontStyle += 'italic ';
+                  
+                  ctx.font = `${fontStyle}${position.fontSize}px ${position.fontFamily || 'Impact'}, sans-serif`;
+                  ctx.textAlign = position.alignment || 'center';
+                  ctx.fillStyle = position.color || '#ffffff';
+                  ctx.strokeStyle = 'black';
+                  ctx.lineWidth = position.fontSize / 15;
+                  ctx.lineJoin = 'round';
+                  
+                  // Calculate x position based on alignment
+                  let x = (position.x / 100) * canvas.width;
+                  
+                  // Draw text with outline
+                  ctx.strokeText(
+                    position.text,
+                    x,
+                    (position.y / 100) * canvas.height,
+                    position.maxWidth
+                  );
+                  ctx.fillText(
+                    position.text,
+                    x,
+                    (position.y / 100) * canvas.height,
+                    position.maxWidth
+                  );
+                }
+              });
+            } else {
+              // Simple mode: add caption at the bottom
+              const lines = caption ? caption.split('\n') : [];
+              
+              if (lines.length > 0) {
+                const fontSize = Math.max(24, Math.min(canvas.width / 12, 48));
+                const lineHeight = fontSize * 1.2;
+                const totalHeight = lines.length * lineHeight;
+                
+                ctx.font = `bold ${fontSize}px Impact, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'white';
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = fontSize / 15;
+                ctx.lineJoin = 'round';
+                
+                lines.forEach((line, index) => {
+                  if (line) {
+                    const y = canvas.height - totalHeight + index * lineHeight;
+                    
+                    // Draw text outline
+                    ctx.strokeText(
+                      line,
+                      canvas.width / 2,
+                      y,
+                      canvas.width * 0.8
+                    );
+                    
+                    // Fill text
+                    ctx.fillText(
+                      line,
+                      canvas.width / 2,
+                      y,
+                      canvas.width * 0.8
+                    );
+                  }
+                });
+              }
+            }
+          }
+          
+          resolve();
+        };
         
-        // Create file from blob
-        fileName = `meme_${Date.now()}.png`;
-        memeFile = new File([blob], fileName, { type: 'image/png' });
+        img.onerror = () => {
+          reject(new Error('Failed to load image'));
+        };
+        
+        img.src = imageSource as string;
+      });
+      
+      // Convert canvas to blob
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, isGif ? 'image/gif' : 'image/png');
+      });
+      
+      if (!blob) {
+        throw new Error('Failed to create image blob');
       }
       
-      console.log('Uploading to Supabase storage...');
+      // Generate unique file name
+      const fileExt = isGif ? '.gif' : '.png';
+      const fileName = `${uuidv4()}${fileExt}`;
       
-      // Check if 'memes' bucket exists, if not try to create it
-      const { data: bucketData } = await supabase.storage.listBuckets();
-      const memesBucketExists = bucketData?.some(bucket => bucket.name === 'memes');
+      console.log('Uploading meme to storage bucket');
       
-      if (!memesBucketExists) {
-        console.log('Memes bucket does not exist, attempting to use a different bucket');
-        // Try using the default public bucket instead
-        const { data: buckets } = await supabase.storage.listBuckets();
-        console.log('Available buckets:', buckets);
-      }
-      
-      // Upload to Supabase storage with public access
+      // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('memes')
-        .upload(`public/${user.id}/${fileName}`, memeFile, {
+        .upload(`public/${user.id}/${fileName}`, blob, {
           cacheControl: '3600',
           upsert: false,
-          contentType: isGif ? 'image/gif' : 'image/png'
+          contentType: isGif ? 'image/gif' : 'image/png',
         });
       
       if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        throw uploadError;
+        console.error('Error uploading to storage:', uploadError);
+        throw new Error(`Error uploading to storage: ${uploadError.message}`);
       }
       
-      console.log('Storage upload successful:', uploadData);
+      console.log('Upload successful:', uploadData);
       
-      // Get public URL - make sure to use the correct path
-      const { data: { publicUrl } } = supabase.storage
+      // Get public URL for the uploaded file
+      const { data: publicUrlData } = supabase.storage
         .from('memes')
         .getPublicUrl(`public/${user.id}/${fileName}`);
       
-      console.log('Meme public URL:', publicUrl);
+      if (!publicUrlData?.publicUrl) {
+        throw new Error('Failed to get public URL');
+      }
       
-      // Also upload to IPFS for permanent storage
-      setIsUploadingToIPFS(true);
+      const imageUrl = publicUrlData.publicUrl;
+      console.log('Public URL:', imageUrl);
       
-      // Safely get a meme title with null checks
-      const memeTitle = isEditMode && textPositions.length > 0 && textPositions[0].text
-        ? (textPositions[0].text.substring(0, 30) || 'Untitled') + '...'
-        : (caption ? (caption.substring(0, 30) + '...') : 'Untitled Meme');
+      // Upload to IPFS in the background (don't wait for it)
+      let ipfsCid: string | undefined = undefined;
+      try {
+        setIsUploadingToIPFS(true);
+        console.log('Starting IPFS upload');
+        
+        // Create a File from the blob
+        const file = new File([blob], fileName, {
+          type: isGif ? 'image/gif' : 'image/png',
+        });
+        
+        // Upload to IPFS
+        const ipfsResult = await uploadFileToIPFS(file, `Meme: ${caption.substring(0, 30)}...`);
+        
+        if (ipfsResult.success && ipfsResult.ipfsHash) {
+          ipfsCid = ipfsResult.ipfsHash;
+          console.log('Successfully pinned to IPFS with CID:', ipfsCid);
+        }
+      } catch (ipfsError) {
+        console.error('IPFS upload failed but continuing:', ipfsError);
+        // Non-fatal error, continue without IPFS
+      } finally {
+        setIsUploadingToIPFS(false);
+      }
       
-      const ipfsResult = await uploadFileToIPFS(memeFile, `Meme: ${memeTitle}`);
-      setIsUploadingToIPFS(false);
-      
-      const ipfsCid = ipfsResult.success ? ipfsResult.ipfsHash : undefined;
-      
-      console.log('IPFS upload result:', ipfsResult);
-      
-      // Get the final caption text (combine all text positions if in edit mode or use empty string if no text)
-      const finalCaption = isEditMode && textPositions.length > 0
-        ? textPositions.map(pos => pos.text || '').filter(Boolean).join('\n')
-        : caption || '';
-      
-      // Create meme record in database with absolute URL
-      console.log('Saving meme to database with creator_id:', user.id);
-      const memeData = await createMeme({
+      // Create meme record in database
+      const newMeme = await createMeme({
         prompt: promptText,
-        prompt_id: promptId, 
-        imageUrl: publicUrl,
-        ipfsCid: ipfsCid,
-        caption: finalCaption,
+        prompt_id: promptId,
+        imageUrl,
+        ipfsCid,
+        caption: caption || '',
         creatorId: user.id,
         votes: 0,
         createdAt: new Date(),
-        // Use AI-generated tags if available, otherwise use default tags
-        tags: imageTags.length > 0 ? imageTags : ['funny', 'meme'],
+        tags: []
       });
       
-      if (!memeData) {
-        console.error('Failed to create meme record in database');
-        throw new Error('Failed to create meme record');
-      }
+      console.log('Meme created:', newMeme);
       
-      console.log('Meme successfully saved to database:', memeData);
+      toast({
+        title: "Success",
+        description: "Your meme has been created successfully!",
+      });
       
-      if (ipfsResult.success) {
-        toast({
-          title: "Success",
-          description: `Meme created successfully and stored on IPFS! Your meme is permanently available at: ${ipfsResult.gatewayUrl}`,
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Meme created successfully! Note: IPFS backup failed, but meme was saved to our server.",
-        });
-      }
-      
-      // Call the onSave callback if provided
-      if (onSave) {
+      // Call onSave callback if provided
+      if (onSave && newMeme) {
         onSave({
-          id: memeData.id,
-          caption: memeData.caption,
-          imageUrl: memeData.imageUrl
+          id: newMeme.id,
+          caption: newMeme.caption,
+          imageUrl: newMeme.imageUrl
         });
       }
-      
-      // Reset form
-      setCaption('');
-      setUploadedImage(null);
-      setFile(null);
-      setIsGif(false);
-      setGeneratedImage(null);
-      setGeneratedCaptions([]);
-      setImageTags([]);
-      setTextPositions([]);
-      setIsEditMode(false);
       
     } catch (error) {
       console.error('Error creating meme:', error);
       toast({
         title: "Error",
-        description: "Failed to create meme: " + (error instanceof Error ? error.message : 'Unknown error'),
+        description: error instanceof Error ? error.message : "Failed to create meme",
         variant: "destructive"
       });
     } finally {
       setIsCreatingMeme(false);
-      setIsUploadingToIPFS(false);
     }
   };
-
-  // Function to save AI-generated image as a template
-  const handleSaveAsTemplate = async (imageUrl: string, prompt: string) => {
-    // Here we would typically save this to user's custom templates in the database
-    // For now, we'll just store it in localStorage as a simple implementation
-    const templateName = `AI: ${prompt.substring(0, 20)}${prompt.length > 20 ? '...' : ''}`;
-    
-    const customTemplates = JSON.parse(localStorage.getItem('customMemeTemplates') || '[]');
-    
-    customTemplates.push({
-      id: `custom-${Date.now()}`,
-      name: templateName,
-      url: imageUrl,
-      prompt,
-      textPositions: [
-        {
-          x: 50,
-          y: 50,
-          fontSize: 32,
-          maxWidth: 300,
-          alignment: 'center'
-        }
-      ]
-    });
-    
-    localStorage.setItem('customMemeTemplates', JSON.stringify(customTemplates));
-    
-    toast({
-      title: "Template Saved",
-      description: "Your AI-generated image has been saved as a template"
-    });
-  };
-
+  
   return (
-    <div className="bg-background border rounded-xl p-4 shadow-sm">
-      <div className="mb-4">
-        <Label htmlFor="prompt-text">Prompt</Label>
-        <Textarea
-          id="prompt-text"
-          placeholder="Enter a prompt or use today's challenge..."
-          value={promptText}
-          className="h-20"
-          readOnly={!!promptText}
-        />
-      </div>
+    <div className="meme-generator border rounded-xl p-4 bg-background shadow-sm">
+      <h2 className="text-xl font-semibold mb-2">Create Your Meme</h2>
+      <p className="text-muted-foreground mb-4">
+        <span className="font-medium">Prompt:</span> {promptText || "Create something funny!"}
+      </p>
       
-      <Tabs defaultValue="template" className="mb-4" onValueChange={setActiveTab}>
-        <TabsList className="w-full">
-          <TabsTrigger value="template" className="flex-1">
-            <LucideImage className="h-4 w-4 mr-2" />
-            Template
-          </TabsTrigger>
-          <TabsTrigger value="upload" className="flex-1">
-            <Upload className="h-4 w-4 mr-2" />
-            Upload
-          </TabsTrigger>
-          <TabsTrigger value="ai-generated" className="flex-1">
-            <Wand className="h-4 w-4 mr-2" />
-            AI Image
-          </TabsTrigger>
+      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="mb-4">
+        <TabsList className="mb-2">
+          <TabsTrigger value="template">Use Template</TabsTrigger>
+          <TabsTrigger value="upload">Upload Image</TabsTrigger>
+          <TabsTrigger value="ai-generated">AI Generate</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="template" className="py-4">
-          <TemplateSelector 
-            selectedTemplate={selectedTemplate} 
-            setSelectedTemplate={setSelectedTemplate} 
+        <TabsContent value="template">
+          <TemplateSelector
+            selectedTemplate={selectedTemplate}
+            setSelectedTemplate={setSelectedTemplate}
           />
         </TabsContent>
         
-        <TabsContent value="upload" className="py-4">
+        <TabsContent value="upload">
           <ImageUploader 
-            uploadedImage={uploadedImage} 
-            isGif={isGif} 
-            handleImageUpload={handleImageUpload} 
+            uploadedImage={uploadedImage}
+            isGif={isGif}
+            handleImageUpload={handleImageUpload}
           />
         </TabsContent>
         
-        <TabsContent value="ai-generated" className="py-4">
-          <AiImageGenerator 
-            promptText={promptText} 
-            isGeneratingAIImage={isGeneratingAIImage} 
+        <TabsContent value="ai-generated">
+          <AiImageGenerator
+            promptText={promptText}
             generatedImage={generatedImage}
-            handleGenerateImage={handleGenerateImage}
-            onSaveAsTemplate={handleSaveAsTemplate}
+            setGeneratedImage={setGeneratedImage}
           />
         </TabsContent>
       </Tabs>
-
-      {/* Image analysis section */}
-      {(activeTab === 'template' || uploadedImage || generatedImage) && (
-        <ImageAnalyzer 
-          isAnalyzingImage={isAnalyzingImage} 
-          imageTags={imageTags} 
-          handleAnalyzeImage={handleAnalyzeImage} 
-        />
-      )}
       
-      {/* Caption section */}
-      {!isEditMode ? (
-        <div className="mb-4">
-          <Label htmlFor="caption">Caption</Label>
-          <Textarea
-            id="caption"
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Enter your meme caption here..."
-            className="h-24"
-          />
-        </div>
-      ) : (
+      <div className="meme-preview my-4">
+        {/* Canvas for meme preview - rendered by MemeCanvas component */}
+        <MemeCanvas
+          activeTab={activeTab}
+          selectedTemplate={selectedTemplate}
+          uploadedImage={uploadedImage}
+          generatedImage={generatedImage}
+          isGif={isGif}
+          caption={caption}
+          textPositions={textPositions}
+          isEditMode={isEditMode}
+          isDragging={isDragging}
+          dragIndex={dragIndex}
+          setCanvasSize={setCanvasSize}
+          setDragStartPos={setDragStartPos}
+          setIsDragging={setIsDragging}
+          setDragIndex={setDragIndex}
+          setTextPositions={setTextPositions}
+        />
+      </div>
+      
+      {/* Text editing section */}
+      {isEditMode ? (
         <TextEditor
           textPositions={textPositions}
-          onChange={handleTextPositionsChange}
-          onRemoveText={handleRemoveTextElement}
-          onAddText={handleAddTextElement}
+          setTextPositions={setTextPositions}
+          handleAddText={handleAddText}
         />
-      )}
-      
-      {/* AI caption generator */}
-      {!isEditMode && (
-        <CaptionGenerator
-          promptText={promptText}
-          selectedStyle={selectedStyle}
-          isGeneratingCaptions={isGeneratingCaptions}
-          generatedCaptions={generatedCaptions}
-          setSelectedStyle={setSelectedStyle}
-          handleGenerateCaptions={handleGenerateCaptions}
-          handleSelectCaption={handleSelectCaption}
-        />
-      )}
-      
-      {/* Preview */}
-      {showPreview && (
-        <div className="mt-6">
-          <h3 className="font-medium mb-3">Meme Preview</h3>
-          <MemeCanvas
-            activeTab={activeTab}
-            selectedTemplate={selectedTemplate}
-            uploadedImage={uploadedImage}
-            generatedImage={generatedImage}
-            isGif={isGif}
-            caption={caption}
-            textPositions={textPositions}
-            isEditMode={isEditMode}
-            isDragging={isDragging}
-            dragIndex={dragIndex}
-            setCanvasSize={setCanvasSize}
-            setDragStartPos={setDragStartPos}
-            setIsDragging={setIsDragging}
-            setDragIndex={setDragIndex}
-            setTextPositions={setTextPositions}
-          />
-          <canvas ref={canvasRef} className="hidden" /> {/* Hidden canvas for saving */}
+      ) : (
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Caption</label>
+          <div className="flex gap-2">
+            <div className="flex-grow">
+              <Textarea
+                placeholder="Add your caption here..."
+                value={caption}
+                onChange={(e) => handleSetCaption(e.target.value)}
+                rows={2}
+                className="resize-none"
+              />
+            </div>
+            
+            <CaptionGenerator
+              promptText={promptText}
+              imageRef={activeTab === 'template' && selectedTemplate ? selectedTemplate.url : 
+                      activeTab === 'upload' && uploadedImage ? uploadedImage :
+                      activeTab === 'ai-generated' && generatedImage ? generatedImage : null}
+              onCaptionGenerated={handleSetCaption}
+            />
+          </div>
         </div>
       )}
       
       {/* Save actions */}
-      <SaveActions 
+      <SaveActions
         isEditMode={isEditMode}
         isCreatingMeme={isCreatingMeme}
         isUploadingToIPFS={isUploadingToIPFS}
         setIsEditMode={setIsEditMode}
         handleSaveMeme={handleSaveMeme}
       />
-      
-      {/* Login warning */}
-      {!user && (
-        <Alert variant="destructive" className="mt-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            You must be logged in to create and save memes.
-          </AlertDescription>
-        </Alert>
-      )}
     </div>
   );
 };

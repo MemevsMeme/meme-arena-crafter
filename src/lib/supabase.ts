@@ -1,6 +1,5 @@
 
 import { supabase as integratedSupabase } from '@/integrations/supabase/client';
-import { Database } from './types';
 
 // Export the integrated Supabase client with proper typing
 export const supabase = integratedSupabase as any;
@@ -21,6 +20,17 @@ const checkMemesBucket = async () => {
     const memesBucket = buckets?.find(bucket => bucket.name === 'memes');
     if (memesBucket) {
       console.log('✅ Memes storage bucket found');
+      
+      // Test access by listing files
+      const { data: files, error: listError } = await supabase.storage
+        .from('memes')
+        .list('public');
+        
+      if (listError) {
+        console.warn('⚠️ Could access memes bucket but got an error listing files:', listError);
+      } else {
+        console.log(`✅ Successfully accessed memes bucket, found ${files?.length || 0} items in public folder`);
+      }
     } else {
       console.warn('⚠️ Memes storage bucket not found. File uploads may fail.');
     }

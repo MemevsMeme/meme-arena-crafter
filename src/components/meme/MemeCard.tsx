@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import UserAvatar from '@/components/ui/UserAvatar';
-import { Heart, MessageSquare, Share, Award } from 'lucide-react';
+import { Heart, MessageSquare, Share, Award, AlertCircle } from 'lucide-react';
 import { Meme } from '@/lib/types';
 import MemeIpfsLink from '@/components/ui/MemeIpfsLink';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 
 interface MemeCardProps {
   meme: Meme;
@@ -28,6 +28,7 @@ const MemeCard = ({
   const [isVoted, setIsVoted] = useState(false);
   const [voteCount, setVoteCount] = useState(meme.votes || 0);
   const [imageError, setImageError] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(true);
 
   const handleVote = () => {
     if (onVote) {
@@ -59,12 +60,18 @@ const MemeCard = ({
       })
       .catch(err => {
         console.error('Error sharing:', err);
-        toast.success('Share URL copied to clipboard!');
+        toast({
+          title: "Link Copied",
+          description: "Share URL copied to clipboard!"
+        });
       });
     } else {
       // Fallback for browsers that don't support the Web Share API
       navigator.clipboard.writeText(window.location.href)
-        .then(() => toast.success('Share URL copied to clipboard!'))
+        .then(() => toast({
+          title: "Link Copied",
+          description: "Share URL copied to clipboard!"
+        }))
         .catch(err => console.error('Could not copy URL:', err));
     }
   };
@@ -72,6 +79,11 @@ const MemeCard = ({
   const handleImageError = () => {
     console.error(`Failed to load image: ${meme.imageUrl}`);
     setImageError(true);
+    setIsImageLoading(false);
+  };
+
+  const handleImageLoad = () => {
+    setIsImageLoading(false);
   };
 
   // Format the created date for display
@@ -101,30 +113,44 @@ const MemeCard = ({
           </div>
         </div>
         
-        <p className="mt-2 text-sm font-medium">
-          {meme.prompt}
-        </p>
+        {meme.prompt && (
+          <p className="mt-2 text-sm font-medium">
+            {meme.prompt}
+          </p>
+        )}
       </div>
       
       <Link to={`/meme/${meme.id}`}>
         <div className="relative bg-muted aspect-square overflow-hidden">
+          {isImageLoading && !imageError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-muted">
+              <div className="loading-spinner h-8 w-8 border-4 border-brand-purple/30 border-t-brand-purple rounded-full animate-spin"></div>
+            </div>
+          )}
+          
           {imageError ? (
-            <div className="w-full h-full flex items-center justify-center">
-              <p className="text-muted-foreground">Image unavailable</p>
+            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-4">
+              <AlertCircle className="h-8 w-8 mb-2 text-amber-500" />
+              <p className="text-center">Image unavailable</p>
+              <p className="text-xs text-center mt-1">"{meme.caption}"</p>
             </div>
           ) : (
             <img
               src={meme.imageUrl}
               alt={meme.caption}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
               onError={handleImageError}
+              onLoad={handleImageLoad}
             />
           )}
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
-            <p className="text-white font-medium text-center whitespace-pre-line">
-              {meme.caption}
-            </p>
-          </div>
+          
+          {!imageError && (
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
+              <p className="text-white font-medium text-center whitespace-pre-line">
+                {meme.caption}
+              </p>
+            </div>
+          )}
         </div>
       </Link>
       
