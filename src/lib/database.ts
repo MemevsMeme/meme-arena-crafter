@@ -759,3 +759,49 @@ export const getNewestMemes = async (limit: number = 10): Promise<Meme[]> => {
     return [];
   }
 };
+
+// Function to check if a prompt has enough submissions to create a battle
+export const checkAndCreateBattleForPrompt = async (promptId: string): Promise<Battle | null> => {
+  try {
+    // Get meme submissions for this prompt
+    const { data: memes, error } = await supabase
+      .from('memes')
+      .select('*')
+      .eq('prompt_id', promptId)
+      .order('votes', { ascending: false })
+      .limit(5);  // Get top 5 submissions
+    
+    if (error) {
+      console.error('Error fetching meme submissions:', error);
+      return null;
+    }
+    
+    // If we have at least 2 meme submissions, create a battle
+    if (memes && memes.length >= 2) {
+      // Get prompt details to determine if it's a community prompt
+      const { data: prompt } = await supabase
+        .from('prompts')
+        .select('*')
+        .eq('id', promptId)
+        .single();
+      
+      if (!prompt) return null;
+      
+      // Create battle using top 2 voted memes
+      const battle = await createBattle({
+        promptId: promptId,
+        memeOneId: memes[0].id,
+        memeTwoId: memes[1].id,
+        creatorId: prompt.creator_id || undefined,
+        isCommunity: prompt.is_community || false
+      });
+      
+      return battle;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error checking for battle creation:', error);
+    return null;
+  }
+};

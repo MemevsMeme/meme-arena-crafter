@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { ArrowLeft, Share, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Battle as BattleType, Meme as MemeType } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { getBattleById, getPromptById, castVote } from '@/lib/database';
@@ -197,7 +196,7 @@ const Battle = () => {
               Share
             </Button>
             
-            {user && (
+            {user && battle.promptId && (
               <Link to={`/create?promptId=${battle.promptId}`}>
                 <Button variant="default" size="sm" className="flex items-center gap-1.5">
                   <RefreshCw className="h-4 w-4" />
@@ -314,7 +313,7 @@ const Battle = () => {
         
         {user && battle.promptId && (
           <div className="bg-muted p-6 rounded-lg text-center">
-            <h2 className="text-xl font-heading mb-4">Want to join this challenge?</h2>
+            <h2 className="text-xl font-heading mb-4">Want to join this battle?</h2>
             <p className="mb-4">Create your own meme for this prompt and it could be featured in future battles!</p>
             <Link to={`/create?promptId=${battle.promptId}`}>
               <Button>Create a Meme</Button>

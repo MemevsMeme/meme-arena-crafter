@@ -10,11 +10,11 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { generateChallengeId } from '@/lib/dailyChallenges';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { TagsInput } from '@/components/ui/tags-input';
+import { createPrompt } from '@/lib/database';
 
 // Form schema for battle creation
 const battleSchema = z.object({
@@ -47,24 +47,20 @@ const CreateBattle = () => {
     setIsSubmitting(true);
     
     try {
-      // Insert into database - match the exact column names
-      const { data: promptData, error: promptError } = await supabase
-        .from('prompts')
-        .insert({
-          text: values.title,
-          theme: values.tags.join(', '), // Use comma-separated tags as theme
-          tags: values.tags,
-          active: true,
-          start_date: new Date().toISOString(),
-          end_date: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(),
-          description: values.description,
-        })
-        .select()
-        .single();
+      // Create a new battle prompt using our database utility
+      const prompt = await createPrompt({
+        text: values.title,
+        theme: values.tags.join(', '),
+        tags: values.tags,
+        description: values.description,
+        isCommunity: true,  // Mark as community-created
+        creatorId: user.id,
+        startDate: new Date(),
+        endDate: new Date(new Date().setDate(new Date().getDate() + 7))  // 7 days from now
+      });
       
-      if (promptError) {
-        console.error("Error creating battle:", promptError);
-        throw new Error(promptError.message);
+      if (!prompt) {
+        throw new Error("Failed to create battle");
       }
       
       toast.success("Battle created successfully!");

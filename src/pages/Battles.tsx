@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/button';
 import { getActiveBattles, getPrompts } from '@/lib/database';
 import { Battle as BattleType, Prompt } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { BattleFilterType } from '@/components/battle/BattleFilter';
 
 const Battles = () => {
-  const [filter, setFilter] = useState<'all' | 'official' | 'community'>('all');
+  const [filter, setFilter] = useState<BattleFilterType>('all');
   const { user } = useAuth();
   
   // Query battles based on filter
@@ -28,7 +29,7 @@ const Battles = () => {
     }
   });
   
-  // Query prompts for ongoing challenges that don't have battles yet
+  // Query prompts for ongoing battles that don't have enough meme submissions yet
   const { data: prompts, isLoading: promptsLoading } = useQuery({
     queryKey: ['active_prompts', filter],
     queryFn: async () => {
@@ -49,7 +50,7 @@ const Battles = () => {
     }
   });
   
-  const handleFilterChange = (newFilter: 'all' | 'official' | 'community') => {
+  const handleFilterChange = (newFilter: BattleFilterType) => {
     setFilter(newFilter);
   };
 
@@ -104,10 +105,10 @@ const Battles = () => {
           </>
         )}
         
-        {/* Active Prompts without battles yet */}
+        {/* Active Prompts - Battles waiting for submissions */}
         {!promptsLoading && prompts && prompts.length > 0 && (
           <>
-            <h2 className="text-2xl font-heading mt-10 mb-4">Ongoing Challenges</h2>
+            <h2 className="text-2xl font-heading mt-10 mb-4">Open Battles - Join Now</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {prompts.map(prompt => (
                 <div key={prompt.id} className="bg-background border rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -120,7 +121,7 @@ const Battles = () => {
                     ))}
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">
-                    {prompt.description || "Join this challenge and create an awesome meme!"}
+                    {prompt.description || "Join this battle and create an awesome meme!"}
                   </p>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">
@@ -128,7 +129,7 @@ const Battles = () => {
                     </span>
                     {user ? (
                       <Link to={`/create?promptId=${prompt.id}`}>
-                        <Button size="sm">Join Challenge</Button>
+                        <Button size="sm">Join Battle</Button>
                       </Link>
                     ) : (
                       <Link to="/login">
@@ -144,7 +145,7 @@ const Battles = () => {
         
         {promptsLoading && (
           <div className="mt-10">
-            <h2 className="text-2xl font-heading mb-4">Ongoing Challenges</h2>
+            <h2 className="text-2xl font-heading mb-4">Open Battles</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="bg-muted animate-pulse rounded-lg h-40"></div>
