@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,7 +7,7 @@ import MemeCanvas from '@/components/meme/MemeCanvas';
 import ImageUploader from '@/components/meme/ImageUploader';
 import AiImageGenerator from '@/components/meme/AiImageGenerator';
 import CaptionGenerator from '@/components/meme/CaptionGenerator';
-import TextEditor from '@/components/meme/TextEditor';
+import TextEditor, { TextPosition } from '@/components/meme/TextEditor';
 import SaveActions from '@/components/meme/SaveActions';
 import { supabase } from '@/lib/supabase';
 import { createMeme } from '@/lib/database';
@@ -22,20 +21,6 @@ interface MemeGeneratorProps {
   promptId?: string;
   onSave?: (meme: { id: string; caption: string; imageUrl: string }) => void;
   defaultEditMode?: boolean;
-}
-
-interface TextPosition {
-  text: string;
-  x: number;
-  y: number;
-  fontSize: number;
-  maxWidth: number;
-  alignment?: 'left' | 'center' | 'right';
-  color?: string;
-  isBold?: boolean;
-  isItalic?: boolean;
-  fontFamily?: string;
-  stretch?: number;
 }
 
 const MemeGenerator: React.FC<MemeGeneratorProps> = ({
@@ -445,6 +430,18 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       setIsCreatingMeme(false);
     }
   };
+
+    // Handler for updating text positions
+    const handleTextPositionsChange = (positions: TextPosition[]) => {
+      setTextPositions(positions);
+    };
+    
+    // Handler for removing text
+    const handleRemoveText = (index: number) => {
+      const updatedPositions = [...textPositions];
+      updatedPositions.splice(index, 1);
+      setTextPositions(updatedPositions);
+    };
   
   return (
     <div className="meme-generator border rounded-xl p-4 bg-background shadow-sm">
@@ -510,8 +507,9 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       {isEditMode ? (
         <TextEditor
           textPositions={textPositions}
-          setTextPositions={setTextPositions}
-          handleAddText={handleAddText}
+          onChange={handleTextPositionsChange}
+          onAddText={handleAddText}
+          onRemoveText={handleRemoveText}
         />
       ) : (
         <div className="mb-4">
