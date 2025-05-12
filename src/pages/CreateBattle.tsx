@@ -54,7 +54,7 @@ const CreateBattle = () => {
         tags: values.tags,
         description: values.description,
         is_community: true,  // Fixed property name to match type definition
-        creatorId: user.id,
+        creator_id: user.id, // Changed from creatorId to creator_id to match type definition
         startDate: new Date(),
         endDate: new Date(new Date().setDate(new Date().getDate() + 7))  // 7 days from now
       });
