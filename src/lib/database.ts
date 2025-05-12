@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Caption, Meme, Prompt, Battle, User } from './types';
 import { Database } from '@/integrations/supabase/types';
@@ -427,15 +426,24 @@ export const getBattleById = async (battleId: string): Promise<Battle | null> =>
   }
 };
 
-export const getPrompts = async (limit: number = 10, offset: number = 0, isCommunity: boolean = false): Promise<Prompt[]> => {
+export const getPrompts = async (limit: number = 10, offset: number = 0, isCommunity: boolean | null = null): Promise<Prompt[]> => {
   try {
-    const { data, error } = await supabase
+    // Start building the query
+    let query = supabase
       .from('prompts')
       .select('*')
-      .eq('active', true)
-      .eq('is_community', isCommunity)
-      .order('start_date', { ascending: false })
+      .eq('active', true);
+      
+    // Only apply isCommunity filter if it's not null
+    if (isCommunity !== null) {
+      query = query.eq('is_community', isCommunity);
+    }
+    
+    // Add ordering and pagination
+    query = query.order('start_date', { ascending: false })
       .range(offset, offset + limit - 1);
+      
+    const { data, error } = await query;
       
     if (error) {
       console.error('Error fetching prompts:', error);
