@@ -10,7 +10,6 @@ import AiImageGenerator from '@/components/meme/AiImageGenerator';
 import CaptionGenerator from '@/components/meme/CaptionGenerator';
 import TextEditor from '@/components/meme/TextEditor';
 import SaveActions from '@/components/meme/SaveActions';
-import { detectGif } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { createMeme } from '@/lib/database';
 import { uploadFileToIPFS, pinUrlToIPFS } from '@/lib/ipfs';
@@ -87,6 +86,11 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   // State variables for saving the meme
   const [isCreatingMeme, setIsCreatingMeme] = useState(false);
   const [isUploadingToIPFS, setIsUploadingToIPFS] = useState(false);
+  const [isGeneratingAIImage, setIsGeneratingAIImage] = useState(false);
+  const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false);
+  const [generatedCaptions, setGeneratedCaptions] = useState<string[]>([]);
+  const [selectedCaptionStyle, setSelectedCaptionStyle] = useState('funny');
+  
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
   // Add text handler
@@ -148,6 +152,41 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       };
       setTextPositions(updatedPositions);
     }
+  };
+  
+  // Handler for generating AI image
+  const handleGenerateImage = () => {
+    // In a real implementation, this would call an AI service
+    setIsGeneratingAIImage(true);
+    
+    // Simulate AI image generation with a timeout
+    setTimeout(() => {
+      // Placeholder logic - in real app would call API
+      setGeneratedImage('/placeholder.svg');
+      setIsGeneratingAIImage(false);
+    }, 2000);
+  };
+  
+  // Handler for generating captions
+  const handleGenerateCaptions = () => {
+    setIsGeneratingCaptions(true);
+    
+    // Simulate caption generation with a timeout
+    setTimeout(() => {
+      // Placeholder logic - in real app would call API
+      const fakeCaptions = [
+        "When you finally understand how callbacks work",
+        "That moment when your code works on the first try",
+        "Programming: Where semicolons ruin your day"
+      ];
+      setGeneratedCaptions(fakeCaptions);
+      setIsGeneratingCaptions(false);
+    }, 2000);
+  };
+  
+  // Handler for selecting a generated caption
+  const handleSelectCaption = (caption: string) => {
+    handleSetCaption(caption);
   };
   
   // Handler for saving the meme
@@ -439,8 +478,9 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         <TabsContent value="ai-generated">
           <AiImageGenerator
             promptText={promptText}
+            isGeneratingAIImage={isGeneratingAIImage}
             generatedImage={generatedImage}
-            setGeneratedImage={setGeneratedImage}
+            handleGenerateImage={handleGenerateImage}
           />
         </TabsContent>
       </Tabs>
@@ -489,10 +529,12 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
             
             <CaptionGenerator
               promptText={promptText}
-              imageRef={activeTab === 'template' && selectedTemplate ? selectedTemplate.url : 
-                      activeTab === 'upload' && uploadedImage ? uploadedImage :
-                      activeTab === 'ai-generated' && generatedImage ? generatedImage : null}
-              onCaptionGenerated={handleSetCaption}
+              selectedStyle={selectedCaptionStyle}
+              isGeneratingCaptions={isGeneratingCaptions}
+              generatedCaptions={generatedCaptions}
+              setSelectedStyle={setSelectedCaptionStyle}
+              handleGenerateCaptions={handleGenerateCaptions}
+              handleSelectCaption={handleSelectCaption}
             />
           </div>
         </div>
