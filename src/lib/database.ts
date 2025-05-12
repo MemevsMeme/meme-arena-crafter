@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Battle, Meme, Prompt, User } from './types';
 import { BattleFilterType } from '@/components/battle/BattleFilter';
@@ -120,7 +121,7 @@ const mapDbMemeToMeme = (dbMeme): Meme => {
   return {
     id: dbMeme.id,
     prompt: dbMeme.prompt,
-    promptId: dbMeme.prompt_id,
+    prompt_id: dbMeme.prompt_id,
     imageUrl: dbMeme.image_url,
     ipfsCid: dbMeme.ipfs_cid,
     caption: dbMeme.caption,
@@ -145,12 +146,12 @@ const mapDbBattleToBattle = (dbBattle): Battle => {
     memeOneId: dbBattle.meme_one_id,
     memeTwoId: dbBattle.meme_two_id,
     winnerId: dbBattle.winner_id,
-    creatorId: dbBattle.creator_id,
+    creator_id: dbBattle.creator_id,
     startTime: dbBattle.start_time,
     endTime: dbBattle.end_time,
     status: dbBattle.status,
     voteCount: dbBattle.vote_count,
-    isCommunity: dbBattle.is_community,
+    is_community: dbBattle.is_community,
     memeOne: null, // These will be populated separately
     memeTwo: null
   };
@@ -372,8 +373,8 @@ const mapDbPromptToPrompt = (dbPrompt): Prompt => {
     text: dbPrompt.text,
     theme: dbPrompt.theme,
     tags: dbPrompt.tags,
-    isCommunity: dbPrompt.is_community,
-    creatorId: dbPrompt.creator_id,
+    is_community: dbPrompt.is_community,
+    creator_id: dbPrompt.creator_id,
     startDate: new Date(dbPrompt.start_date),
     endDate: new Date(dbPrompt.end_date),
     description: dbPrompt.description,
@@ -414,7 +415,7 @@ export const getActivePrompt = async () => {
       .select('*')
       .lt('start_date', new Date().toISOString())
       .gt('end_date', new Date().toISOString())
-      .order('created_at', { ascending: false })
+      .order('start_date', { ascending: false })
       .limit(1)
       .maybeSingle();
 
