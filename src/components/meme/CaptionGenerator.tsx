@@ -29,16 +29,14 @@ const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({
 }) => {
   const onGenerateCaptions = () => {
     if (!promptText) {
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Please enter a prompt text first",
         variant: "destructive"
       });
       return;
     }
     
-    toast({
-      title: "Generating captions...",
+    toast("Generating captions...", {
       description: "This might take a few seconds with Gemini 2.0",
     });
     

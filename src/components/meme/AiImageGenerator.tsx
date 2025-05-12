@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Wand, Save } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 
 interface AiImageGeneratorProps {
@@ -25,16 +25,14 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
   
   const handleImageGeneration = () => {
     if (!promptText && !customPrompt) {
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Please enter a prompt text first",
         variant: "destructive"
       });
       return;
     }
     
-    toast({
-      title: "Generating...",
+    toast("Generating...", {
       description: "Generating image with AI..."
     });
     
@@ -44,8 +42,7 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
   const handleSaveAsTemplate = () => {
     if (generatedImage && onSaveAsTemplate) {
       onSaveAsTemplate(generatedImage, promptText);
-      toast({
-        title: "Success",
+      toast("Success", {
         description: "Image saved as template"
       });
     }

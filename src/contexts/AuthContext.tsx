@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Session, User as AuthUser } from '@supabase/supabase-js';
@@ -50,7 +51,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           const newProfile = await createProfile({
             id: user.id,
             username: user.email || `user_${user.id.substring(0, 8)}`,
-            avatarUrl: `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${user.id}`,
+            avatarUrl: `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${user.id}`
           });
           setUserProfile(newProfile);
         }

@@ -1,11 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Battle, Caption, Meme, MemeComment, Profile, Prompt, UserVote } from './types';
+import { Battle, Meme, Prompt } from './types';
 import { BattleFilterType } from '@/components/battle/BattleFilter';
 
 /**
  * Get user profile by user ID
  */
-export const getProfile = async (userId: string): Promise<Profile | null> => {
+export const getProfile = async (userId: string) => {
   try {
     const { data, error } = await supabase
       .from('profiles')
@@ -18,7 +18,7 @@ export const getProfile = async (userId: string): Promise<Profile | null> => {
       return null;
     }
 
-    return data as Profile;
+    return data;
   } catch (error) {
     console.error('Error in getProfile:', error);
     return null;
@@ -26,13 +26,55 @@ export const getProfile = async (userId: string): Promise<Profile | null> => {
 };
 
 /**
- * Update user profile
+ * Create user profile
  */
-export const updateProfile = async (userId: string, updates: Partial<Profile>): Promise<Profile | null> => {
+export const createProfile = async (profileData: { id: string, username: string, avatarUrl?: string }) => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .update(updates)
+      .insert([{
+        id: profileData.id,
+        username: profileData.username,
+        avatar_url: profileData.avatarUrl || `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${profileData.id}`,
+        meme_streak: 0,
+        wins: 0,
+        losses: 0,
+        level: 1,
+        xp: 0
+      }])
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('Error creating profile:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in createProfile:', error);
+    return null;
+  }
+};
+
+/**
+ * Update user profile
+ */
+export const updateProfile = async (userId: string, updates: any) => {
+  try {
+    // Convert camelCase to snake_case for database fields
+    const dbUpdates = {};
+    if (updates.avatarUrl) dbUpdates['avatar_url'] = updates.avatarUrl;
+    if (updates.memeStreak !== undefined) dbUpdates['meme_streak'] = updates.memeStreak;
+    if (updates.wins !== undefined) dbUpdates['wins'] = updates.wins;
+    if (updates.losses !== undefined) dbUpdates['losses'] = updates.losses;
+    if (updates.level !== undefined) dbUpdates['level'] = updates.level;
+    if (updates.xp !== undefined) dbUpdates['xp'] = updates.xp;
+    if (updates.username) dbUpdates['username'] = updates.username;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(dbUpdates)
       .eq('id', userId)
       .select('*')
       .single();
@@ -42,7 +84,8 @@ export const updateProfile = async (userId: string, updates: Partial<Profile>): 
       return null;
     }
 
-    return data as Profile;
+    // Convert response to camelCase for frontend
+    return mapDbProfileToProfile(data);
   } catch (error) {
     console.error('Error in updateProfile:', error);
     return null;
@@ -50,21 +93,62 @@ export const updateProfile = async (userId: string, updates: Partial<Profile>): 
 };
 
 /**
+ * Map DB profile to camelCase profile
+ */
+const mapDbProfileToProfile = (dbProfile) => {
+  if (!dbProfile) return null;
+  
+  return {
+    id: dbProfile.id,
+    username: dbProfile.username,
+    avatarUrl: dbProfile.avatar_url,
+    memeStreak: dbProfile.meme_streak,
+    wins: dbProfile.wins,
+    losses: dbProfile.losses,
+    level: dbProfile.level,
+    xp: dbProfile.xp,
+    createdAt: dbProfile.created_at
+  };
+};
+
+/**
+ * Map DB meme to camelCase meme
+ */
+const mapDbMemeToMeme = (dbMeme) => {
+  if (!dbMeme) return null;
+  
+  return {
+    id: dbMeme.id,
+    prompt: dbMeme.prompt,
+    promptId: dbMeme.prompt_id,
+    imageUrl: dbMeme.image_url,
+    ipfsCid: dbMeme.ipfs_cid,
+    caption: dbMeme.caption,
+    creatorId: dbMeme.creator_id,
+    votes: dbMeme.votes,
+    createdAt: dbMeme.created_at,
+    tags: dbMeme.tags,
+    isBattleSubmission: dbMeme.is_battle_submission,
+    battleId: dbMeme.battle_id
+  };
+};
+
+/**
  * Get all memes
  */
-export const getAllMemes = async (): Promise<Meme[]> => {
+export const getAllMemes = async () => {
   try {
     const { data, error } = await supabase
       .from('memes')
       .select('*')
-      .order('createdAt', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching memes:', error);
       return [];
     }
 
-    return data as Meme[];
+    return data.map(mapDbMemeToMeme);
   } catch (error) {
     console.error('Error in getAllMemes:', error);
     return [];
@@ -74,7 +158,7 @@ export const getAllMemes = async (): Promise<Meme[]> => {
 /**
  * Get meme by ID
  */
-export const getMemeById = async (memeId: string): Promise<Meme | null> => {
+export const getMemeById = async (memeId: string) => {
   try {
     const { data, error } = await supabase
       .from('memes')
@@ -87,7 +171,7 @@ export const getMemeById = async (memeId: string): Promise<Meme | null> => {
       return null;
     }
 
-    return data as Meme;
+    return mapDbMemeToMeme(data);
   } catch (error) {
     console.error('Error in getMemeById:', error);
     return null;
@@ -97,20 +181,20 @@ export const getMemeById = async (memeId: string): Promise<Meme | null> => {
 /**
  * Get memes by user ID
  */
-export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
+export const getMemesByUserId = async (userId: string) => {
   try {
     const { data, error } = await supabase
       .from('memes')
       .select('*')
-      .eq('creatorId', userId)
-      .order('createdAt', { ascending: false });
+      .eq('creator_id', userId)
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching memes:', error);
       return [];
     }
 
-    return data as Meme[];
+    return data.map(mapDbMemeToMeme);
   } catch (error) {
     console.error('Error in getMemesByUserId:', error);
     return [];
@@ -120,11 +204,26 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
 /**
  * Create a new meme
  */
-export const createMeme = async (meme: Omit<Meme, 'id'>): Promise<Meme | null> => {
+export const createMeme = async (meme) => {
   try {
+    // Convert camelCase to snake_case for database fields
+    const dbMeme = {
+      prompt: meme.prompt,
+      prompt_id: meme.promptId || meme.prompt_id,
+      image_url: meme.imageUrl || meme.image_url,
+      ipfs_cid: meme.ipfsCid || meme.ipfs_cid,
+      caption: meme.caption,
+      creator_id: meme.creatorId || meme.creator_id,
+      votes: meme.votes || 0,
+      created_at: meme.createdAt || new Date().toISOString(),
+      tags: meme.tags || [],
+      battle_id: meme.battleId || meme.battle_id,
+      is_battle_submission: meme.isBattleSubmission || meme.is_battle_submission || false
+    };
+
     const { data, error } = await supabase
       .from('memes')
-      .insert([meme])
+      .insert([dbMeme])
       .select('*')
       .single();
 
@@ -133,7 +232,7 @@ export const createMeme = async (meme: Omit<Meme, 'id'>): Promise<Meme | null> =
       return null;
     }
 
-    return data as Meme;
+    return mapDbMemeToMeme(data);
   } catch (error) {
     console.error('Error in createMeme:', error);
     return null;
@@ -143,7 +242,7 @@ export const createMeme = async (meme: Omit<Meme, 'id'>): Promise<Meme | null> =
 /**
  * Update meme votes
  */
-export const updateMemeVotes = async (memeId: string, votes: number): Promise<Meme | null> => {
+export const updateMemeVotes = async (memeId: string, votes: number) => {
   try {
     const { data, error } = await supabase
       .from('memes')
@@ -157,7 +256,7 @@ export const updateMemeVotes = async (memeId: string, votes: number): Promise<Me
       return null;
     }
 
-    return data as Meme;
+    return mapDbMemeToMeme(data);
   } catch (error) {
     console.error('Error in updateMemeVotes:', error);
     return null;
@@ -167,7 +266,7 @@ export const updateMemeVotes = async (memeId: string, votes: number): Promise<Me
 /**
  * Delete a meme
  */
-export const deleteMeme = async (memeId: string): Promise<boolean> => {
+export const deleteMeme = async (memeId: string) => {
   try {
     const { error } = await supabase
       .from('memes')
@@ -189,7 +288,7 @@ export const deleteMeme = async (memeId: string): Promise<boolean> => {
 /**
  * Get all meme comments
  */
-export const getAllMemeComments = async (memeId: string): Promise<MemeComment[]> => {
+export const getAllMemeComments = async (memeId: string) => {
   try {
     const { data, error } = await supabase
       .from('meme_comments')
@@ -202,7 +301,7 @@ export const getAllMemeComments = async (memeId: string): Promise<MemeComment[]>
       return [];
     }
 
-    return data as MemeComment[];
+    return data;
   } catch (error) {
     console.error('Error in getAllMemeComments:', error);
     return [];
@@ -212,7 +311,7 @@ export const getAllMemeComments = async (memeId: string): Promise<MemeComment[]>
 /**
  * Create a new meme comment
  */
-export const createMemeComment = async (comment: Omit<MemeComment, 'id'>): Promise<MemeComment | null> => {
+export const createMemeComment = async (comment) => {
   try {
     const { data, error } = await supabase
       .from('meme_comments')
@@ -225,7 +324,7 @@ export const createMemeComment = async (comment: Omit<MemeComment, 'id'>): Promi
       return null;
     }
 
-    return data as MemeComment;
+    return data;
   } catch (error) {
     console.error('Error in createMemeComment:', error);
     return null;
@@ -235,7 +334,7 @@ export const createMemeComment = async (comment: Omit<MemeComment, 'id'>): Promi
 /**
  * Delete a meme comment
  */
-export const deleteMemeComment = async (commentId: string): Promise<boolean> => {
+export const deleteMemeComment = async (commentId: string) => {
   try {
     const { error } = await supabase
       .from('meme_comments')
@@ -257,7 +356,7 @@ export const deleteMemeComment = async (commentId: string): Promise<boolean> => 
 /**
  * Get all prompts
  */
-export const getAllPrompts = async (): Promise<Prompt[]> => {
+export const getAllPrompts = async () => {
   try {
     const { data, error } = await supabase
       .from('prompts')
@@ -269,7 +368,7 @@ export const getAllPrompts = async (): Promise<Prompt[]> => {
       return [];
     }
 
-    return data as Prompt[];
+    return data;
   } catch (error) {
     console.error('Error in getAllPrompts:', error);
     return [];
@@ -279,7 +378,7 @@ export const getAllPrompts = async (): Promise<Prompt[]> => {
 /**
  * Get prompt by ID
  */
-export const getPromptById = async (promptId: string): Promise<Prompt | null> => {
+export const getPromptById = async (promptId: string) => {
   try {
     const { data, error } = await supabase
       .from('prompts')
@@ -292,7 +391,7 @@ export const getPromptById = async (promptId: string): Promise<Prompt | null> =>
       return null;
     }
 
-    return data as Prompt;
+    return data;
   } catch (error) {
     console.error('Error in getPromptById:', error);
     return null;
@@ -302,7 +401,7 @@ export const getPromptById = async (promptId: string): Promise<Prompt | null> =>
 /**
  * Get active prompt
  */
-export const getActivePrompt = async (): Promise<Prompt | null> => {
+export const getActivePrompt = async () => {
   try {
     const { data, error } = await supabase
       .from('prompts')
@@ -318,7 +417,7 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
       return null;
     }
 
-    return data as Prompt;
+    return data;
   } catch (error) {
     console.error('Error in getActivePrompt:', error);
     return null;
@@ -326,42 +425,9 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
 };
 
 /**
- * Get active battle prompts
- */
-export const getActiveBattles = async (filter: BattleFilterType = 'all'): Promise<Battle[]> => {
-  try {
-    let query = supabase
-      .from('prompts')
-      .select('*')
-      .lt('startDate', new Date().toISOString())
-      .gt('endDate', new Date().toISOString())
-      .order('createdAt', { ascending: false });
-
-    // Apply filter if not 'all'
-    if (filter === 'official') {
-      query = query.eq('isCommunity', false);
-    } else if (filter === 'community') {
-      query = query.eq('isCommunity', true);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error fetching active battles:', error);
-      return [];
-    }
-
-    return data as Battle[];
-  } catch (error) {
-    console.error('Error in getActiveBattles:', error);
-    return [];
-  }
-};
-
-/**
  * Create a new prompt
  */
-export const createPrompt = async (prompt: Omit<Prompt, 'id'>): Promise<Prompt | null> => {
+export const createPrompt = async (prompt) => {
   try {
     const { data, error } = await supabase
       .from('prompts')
@@ -374,7 +440,7 @@ export const createPrompt = async (prompt: Omit<Prompt, 'id'>): Promise<Prompt |
       return null;
     }
 
-    return data as Prompt;
+    return data;
   } catch (error) {
     console.error('Error in createPrompt:', error);
     return null;
@@ -384,7 +450,7 @@ export const createPrompt = async (prompt: Omit<Prompt, 'id'>): Promise<Prompt |
 /**
  * Update prompt
  */
-export const updatePrompt = async (promptId: string, updates: Partial<Prompt>): Promise<Prompt | null> => {
+export const updatePrompt = async (promptId: string, updates: any) => {
   try {
     const { data, error } = await supabase
       .from('prompts')
@@ -398,7 +464,7 @@ export const updatePrompt = async (promptId: string, updates: Partial<Prompt>): 
       return null;
     }
 
-    return data as Prompt;
+    return data;
   } catch (error) {
     console.error('Error in updatePrompt:', error);
     return null;
@@ -408,7 +474,7 @@ export const updatePrompt = async (promptId: string, updates: Partial<Prompt>): 
 /**
  * Delete a prompt
  */
-export const deletePrompt = async (promptId: string): Promise<boolean> => {
+export const deletePrompt = async (promptId: string) => {
   try {
     const { error } = await supabase
       .from('prompts')
@@ -430,7 +496,7 @@ export const deletePrompt = async (promptId: string): Promise<boolean> => {
 /**
  * Get user vote by user and meme ID
  */
-export const getUserVote = async (userId: string, memeId: string): Promise<UserVote | null> => {
+export const getUserVote = async (userId: string, memeId: string) => {
   try {
     const { data, error } = await supabase
       .from('user_votes')
@@ -448,7 +514,7 @@ export const getUserVote = async (userId: string, memeId: string): Promise<UserV
       return null;
     }
 
-    return data as UserVote;
+    return data;
   } catch (error) {
     console.error('Error in getUserVote:', error);
     return null;
@@ -458,7 +524,7 @@ export const getUserVote = async (userId: string, memeId: string): Promise<UserV
 /**
  * Upvote a meme
  */
-export const upvoteMeme = async (userId: string, memeId: string): Promise<UserVote | null> => {
+export const upvoteMeme = async (userId: string, memeId: string) => {
   try {
     // First, check if the user has already voted
     const existingVote = await getUserVote(userId, memeId);
@@ -493,7 +559,7 @@ export const upvoteMeme = async (userId: string, memeId: string): Promise<UserVo
           return null;
         }
 
-        return data as UserVote;
+        return data;
       }
     } else {
       // If the user has not voted, add an upvote
@@ -508,7 +574,7 @@ export const upvoteMeme = async (userId: string, memeId: string): Promise<UserVo
         return null;
       }
 
-      return data as UserVote;
+      return data;
     }
   } catch (error) {
     console.error('Error in upvoteMeme:', error);
@@ -519,7 +585,7 @@ export const upvoteMeme = async (userId: string, memeId: string): Promise<UserVo
 /**
  * Downvote a meme
  */
-export const downvoteMeme = async (userId: string, memeId: string): Promise<UserVote | null> => {
+export const downvoteMeme = async (userId: string, memeId: string) => {
   try {
     // First, check if the user has already voted
     const existingVote = await getUserVote(userId, memeId);
@@ -554,7 +620,7 @@ export const downvoteMeme = async (userId: string, memeId: string): Promise<User
           return null;
         }
 
-        return data as UserVote;
+        return data;
       }
     } else {
       // If the user has not voted, add a downvote
@@ -569,10 +635,43 @@ export const downvoteMeme = async (userId: string, memeId: string): Promise<User
         return null;
       }
 
-      return data as UserVote;
+      return data;
     }
   } catch (error) {
     console.error('Error in downvoteMeme:', error);
     return null;
+  }
+};
+
+/**
+ * Get active battle prompts
+ */
+export const getActiveBattles = async (filter: BattleFilterType = 'all') => {
+  try {
+    let query = supabase
+      .from('prompts')
+      .select('*')
+      .lt('start_date', new Date().toISOString())
+      .gt('end_date', new Date().toISOString())
+      .order('created_at', { ascending: false });
+
+    // Apply filter if not 'all'
+    if (filter === 'official') {
+      query = query.eq('is_community', false);
+    } else if (filter === 'community') {
+      query = query.eq('is_community', true);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching active battles:', error);
+      return [];
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in getActiveBattles:', error);
+    return [];
   }
 };
