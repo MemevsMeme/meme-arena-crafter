@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Wand, Save } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 
 interface AiImageGeneratorProps {
   promptText: string;
@@ -20,8 +21,10 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
   handleGenerateImage,
   onSaveAsTemplate
 }) => {
+  const [customPrompt, setCustomPrompt] = useState("");
+  
   const handleImageGeneration = () => {
-    if (!promptText) {
+    if (!promptText && !customPrompt) {
       toast({
         title: "Error",
         description: "Please enter a prompt text first",
@@ -51,14 +54,23 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
   return (
     <div>
       <div className="mb-4">
-        <Button 
-          onClick={handleImageGeneration} 
-          disabled={isGeneratingAIImage || !promptText}
-          className="w-full"
-        >
-          {isGeneratingAIImage ? 'Generating Image...' : 'Generate AI Image from Prompt'}
-          <Wand className="ml-2 h-4 w-4" />
-        </Button>
+        <label className="block text-sm font-medium mb-1">Customize Image Prompt</label>
+        <div className="space-y-3">
+          <Input 
+            value={customPrompt}
+            onChange={(e) => setCustomPrompt(e.target.value)}
+            placeholder={`Customize prompt (base: "${promptText}")`}
+            className="mb-2"
+          />
+          <Button 
+            onClick={handleImageGeneration} 
+            disabled={isGeneratingAIImage || (!promptText && !customPrompt)}
+            className="w-full"
+          >
+            {isGeneratingAIImage ? 'Generating Image...' : 'Generate AI Image from Prompt'}
+            <Wand className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       </div>
       
       {isGeneratingAIImage && (

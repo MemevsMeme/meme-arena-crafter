@@ -6,7 +6,7 @@ import { CAPTION_STYLES } from '@/lib/constants';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface CaptionGeneratorProps {
   promptText: string;

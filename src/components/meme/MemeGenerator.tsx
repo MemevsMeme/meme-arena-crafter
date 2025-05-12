@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -82,6 +81,8 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
+  const [customImagePrompt, setCustomImagePrompt] = useState<string>("");
+  
   // Add text handler
   const handleAddText = () => {
     const newPosition: TextPosition = {
@@ -143,9 +144,9 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
     }
   };
 
-  // Handler for generating AI image
+  // Handler for generating AI image with custom prompt
   const handleGenerateImage = async () => {
-    if (!promptText) {
+    if (!promptText && !customImagePrompt) {
       toast({
         title: "Error",
         description: "Please enter a prompt text first",
@@ -158,8 +159,11 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
     setActiveTab('ai-generated');
     
     try {
+      // Use custom prompt if provided, otherwise use the original promptText
+      const finalPrompt = customImagePrompt || promptText;
+      
       // Call the AI image generation function from lib/ai.ts
-      const imageData = await generateMemeImage(promptText, selectedCaptionStyle);
+      const imageData = await generateMemeImage(finalPrompt, selectedCaptionStyle);
       
       if (imageData) {
         console.log('AI image generated successfully');
@@ -179,24 +183,44 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
     }
   };
   
-  // Handler for generating captions
-  const handleGenerateCaptions = () => {
-    // This is implemented in the CaptionGenerator component
+  // Handler for generating captions using AI
+  const handleGenerateCaptions = async () => {
+    if (!promptText) {
+      toast({
+        title: "Error",
+        description: "Please enter a prompt text first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsGeneratingCaptions(true);
     
-    // Simulate caption generation with a timeout
-    setTimeout(() => {
-      // Placeholder logic - in real app would call API
-      const fakeCaptions = [
-        "When you finally understand how callbacks work",
-        "That moment when your code works on the first try",
-        "Programming: Where semicolons ruin your day"
-      ];
-      setGeneratedCaptions(fakeCaptions);
+    try {
+      // Import and use the generateCaption function from lib/ai.ts
+      const { generateCaption } = await import('@/lib/ai');
+      const captions = await generateCaption(promptText, selectedCaptionStyle);
+      
+      setGeneratedCaptions(captions);
+    } catch (error) {
+      console.error('Error generating captions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate captions. Please try again.",
+        variant: "destructive"
+      });
+      
+      // Fallback captions in case of error
+      setGeneratedCaptions([
+        `When ${promptText ? promptText.toLowerCase() : 'trying'} but it actually works`,
+        `Nobody:\nAbsolutely nobody:\nMe: ${promptText || 'doing meme stuff'}`,
+        `${promptText || 'This meme'}? Story of my life.`
+      ]);
+    } finally {
       setIsGeneratingCaptions(false);
-    }, 2000);
+    }
   };
-  
+
   // Handler for selecting a generated caption
   const handleSelectCaption = (caption: string) => {
     handleSetCaption(caption);
@@ -511,8 +535,8 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         </TabsContent>
       </Tabs>
       
+      {/* Canvas for meme preview - rendered by MemeCanvas component */}
       <div className="meme-preview my-4">
-        {/* Canvas for meme preview - rendered by MemeCanvas component */}
         <MemeCanvas
           activeTab={activeTab}
           selectedTemplate={selectedTemplate}
@@ -553,17 +577,17 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
                 className="resize-none"
               />
             </div>
-            
-            <CaptionGenerator
-              promptText={promptText}
-              selectedStyle={selectedCaptionStyle}
-              isGeneratingCaptions={isGeneratingCaptions}
-              generatedCaptions={generatedCaptions}
-              setSelectedStyle={setSelectedCaptionStyle}
-              handleGenerateCaptions={handleGenerateCaptions}
-              handleSelectCaption={handleSelectCaption}
-            />
           </div>
+          
+          <CaptionGenerator
+            promptText={promptText}
+            selectedStyle={selectedCaptionStyle}
+            isGeneratingCaptions={isGeneratingCaptions}
+            generatedCaptions={generatedCaptions}
+            setSelectedStyle={setSelectedCaptionStyle}
+            handleGenerateCaptions={handleGenerateCaptions}
+            handleSelectCaption={handleSelectCaption}
+          />
         </div>
       )}
       
