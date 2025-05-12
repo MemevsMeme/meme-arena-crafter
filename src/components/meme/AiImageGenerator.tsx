@@ -25,9 +25,8 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
   
   const handleImageGeneration = () => {
     if (!promptText && !customPrompt) {
-      toast("Error", {
-        description: "Please enter a prompt text first",
-        variant: "destructive"
+      toast("Please enter a prompt text first", {
+        description: "A prompt is needed to generate an image",
       });
       return;
     }
@@ -42,8 +41,8 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
   const handleSaveAsTemplate = () => {
     if (generatedImage && onSaveAsTemplate) {
       onSaveAsTemplate(generatedImage, promptText);
-      toast("Success", {
-        description: "Image saved as template"
+      toast("Image saved as template", {
+        description: "You can now use this as a template"
       });
     }
   };

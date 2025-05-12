@@ -1,5 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { Battle, Meme, Prompt } from './types';
+import { Battle, Meme, Prompt, User } from './types';
 import { BattleFilterType } from '@/components/battle/BattleFilter';
 
 /**
@@ -18,7 +19,7 @@ export const getProfile = async (userId: string) => {
       return null;
     }
 
-    return data;
+    return mapDbProfileToProfile(data);
   } catch (error) {
     console.error('Error in getProfile:', error);
     return null;
@@ -50,7 +51,7 @@ export const createProfile = async (profileData: { id: string, username: string,
       return null;
     }
 
-    return data;
+    return mapDbProfileToProfile(data);
   } catch (error) {
     console.error('Error in createProfile:', error);
     return null;
@@ -114,7 +115,7 @@ const mapDbProfileToProfile = (dbProfile) => {
 /**
  * Map DB meme to camelCase meme
  */
-const mapDbMemeToMeme = (dbMeme) => {
+const mapDbMemeToMeme = (dbMeme): Meme => {
   if (!dbMeme) return null;
   
   return {
@@ -286,74 +287,6 @@ export const deleteMeme = async (memeId: string) => {
 };
 
 /**
- * Get all meme comments
- */
-export const getAllMemeComments = async (memeId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('meme_comments')
-      .select('*')
-      .eq('memeId', memeId)
-      .order('createdAt', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching meme comments:', error);
-      return [];
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error in getAllMemeComments:', error);
-    return [];
-  }
-};
-
-/**
- * Create a new meme comment
- */
-export const createMemeComment = async (comment) => {
-  try {
-    const { data, error } = await supabase
-      .from('meme_comments')
-      .insert([comment])
-      .select('*')
-      .single();
-
-    if (error) {
-      console.error('Error creating meme comment:', error);
-      return null;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error in createMemeComment:', error);
-    return null;
-  }
-};
-
-/**
- * Delete a meme comment
- */
-export const deleteMemeComment = async (commentId: string) => {
-  try {
-    const { error } = await supabase
-      .from('meme_comments')
-      .delete()
-      .eq('id', commentId);
-
-    if (error) {
-      console.error('Error deleting meme comment:', error);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Error in deleteMemeComment:', error);
-    return false;
-  }
-};
-
-/**
  * Get all prompts
  */
 export const getAllPrompts = async () => {
@@ -361,7 +294,7 @@ export const getAllPrompts = async () => {
     const { data, error } = await supabase
       .from('prompts')
       .select('*')
-      .order('createdAt', { ascending: false });
+      .order('start_date', { ascending: false });
 
     if (error) {
       console.error('Error fetching prompts:', error);
@@ -406,11 +339,11 @@ export const getActivePrompt = async () => {
     const { data, error } = await supabase
       .from('prompts')
       .select('*')
-      .lt('startDate', new Date().toISOString())
-      .gt('endDate', new Date().toISOString())
-      .order('createdAt', { ascending: false })
+      .lt('start_date', new Date().toISOString())
+      .gt('end_date', new Date().toISOString())
+      .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching active prompt:', error);
@@ -494,22 +427,18 @@ export const deletePrompt = async (promptId: string) => {
 };
 
 /**
- * Get user vote by user and meme ID
+ * Get user vote 
  */
 export const getUserVote = async (userId: string, memeId: string) => {
   try {
     const { data, error } = await supabase
-      .from('user_votes')
+      .from('votes')
       .select('*')
-      .eq('userId', userId)
-      .eq('memeId', memeId)
-      .single();
+      .eq('user_id', userId)
+      .eq('meme_id', memeId)
+      .maybeSingle();
 
     if (error) {
-      // If no vote exists, it's not an error
-      if (error.code === 'PGRST116') {
-        return null;
-      }
       console.error('Error fetching user vote:', error);
       return null;
     }
@@ -530,47 +459,29 @@ export const upvoteMeme = async (userId: string, memeId: string) => {
     const existingVote = await getUserVote(userId, memeId);
 
     if (existingVote) {
-      // If the user has already upvoted, remove the vote
-      if (existingVote.voteType === 'upvote') {
-        const { error } = await supabase
-          .from('user_votes')
-          .delete()
-          .eq('userId', userId)
-          .eq('memeId', memeId);
+      // If already voted, remove the vote
+      const { error } = await supabase
+        .from('votes')
+        .delete()
+        .eq('user_id', userId)
+        .eq('meme_id', memeId);
 
-        if (error) {
-          console.error('Error removing upvote:', error);
-          return null;
-        }
-
+      if (error) {
+        console.error('Error removing vote:', error);
         return null;
-      } else {
-        // If the user has downvoted, change the vote to upvote
-        const { data, error } = await supabase
-          .from('user_votes')
-          .update({ voteType: 'upvote' })
-          .eq('userId', userId)
-          .eq('memeId', memeId)
-          .select('*')
-          .single();
-
-        if (error) {
-          console.error('Error changing vote to upvote:', error);
-          return null;
-        }
-
-        return data;
       }
+
+      return null;
     } else {
-      // If the user has not voted, add an upvote
+      // If the user has not voted, add a vote
       const { data, error } = await supabase
-        .from('user_votes')
-        .insert([{ userId, memeId, voteType: 'upvote' }])
+        .from('votes')
+        .insert([{ user_id: userId, meme_id: memeId, battle_id: null }])
         .select('*')
         .single();
 
       if (error) {
-        console.error('Error adding upvote:', error);
+        console.error('Error adding vote:', error);
         return null;
       }
 
@@ -583,77 +494,15 @@ export const upvoteMeme = async (userId: string, memeId: string) => {
 };
 
 /**
- * Downvote a meme
- */
-export const downvoteMeme = async (userId: string, memeId: string) => {
-  try {
-    // First, check if the user has already voted
-    const existingVote = await getUserVote(userId, memeId);
-
-    if (existingVote) {
-      // If the user has already downvoted, remove the vote
-      if (existingVote.voteType === 'downvote') {
-        const { error } = await supabase
-          .from('user_votes')
-          .delete()
-          .eq('userId', userId)
-          .eq('memeId', memeId);
-
-        if (error) {
-          console.error('Error removing downvote:', error);
-          return null;
-        }
-
-        return null;
-      } else {
-        // If the user has upvoted, change the vote to downvote
-        const { data, error } = await supabase
-          .from('user_votes')
-          .update({ voteType: 'downvote' })
-          .eq('userId', userId)
-          .eq('memeId', memeId)
-          .select('*')
-          .single();
-
-        if (error) {
-          console.error('Error changing vote to downvote:', error);
-          return null;
-        }
-
-        return data;
-      }
-    } else {
-      // If the user has not voted, add a downvote
-      const { data, error } = await supabase
-        .from('user_votes')
-        .insert([{ userId, memeId, voteType: 'downvote' }])
-        .select('*')
-        .single();
-
-      if (error) {
-        console.error('Error adding downvote:', error);
-        return null;
-      }
-
-      return data;
-    }
-  } catch (error) {
-    console.error('Error in downvoteMeme:', error);
-    return null;
-  }
-};
-
-/**
  * Get active battle prompts
  */
 export const getActiveBattles = async (filter: BattleFilterType = 'all') => {
   try {
     let query = supabase
-      .from('prompts')
+      .from('battles')
       .select('*')
-      .lt('start_date', new Date().toISOString())
-      .gt('end_date', new Date().toISOString())
-      .order('created_at', { ascending: false });
+      .eq('status', 'active')
+      .order('start_time', { ascending: false });
 
     // Apply filter if not 'all'
     if (filter === 'official') {
@@ -672,6 +521,52 @@ export const getActiveBattles = async (filter: BattleFilterType = 'all') => {
     return data;
   } catch (error) {
     console.error('Error in getActiveBattles:', error);
+    return [];
+  }
+};
+
+/**
+ * Get trending memes
+ */
+export const getTrendingMemes = async (limit: number = 10) => {
+  try {
+    const { data, error } = await supabase
+      .from('memes')
+      .select('*')
+      .order('votes', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching trending memes:', error);
+      return [];
+    }
+
+    return data.map(mapDbMemeToMeme);
+  } catch (error) {
+    console.error('Error in getTrendingMemes:', error);
+    return [];
+  }
+};
+
+/**
+ * Get newest memes
+ */
+export const getNewestMemes = async (limit: number = 10) => {
+  try {
+    const { data, error } = await supabase
+      .from('memes')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching newest memes:', error);
+      return [];
+    }
+
+    return data.map(mapDbMemeToMeme);
+  } catch (error) {
+    console.error('Error in getNewestMemes:', error);
     return [];
   }
 };

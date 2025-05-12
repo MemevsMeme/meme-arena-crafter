@@ -81,6 +81,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
+  // Add custom prompt state for AI image generation
   const [customImagePrompt, setCustomImagePrompt] = useState<string>("");
   
   // Add text handler
