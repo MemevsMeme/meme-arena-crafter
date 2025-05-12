@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,13 +16,14 @@ import { uploadFileToIPFS, pinUrlToIPFS } from '@/lib/ipfs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
+import { generateMemeImage } from '@/lib/ai';
 
 interface MemeGeneratorProps {
   promptText: string;
   promptId?: string;
   onSave?: (meme: { id: string; caption: string; imageUrl: string }) => void;
   defaultEditMode?: boolean;
-  defaultTemplate?: any; // Add defaultTemplate prop
+  defaultTemplate?: any;
 }
 
 const MemeGenerator: React.FC<MemeGeneratorProps> = ({
@@ -29,7 +31,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   promptId,
   onSave,
   defaultEditMode = false,
-  defaultTemplate = null // Default to null if not provided
+  defaultTemplate = null
 }) => {
   const { user } = useAuth();
   
@@ -48,8 +50,8 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   const [textPositions, setTextPositions] = useState<TextPosition[]>([
     {
       text: '',
-      x: 50, // Center horizontally (percentage)
-      y: 85, // Near bottom (percentage)
+      x: 50,
+      y: 85,
       fontSize: 36,
       maxWidth: 300,
       alignment: 'center',
@@ -140,22 +142,46 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       setTextPositions(updatedPositions);
     }
   };
-  
+
   // Handler for generating AI image
-  const handleGenerateImage = () => {
-    // In a real implementation, this would call an AI service
-    setIsGeneratingAIImage(true);
+  const handleGenerateImage = async () => {
+    if (!promptText) {
+      toast({
+        title: "Error",
+        description: "Please enter a prompt text first",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    // Simulate AI image generation with a timeout
-    setTimeout(() => {
-      // Placeholder logic - in real app would call API
-      setGeneratedImage('/placeholder.svg');
+    setIsGeneratingAIImage(true);
+    setActiveTab('ai-generated');
+    
+    try {
+      // Call the AI image generation function from lib/ai.ts
+      const imageData = await generateMemeImage(promptText, selectedCaptionStyle);
+      
+      if (imageData) {
+        console.log('AI image generated successfully');
+        setGeneratedImage(imageData);
+      } else {
+        throw new Error('Failed to generate image');
+      }
+    } catch (error) {
+      console.error('Error generating AI image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate AI image. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setIsGeneratingAIImage(false);
-    }, 2000);
+    }
   };
   
   // Handler for generating captions
   const handleGenerateCaptions = () => {
+    // This is implemented in the CaptionGenerator component
     setIsGeneratingCaptions(true);
     
     // Simulate caption generation with a timeout
@@ -174,6 +200,18 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   // Handler for selecting a generated caption
   const handleSelectCaption = (caption: string) => {
     handleSetCaption(caption);
+  };
+
+  // Handler for updating text positions
+  const handleTextPositionsChange = (positions: TextPosition[]) => {
+    setTextPositions(positions);
+  };
+  
+  // Handler for removing text
+  const handleRemoveText = (index: number) => {
+    const updatedPositions = [...textPositions];
+    updatedPositions.splice(index, 1);
+    setTextPositions(updatedPositions);
   };
   
   // Handler for saving the meme
@@ -432,18 +470,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       setIsCreatingMeme(false);
     }
   };
-
-    // Handler for updating text positions
-    const handleTextPositionsChange = (positions: TextPosition[]) => {
-      setTextPositions(positions);
-    };
-    
-    // Handler for removing text
-    const handleRemoveText = (index: number) => {
-      const updatedPositions = [...textPositions];
-      updatedPositions.splice(index, 1);
-      setTextPositions(updatedPositions);
-    };
   
   return (
     <div className="meme-generator border rounded-xl p-4 bg-background shadow-sm">
@@ -480,6 +506,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
             isGeneratingAIImage={isGeneratingAIImage}
             generatedImage={generatedImage}
             handleGenerateImage={handleGenerateImage}
+            onSaveAsTemplate={setSelectedTemplate}
           />
         </TabsContent>
       </Tabs>
