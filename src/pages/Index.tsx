@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -8,54 +8,28 @@ import MemeCard from '@/components/meme/MemeCard';
 import BattleCard from '@/components/battle/BattleCard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MOCK_MEMES, MOCK_BATTLES, MOCK_PROMPTS } from '@/lib/constants';
 import { Battle, Meme, Prompt } from '@/lib/types';
-import { supabase } from '@/lib/supabase';
+import { getActivePrompt, getActiveBattles, getTrendingMemes, getNewestMemes } from '@/lib/database';
 import { getTodaysChallenge } from '@/lib/dailyChallenges';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
+  const { user } = useAuth();
   
-  // Use the mock data directly, properly typed
-  const todaysMemes = MOCK_MEMES as Meme[];
-  const activeBattles = MOCK_BATTLES as Battle[];
-  const recentBattles = activeBattles.slice(0, 3);
-
   // Setup query for active prompt
   const { data: activePrompt, isLoading: promptLoading } = useQuery({
     queryKey: ['activePrompt'],
     queryFn: async () => {
       try {
         // First try to get an active prompt from the database
-        const { data, error } = await supabase
-          .from('prompts')
-          .select()
-          .eq('active', true)
-          .order('start_date', { ascending: false })
-          .limit(1)
-          .maybeSingle(); // Use maybeSingle instead of single
-          
-        if (error) {
-          console.error('Error fetching active prompt:', error);
-          return getTodaysChallenge(); // Fallback to local challenge
-        }
+        const prompt = await getActivePrompt();
         
-        if (!data) {
+        if (!prompt) {
           console.log('No active prompt found, using local challenge');
           return getTodaysChallenge(); // Fallback to local challenge
         }
-        
-        // Convert database prompt format to our application format
-        const prompt: Prompt = {
-          id: data.id,
-          text: data.text,
-          theme: data.theme,
-          tags: data.tags || [],
-          active: data.active,
-          startDate: new Date(data.start_date),
-          endDate: new Date(data.end_date),
-          description: data.description
-        };
         
         return prompt;
       } catch (error) {
@@ -63,6 +37,41 @@ const Index = () => {
         return getTodaysChallenge(); // Fallback to local challenge
       }
     },
+  });
+  
+  // Query for recent battles
+  const { data: recentBattles, isLoading: battlesLoading } = useQuery({
+    queryKey: ['recentBattles'],
+    queryFn: async () => {
+      try {
+        return await getActiveBattles(3, 0, 'all');
+      } catch (error) {
+        console.error('Failed to fetch recent battles:', error);
+        return [];
+      }
+    }
+  });
+  
+  // Query for memes based on active tab
+  const { data: memes, isLoading: memesLoading } = useQuery({
+    queryKey: ['memes', activeFeedTab],
+    queryFn: async () => {
+      try {
+        if (activeFeedTab === 'trending') {
+          return await getTrendingMemes(12);
+        } else if (activeFeedTab === 'newest') {
+          return await getNewestMemes(12);
+        } else {
+          // For 'following' tab, get memes from followed users
+          // This would require additional backend support
+          // For now, just return empty array
+          return [];
+        }
+      } catch (error) {
+        console.error(`Failed to fetch ${activeFeedTab} memes:`, error);
+        return [];
+      }
+    }
   });
 
   return (
@@ -79,45 +88,40 @@ const Index = () => {
                 prompt={activePrompt} 
                 isLoading={promptLoading} 
               />
-              
-              <div className="mt-4">
-                <h3 className="font-heading text-lg mb-2">Previous Prompts</h3>
-                <div className="space-y-2">
-                  {MOCK_PROMPTS.slice(1).map(prompt => (
-                    <div key={prompt.id} className="p-3 rounded-lg bg-muted hover:bg-muted/80 cursor-pointer">
-                      <p className="font-medium">{prompt.text}</p>
-                      <div className="flex gap-1 mt-1">
-                        {prompt.tags.map(tag => (
-                          <span key={tag} className="text-xs px-2 rounded-full bg-background">
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </section>
             
             <section>
               <div className="flex justify-between items-center mb-3">
                 <h2 className="text-2xl font-heading">Live Battles</h2>
                 <Button variant="link" className="text-sm" asChild>
-                  <a href="/battles">View all</a>
+                  <Link to="/battles">View all</Link>
                 </Button>
               </div>
               
-              <div className="space-y-3">
-                {recentBattles.map(battle => (
-                  <BattleCard key={battle.id} battle={battle} compact />
-                ))}
-                
-                {recentBattles.length === 0 && (
-                  <div className="text-center p-6 bg-muted rounded-lg">
-                    <p className="text-muted-foreground">No active battles. Create a meme to start one!</p>
-                  </div>
-                )}
-              </div>
+              {battlesLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-36 bg-muted animate-pulse rounded-md"></div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentBattles && recentBattles.length > 0 ? (
+                    recentBattles.map((battle) => (
+                      <BattleCard key={battle.id} battle={battle} compact />
+                    ))
+                  ) : (
+                    <div className="text-center p-6 bg-muted rounded-lg">
+                      <p className="text-muted-foreground">No active battles. Create a meme to start one!</p>
+                      {user && (
+                        <Link to="/create" className="mt-2 inline-block">
+                          <Button size="sm">Create Meme</Button>
+                        </Link>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
           </div>
           
@@ -136,21 +140,43 @@ const Index = () => {
                 </Tabs>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {todaysMemes.map(meme => (
-                  <MemeCard key={meme.id} meme={meme} />
-                ))}
-                
-                {todaysMemes.length === 0 && (
-                  <div className="col-span-full text-center p-10 bg-muted rounded-lg">
-                    <p className="text-muted-foreground">No memes found. Be the first to create one!</p>
-                  </div>
-                )}
-              </div>
-              
-              <div className="mt-6 text-center">
-                <Button variant="outline">Load More</Button>
-              </div>
+              {memesLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="h-64 bg-muted animate-pulse rounded-md"></div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {memes && memes.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {memes.map(meme => (
+                        <MemeCard key={meme.id} meme={meme} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="col-span-full text-center p-10 bg-muted rounded-lg">
+                      <p className="text-muted-foreground">No memes found for this filter.</p>
+                      {user && (
+                        <Link to="/create" className="mt-4 inline-block">
+                          <Button>Create a Meme</Button>
+                        </Link>
+                      )}
+                      {!user && (
+                        <Link to="/login" className="mt-4 inline-block">
+                          <Button>Sign in to Create Memes</Button>
+                        </Link>
+                      )}
+                    </div>
+                  )}
+                  
+                  {memes && memes.length > 0 && (
+                    <div className="mt-6 text-center">
+                      <Button variant="outline">Load More</Button>
+                    </div>
+                  )}
+                </>
+              )}
             </section>
           </div>
         </div>

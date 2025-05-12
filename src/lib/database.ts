@@ -63,17 +63,60 @@ interface RawProfileRow {
   created_at: string;
 }
 
+// Helper functions to convert database rows to application models
+const mapPromptRowToPrompt = (row: RawPromptRow): Prompt => ({
+  id: row.id,
+  text: row.text,
+  theme: row.theme || '',
+  tags: row.tags || [],
+  active: row.active,
+  startDate: new Date(row.start_date),
+  endDate: new Date(row.end_date),
+  description: row.description || undefined,
+  creator_id: row.creator_id || undefined,
+  is_community: row.is_community
+});
+
+const mapMemeRowToMeme = (row: RawMemeRow): Meme => ({
+  id: row.id,
+  prompt: row.prompt || '',
+  prompt_id: row.prompt_id || undefined,
+  imageUrl: row.image_url,
+  ipfsCid: row.ipfs_cid || '',
+  caption: row.caption,
+  creatorId: row.creator_id,
+  votes: row.votes,
+  createdAt: new Date(row.created_at),
+  tags: row.tags || [],
+  isBattleSubmission: row.is_battle_submission || false,
+  battleId: row.battle_id || undefined
+});
+
+const mapProfileRowToUser = (row: RawProfileRow): User => ({
+  id: row.id,
+  username: row.username,
+  avatarUrl: row.avatar_url || '',
+  memeStreak: row.meme_streak,
+  wins: row.wins,
+  losses: row.losses,
+  level: row.level,
+  xp: row.xp,
+  createdAt: new Date(row.created_at)
+});
+
+// Database functions
+
 export const getActivePrompt = async (): Promise<Prompt | null> => {
   try {
     const today = new Date();
     
     const { data, error } = await supabase
       .from('prompts')
-      .select('*')  // Select all fields, including newly added ones
+      .select('*') 
       .eq('active', true)
       .lte('start_date', today.toISOString())
       .gte('end_date', today.toISOString())
-      .maybeSingle(); // Use maybeSingle() instead of single() to avoid errors when no row is found
+      .maybeSingle(); 
     
     if (error) {
       console.error('Error fetching active prompt:', error);
@@ -86,20 +129,31 @@ export const getActivePrompt = async (): Promise<Prompt | null> => {
     }
     
     // Convert to our app model
-    return {
-      id: data.id,
-      text: data.text,
-      theme: data.theme || '',
-      tags: data.tags || [],
-      active: data.active,
-      startDate: new Date(data.start_date),
-      endDate: new Date(data.end_date),
-      description: data.description || undefined,
-      creator_id: data.creator_id || undefined,
-      is_community: data.is_community
-    };
+    return mapPromptRowToPrompt(data);
   } catch (error) {
     console.error('Error in getActivePrompt:', error);
+    return null;
+  }
+};
+
+export const getPromptById = async (promptId: string): Promise<Prompt | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('prompts')
+      .select('*')
+      .eq('id', promptId)
+      .maybeSingle();
+      
+    if (error) {
+      console.error('Error fetching prompt by ID:', error);
+      return null;
+    }
+    
+    if (!data) return null;
+    
+    return mapPromptRowToPrompt(data);
+  } catch (error) {
+    console.error('Error in getPromptById:', error);
     return null;
   }
 };
@@ -120,17 +174,7 @@ export const getProfile = async (userId: string): Promise<User | null> => {
     if (!data) return null;
     
     // Transform to application model
-    return {
-      id: data.id,
-      username: data.username,
-      avatarUrl: data.avatar_url || '',
-      memeStreak: data.meme_streak,
-      wins: data.wins,
-      losses: data.losses,
-      level: data.level,
-      xp: data.xp,
-      createdAt: new Date(data.created_at)
-    };
+    return mapProfileRowToUser(data);
   } catch (error) {
     console.error('Error in getProfile:', error);
     return null;
@@ -163,17 +207,7 @@ export const updateProfile = async (userId: string, updates: any): Promise<User 
     if (!data || data.length === 0) return null;
     
     // Return transformed data
-    return {
-      id: data[0].id,
-      username: data[0].username,
-      avatarUrl: data[0].avatar_url || '',
-      memeStreak: data[0].meme_streak,
-      wins: data[0].wins,
-      losses: data[0].losses,
-      level: data[0].level,
-      xp: data[0].xp,
-      createdAt: new Date(data[0].created_at)
-    };
+    return mapProfileRowToUser(data[0]);
   } catch (error) {
     console.error('Error in updateProfile:', error);
     return null;
@@ -184,7 +218,7 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
   try {
     const { data, error } = await supabase
       .from('memes')
-      .select('*')  // Select all columns including new ones
+      .select('*')
       .eq('creator_id', userId)
       .order('created_at', { ascending: false });
 
@@ -196,20 +230,7 @@ export const getMemesByUserId = async (userId: string): Promise<Meme[]> => {
     if (!data || !data.length) return [];
     
     // Transform data items
-    return data.map(item => ({
-      id: item.id,
-      prompt: item.prompt || '',
-      prompt_id: item.prompt_id || undefined,
-      imageUrl: item.image_url,
-      ipfsCid: item.ipfs_cid || '',
-      caption: item.caption,
-      creatorId: item.creator_id,
-      votes: item.votes,
-      createdAt: new Date(item.created_at),
-      tags: item.tags || [],
-      isBattleSubmission: item.is_battle_submission || false,
-      battleId: item.battle_id || undefined
-    }));
+    return data.map(mapMemeRowToMeme);
   } catch (error) {
     console.error('Error in getMemesByUserId:', error);
     return [];
@@ -244,17 +265,7 @@ export const createProfile = async (profile: {
     if (!data || data.length === 0) return null;
     
     // Transform to application model
-    return {
-      id: data[0].id,
-      username: data[0].username,
-      avatarUrl: data[0].avatar_url || '',
-      memeStreak: data[0].meme_streak,
-      wins: data[0].wins,
-      losses: data[0].losses,
-      level: data[0].level,
-      xp: data[0].xp,
-      createdAt: new Date(data[0].created_at)
-    };
+    return mapProfileRowToUser(data[0]);
   } catch (error) {
     console.error('Error in createProfile:', error);
     return null;
@@ -266,7 +277,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
     // Build the query
     let query = supabase
       .from('battles')
-      .select('*')  // Select all fields including new ones
+      .select('*')
       .eq('status', 'active')
       .order('start_time', { ascending: false });
     
@@ -306,20 +317,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
           
         if (memeData) {
-          memeOne = {
-            id: memeData.id,
-            prompt: memeData.prompt || '',
-            prompt_id: memeData.prompt_id || undefined,
-            imageUrl: memeData.image_url,
-            ipfsCid: memeData.ipfs_cid || '',
-            caption: memeData.caption,
-            creatorId: memeData.creator_id,
-            votes: memeData.votes,
-            createdAt: new Date(memeData.created_at),
-            tags: memeData.tags || [],
-            isBattleSubmission: memeData.is_battle_submission || false,
-            battleId: memeData.battle_id || undefined
-          };
+          memeOne = mapMemeRowToMeme(memeData);
         }
       }
       
@@ -333,20 +331,7 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
           .single();
           
         if (memeData) {
-          memeTwo = {
-            id: memeData.id,
-            prompt: memeData.prompt || '',
-            prompt_id: memeData.prompt_id || undefined,
-            imageUrl: memeData.image_url,
-            ipfsCid: memeData.ipfs_cid || '',
-            caption: memeData.caption,
-            creatorId: memeData.creator_id,
-            votes: memeData.votes,
-            createdAt: new Date(memeData.created_at),
-            tags: memeData.tags || [],
-            isBattleSubmission: memeData.is_battle_submission || false,
-            battleId: memeData.battle_id || undefined
-          };
+          memeTwo = mapMemeRowToMeme(memeData);
         }
       }
 
@@ -375,11 +360,78 @@ export const getActiveBattles = async (limit: number = 20, offset: number = 0, f
   }
 };
 
+export const getBattleById = async (battleId: string): Promise<Battle | null> => {
+  try {
+    // Fetch the battle
+    const { data: battle, error } = await supabase
+      .from('battles')
+      .select('*')
+      .eq('id', battleId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching battle:', error);
+      return null;
+    }
+    
+    if (!battle) {
+      return null;
+    }
+    
+    // Fetch meme one
+    let memeOne: Meme | undefined;
+    if (battle.meme_one_id) {
+      const { data: memeData } = await supabase
+        .from('memes')
+        .select('*')
+        .eq('id', battle.meme_one_id)
+        .single();
+        
+      if (memeData) {
+        memeOne = mapMemeRowToMeme(memeData);
+      }
+    }
+    
+    // Fetch meme two
+    let memeTwo: Meme | undefined;
+    if (battle.meme_two_id) {
+      const { data: memeData } = await supabase
+        .from('memes')
+        .select('*')
+        .eq('id', battle.meme_two_id)
+        .single();
+        
+      if (memeData) {
+        memeTwo = mapMemeRowToMeme(memeData);
+      }
+    }
+    
+    return {
+      id: battle.id,
+      promptId: battle.prompt_id || '',
+      memeOneId: battle.meme_one_id,
+      memeTwoId: battle.meme_two_id,
+      memeOne,
+      memeTwo,
+      winnerId: battle.winner_id || undefined,
+      voteCount: battle.vote_count,
+      startTime: new Date(battle.start_time),
+      endTime: new Date(battle.end_time),
+      status: battle.status as 'active' | 'completed' | 'cancelled',
+      is_community: battle.is_community,
+      creator_id: battle.creator_id || undefined
+    };
+  } catch (error) {
+    console.error('Error in getBattleById:', error);
+    return null;
+  }
+};
+
 export const getPrompts = async (limit: number = 10, offset: number = 0, isCommunity: boolean = false): Promise<Prompt[]> => {
   try {
     const { data, error } = await supabase
       .from('prompts')
-      .select('*')  // Select all columns including new ones
+      .select('*')
       .eq('active', true)
       .eq('is_community', isCommunity)
       .order('start_date', { ascending: false })
@@ -393,18 +445,7 @@ export const getPrompts = async (limit: number = 10, offset: number = 0, isCommu
     if (!data || !data.length) return [];
     
     // Transform each item
-    return data.map(prompt => ({
-      id: prompt.id,
-      text: prompt.text,
-      theme: prompt.theme || '',
-      tags: prompt.tags || [],
-      active: prompt.active,
-      startDate: new Date(prompt.start_date),
-      endDate: new Date(prompt.end_date),
-      description: prompt.description || undefined,
-      creator_id: prompt.creator_id || undefined,
-      is_community: prompt.is_community
-    }));
+    return data.map(mapPromptRowToPrompt);
   } catch (error) {
     console.error('Error in getPrompts:', error);
     return [];
@@ -445,7 +486,7 @@ export const createMeme = async (meme: {
     const { data, error } = await supabase
       .from('memes')
       .insert(dbMeme)
-      .select('*');  // Select all fields
+      .select('*');
 
     if (error) {
       console.error('Error creating meme:', error);
@@ -459,22 +500,253 @@ export const createMeme = async (meme: {
     }
     
     // Transform to application model
-    return {
-      id: data[0].id,
-      prompt: data[0].prompt || '',
-      prompt_id: data[0].prompt_id || undefined,
-      imageUrl: data[0].image_url,
-      ipfsCid: data[0].ipfs_cid || '',
-      caption: data[0].caption,
-      creatorId: data[0].creator_id,
-      votes: data[0].votes,
-      createdAt: new Date(data[0].created_at),
-      tags: data[0].tags || [],
-      isBattleSubmission: data[0].is_battle_submission || false,
-      battleId: data[0].battle_id || undefined
-    };
+    return mapMemeRowToMeme(data[0]);
   } catch (err) {
     console.error('Error creating meme record in database');
     throw new Error('Failed to create meme record');
+  }
+};
+
+export const createBattle = async (battle: {
+  promptId?: string;
+  memeOneId: string;
+  memeTwoId: string;
+  creatorId?: string;
+  isCommunity: boolean;
+  startTime?: Date;
+  endTime?: Date;
+}): Promise<Battle | null> => {
+  try {
+    const now = new Date();
+    const endTime = battle.endTime || new Date(now.getTime() + 24 * 60 * 60 * 1000); // Default: 24 hours from now
+    
+    const dbBattle = {
+      prompt_id: battle.promptId,
+      meme_one_id: battle.memeOneId,
+      meme_two_id: battle.memeTwoId,
+      creator_id: battle.creatorId,
+      is_community: battle.isCommunity,
+      start_time: (battle.startTime || now).toISOString(),
+      end_time: endTime.toISOString(),
+      status: 'active',
+      vote_count: 0
+    };
+    
+    const { data, error } = await supabase
+      .from('battles')
+      .insert(dbBattle)
+      .select('*')
+      .single();
+      
+    if (error) {
+      console.error('Error creating battle:', error);
+      return null;
+    }
+    
+    if (!data) return null;
+    
+    // Update the memes to mark them as battle submissions
+    await supabase
+      .from('memes')
+      .update({ 
+        is_battle_submission: true,
+        battle_id: data.id 
+      })
+      .in('id', [battle.memeOneId, battle.memeTwoId]);
+    
+    // Fetch the memes for the battle
+    const memeOne = await getMemeById(battle.memeOneId);
+    const memeTwo = await getMemeById(battle.memeTwoId);
+    
+    return {
+      id: data.id,
+      promptId: data.prompt_id || '',
+      memeOneId: data.meme_one_id,
+      memeTwoId: data.meme_two_id,
+      memeOne,
+      memeTwo,
+      voteCount: data.vote_count,
+      startTime: new Date(data.start_time),
+      endTime: new Date(data.end_time),
+      status: data.status as 'active' | 'completed' | 'cancelled',
+      is_community: data.is_community,
+      creator_id: data.creator_id || undefined
+    };
+  } catch (error) {
+    console.error('Error in createBattle:', error);
+    return null;
+  }
+};
+
+export const getMemeById = async (memeId: string): Promise<Meme | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('memes')
+      .select('*')
+      .eq('id', memeId)
+      .single();
+      
+    if (error) {
+      console.error('Error fetching meme by ID:', error);
+      return null;
+    }
+    
+    if (!data) return null;
+    
+    return mapMemeRowToMeme(data);
+  } catch (error) {
+    console.error('Error in getMemeById:', error);
+    return null;
+  }
+};
+
+export const castVote = async (battleId: string, memeId: string, userId: string): Promise<boolean> => {
+  try {
+    // First check if user has already voted
+    const { data: existingVote, error: checkError } = await supabase
+      .from('votes')
+      .select('id')
+      .eq('battle_id', battleId)
+      .eq('user_id', userId)
+      .maybeSingle();
+      
+    if (checkError) {
+      console.error('Error checking for existing vote:', checkError);
+      return false;
+    }
+    
+    if (existingVote) {
+      console.log('User already voted in this battle');
+      return false;
+    }
+    
+    // Create the vote record
+    const { error: voteError } = await supabase
+      .from('votes')
+      .insert({
+        battle_id: battleId,
+        meme_id: memeId,
+        user_id: userId
+      });
+      
+    if (voteError) {
+      console.error('Error casting vote:', voteError);
+      return false;
+    }
+    
+    // Increment the vote count for the meme
+    const { error: memeError } = await supabase.rpc('increment_meme_votes', {
+      meme_id: memeId
+    });
+    
+    if (memeError) {
+      console.error('Error incrementing meme votes:', memeError);
+    }
+    
+    // Increment the battle vote count
+    const { error: battleError } = await supabase.rpc('increment_battle_votes', {
+      battle_id: battleId
+    });
+    
+    if (battleError) {
+      console.error('Error incrementing battle votes:', battleError);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in castVote:', error);
+    return false;
+  }
+};
+
+export const createPrompt = async (prompt: {
+  text: string;
+  theme?: string;
+  tags: string[];
+  description?: string;
+  isCommunity: boolean;
+  creatorId?: string;
+  startDate?: Date;
+  endDate?: Date;
+}): Promise<Prompt | null> => {
+  try {
+    const now = new Date();
+    const endDate = prompt.endDate || new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // Default: 7 days from now
+    
+    const dbPrompt = {
+      text: prompt.text,
+      theme: prompt.theme || null,
+      tags: prompt.tags,
+      description: prompt.description || null,
+      is_community: prompt.isCommunity,
+      creator_id: prompt.creatorId || null,
+      active: true,
+      start_date: (prompt.startDate || now).toISOString(),
+      end_date: endDate.toISOString()
+    };
+    
+    const { data, error } = await supabase
+      .from('prompts')
+      .insert(dbPrompt)
+      .select('*')
+      .single();
+      
+    if (error) {
+      console.error('Error creating prompt:', error);
+      return null;
+    }
+    
+    if (!data) return null;
+    
+    return mapPromptRowToPrompt(data);
+  } catch (error) {
+    console.error('Error in createPrompt:', error);
+    return null;
+  }
+};
+
+// Function to get trending memes
+export const getTrendingMemes = async (limit: number = 10): Promise<Meme[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('memes')
+      .select('*')
+      .order('votes', { ascending: false })
+      .limit(limit);
+      
+    if (error) {
+      console.error('Error fetching trending memes:', error);
+      return [];
+    }
+    
+    if (!data || data.length === 0) return [];
+    
+    return data.map(mapMemeRowToMeme);
+  } catch (error) {
+    console.error('Error in getTrendingMemes:', error);
+    return [];
+  }
+};
+
+// Function to get newest memes
+export const getNewestMemes = async (limit: number = 10): Promise<Meme[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('memes')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+      
+    if (error) {
+      console.error('Error fetching newest memes:', error);
+      return [];
+    }
+    
+    if (!data || data.length === 0) return [];
+    
+    return data.map(mapMemeRowToMeme);
+  } catch (error) {
+    console.error('Error in getNewestMemes:', error);
+    return [];
   }
 };

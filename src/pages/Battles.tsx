@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import BattleCard from '@/components/battle/BattleCard';
@@ -8,25 +9,21 @@ import BattleFilter from '@/components/battle/BattleFilter';
 import { Button } from '@/components/ui/button';
 import { getActiveBattles, getPrompts } from '@/lib/database';
 import { Battle as BattleType, Prompt } from '@/lib/types';
-import { MOCK_BATTLES, MOCK_PROMPTS } from '@/lib/constants';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Battles = () => {
   const [filter, setFilter] = useState<'all' | 'official' | 'community'>('all');
+  const { user } = useAuth();
   
   // Query battles based on filter
   const { data: battles, isLoading: battlesLoading } = useQuery({
     queryKey: ['battles', filter],
     queryFn: async () => {
-      // For now, we'll use mock data but filter it
-      // In a real implementation, we would fetch from the database
-      // return getActiveBattles(20, 0, filter);
-      
-      if (filter === 'all') {
-        return MOCK_BATTLES;
-      } else if (filter === 'official') {
-        return MOCK_BATTLES.filter(b => b.is_community === false);
-      } else {
-        return MOCK_BATTLES.filter(b => b.is_community === true);
+      try {
+        return await getActiveBattles(20, 0, filter);
+      } catch (error) {
+        console.error('Error fetching battles:', error);
+        return [];
       }
     }
   });
@@ -35,15 +32,19 @@ const Battles = () => {
   const { data: prompts, isLoading: promptsLoading } = useQuery({
     queryKey: ['active_prompts', filter],
     queryFn: async () => {
-      // In a real implementation, we would fetch from the database
-      // return getPrompts(10, 0, filter === 'community');
-      
-      if (filter === 'community') {
-        return MOCK_PROMPTS.filter(p => p.is_community === true);
-      } else if (filter === 'official') {
-        return MOCK_PROMPTS.filter(p => p.is_community === false);
-      } else {
-        return MOCK_PROMPTS;
+      try {
+        if (filter === 'community') {
+          return await getPrompts(10, 0, true);
+        } else if (filter === 'official') {
+          return await getPrompts(10, 0, false);
+        } else {
+          const communityPrompts = await getPrompts(5, 0, true);
+          const officialPrompts = await getPrompts(5, 0, false);
+          return [...officialPrompts, ...communityPrompts];
+        }
+      } catch (error) {
+        console.error('Error fetching prompts:', error);
+        return [];
       }
     }
   });
@@ -57,7 +58,15 @@ const Battles = () => {
       <Navbar />
       
       <main className="container mx-auto px-4 py-6 flex-grow">
-        <h1 className="text-3xl font-heading mb-6">Meme Battles</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-heading">Meme Battles</h1>
+          
+          {user && (
+            <Link to="/create-battle">
+              <Button>Create a Battle</Button>
+            </Link>
+          )}
+        </div>
         
         <div className="mb-6">
           <BattleFilter activeFilter={filter} onFilterChange={handleFilterChange} />
@@ -80,14 +89,23 @@ const Battles = () => {
             ) : (
               <div className="text-center p-10 bg-muted rounded-lg">
                 <p className="text-muted-foreground mb-4">No battles found for this filter.</p>
-                <Button>Create a Battle</Button>
+                {user && (
+                  <Link to="/create-battle">
+                    <Button>Create a Battle</Button>
+                  </Link>
+                )}
+                {!user && (
+                  <Link to="/login">
+                    <Button>Sign in to Create Battles</Button>
+                  </Link>
+                )}
               </div>
             )}
           </>
         )}
         
         {/* Active Prompts without battles yet */}
-        {prompts && prompts.length > 0 && (
+        {!promptsLoading && prompts && prompts.length > 0 && (
           <>
             <h2 className="text-2xl font-heading mt-10 mb-4">Ongoing Challenges</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -108,12 +126,31 @@ const Battles = () => {
                     <span className="text-sm text-muted-foreground">
                       Ends in {Math.round((prompt.endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days
                     </span>
-                    <Button size="sm">Join Challenge</Button>
+                    {user ? (
+                      <Link to={`/create?promptId=${prompt.id}`}>
+                        <Button size="sm">Join Challenge</Button>
+                      </Link>
+                    ) : (
+                      <Link to="/login">
+                        <Button size="sm">Sign in to Join</Button>
+                      </Link>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           </>
+        )}
+        
+        {promptsLoading && (
+          <div className="mt-10">
+            <h2 className="text-2xl font-heading mb-4">Ongoing Challenges</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-muted animate-pulse rounded-lg h-40"></div>
+              ))}
+            </div>
+          </div>
         )}
       </main>
       

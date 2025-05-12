@@ -1,32 +1,39 @@
 
 import React from 'react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 interface BattleFilterProps {
   activeFilter: 'all' | 'official' | 'community';
   onFilterChange: (filter: 'all' | 'official' | 'community') => void;
 }
 
-const BattleFilter = ({ activeFilter, onFilterChange }: BattleFilterProps) => {
+const BattleFilter: React.FC<BattleFilterProps> = ({ activeFilter, onFilterChange }) => {
   return (
-    <div className="flex justify-between items-center w-full">
-      <Tabs value={activeFilter} onValueChange={(value: any) => onFilterChange(value)} className="w-auto">
-        <TabsList>
-          <TabsTrigger value="all">All Battles</TabsTrigger>
-          <TabsTrigger value="official">Official Challenges</TabsTrigger>
-          <TabsTrigger value="community">Community Battles</TabsTrigger>
-        </TabsList>
-      </Tabs>
-      
-      <Link to="/create-battle">
-        <Button className="flex items-center gap-2">
-          <PlusCircle className="h-4 w-4" />
-          Create Battle
-        </Button>
-      </Link>
+    <div className="inline-flex p-1 rounded-md bg-muted">
+      <Button
+        variant={activeFilter === 'all' ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => onFilterChange('all')}
+        className={activeFilter === 'all' ? '' : 'hover:bg-background/50'}
+      >
+        All Battles
+      </Button>
+      <Button
+        variant={activeFilter === 'official' ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => onFilterChange('official')}
+        className={activeFilter === 'official' ? '' : 'hover:bg-background/50'}
+      >
+        Official
+      </Button>
+      <Button
+        variant={activeFilter === 'community' ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => onFilterChange('community')}
+        className={activeFilter === 'community' ? '' : 'hover:bg-background/50'}
+      >
+        Community
+      </Button>
     </div>
   );
 };

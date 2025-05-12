@@ -1,133 +1,196 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Battle } from '@/lib/types';
+import { Card } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
-import { Battle, Meme } from '@/lib/types';
-import { MOCK_MEMES, MOCK_PROMPTS } from '@/lib/constants';
+import UserAvatar from '@/components/ui/UserAvatar';
+import { formatDistanceToNow } from 'date-fns';
+import { Clock } from 'lucide-react';
 
 interface BattleCardProps {
   battle: Battle;
   compact?: boolean;
-  memeOne?: Meme;
-  memeTwo?: Meme;
 }
 
-const BattleCard = ({ battle, compact = false, memeOne, memeTwo }: BattleCardProps) => {
-  // For the MVP, we'll use mock data if real data isn't provided
-  const memeOneData = memeOne || MOCK_MEMES.find(m => m.id === battle.memeOneId) || MOCK_MEMES[0];
-  const memeTwoData = memeTwo || MOCK_MEMES.find(m => m.id === battle.memeTwoId) || MOCK_MEMES[1];
-  
-  // Find prompt data - use battle.prompt if it exists, otherwise look up by ID, or use a default
-  const promptData = battle.prompt || 
-                    (battle.promptId ? MOCK_PROMPTS.find(p => p.id === battle.promptId) : null) || 
-                    { text: "Today's meme challenge" };
-  
-  const timeRemaining = battle.endTime.getTime() - Date.now();
+const BattleCard = ({ battle, compact = false }: BattleCardProps) => {
+  // Calculate time remaining
+  const timeRemaining = new Date(battle.endTime).getTime() - Date.now();
   const isActive = battle.status === 'active' && timeRemaining > 0;
   
-  const formatTimeRemaining = () => {
-    if (!isActive) return 'Ended';
-    
-    const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
-    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-    
-    return `${hours}h ${minutes}m remaining`;
-  };
+  // Calculate vote percentages
+  const totalVotes = battle.voteCount || 0;
+  
+  // Default 50/50 if no votes yet, otherwise calculate based on winner if completed
+  let leftPercent = 50;
+  let rightPercent = 50;
+  
+  if (battle.status === 'completed' && battle.winnerId) {
+    leftPercent = battle.winnerId === battle.memeOneId ? 60 : 40;
+    rightPercent = 100 - leftPercent;
+  }
   
   if (compact) {
     return (
-      <Link to={`/battle/${battle.id}`}>
-        <div className="battle-card flex hover:scale-[102%] transition-transform duration-200">
-          <div className="relative flex-1 overflow-hidden">
-            <div className="absolute top-0 left-0 bg-black/50 p-1 text-white text-xs">
-              {battle.voteCount} votes
+      <Card className="overflow-hidden">
+        <Link to={`/battle/${battle.id}`}>
+          <div className="p-3 border-b bg-muted/50">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-medium truncate mr-2">{battle.promptId || "Meme Battle"}</h3>
+              {isActive && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-800">
+                  <span className="w-2 h-2 mr-1 rounded-full bg-green-500"></span>
+                  Live
+                </span>
+              )}
             </div>
-            <img
-              src={memeOneData.imageUrl}
-              alt="Meme One"
-              className="w-full h-32 object-cover"
-            />
           </div>
-          <div className="p-2 flex flex-col justify-center items-center bg-muted">
-            <span className="font-bold">VS</span>
-            {isActive && <span className="text-[10px]">LIVE</span>}
-          </div>
-          <div className="relative flex-1 overflow-hidden">
-            <div className="absolute top-0 right-0 bg-black/50 p-1 text-white text-xs">
-              {battle.voteCount} votes
+          
+          <div className="flex">
+            <div className="w-1/2 relative">
+              {battle.memeOne && battle.memeOne.imageUrl ? (
+                <img 
+                  src={battle.memeOne.imageUrl} 
+                  alt="First meme" 
+                  className="w-full h-24 object-cover" 
+                />
+              ) : (
+                <div className="w-full h-24 bg-muted flex items-center justify-center text-muted-foreground">
+                  No image
+                </div>
+              )}
             </div>
-            <img
-              src={memeTwoData.imageUrl}
-              alt="Meme Two"
-              className="w-full h-32 object-cover"
-            />
+            
+            <div className="w-1/2 relative">
+              {battle.memeTwo && battle.memeTwo.imageUrl ? (
+                <img 
+                  src={battle.memeTwo.imageUrl} 
+                  alt="Second meme" 
+                  className="w-full h-24 object-cover" 
+                />
+              ) : (
+                <div className="w-full h-24 bg-muted flex items-center justify-center text-muted-foreground">
+                  No image
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </Link>
+          
+          <div className="p-3">
+            <div className="flex justify-between items-center text-xs text-muted-foreground mb-1">
+              <span>{totalVotes} votes</span>
+              <span>
+                {isActive ? (
+                  <span className="flex items-center">
+                    <Clock className="w-3 h-3 mr-1" />
+                    {formatDistanceToNow(new Date(battle.endTime), { addSuffix: true })}
+                  </span>
+                ) : (
+                  battle.status
+                )}
+              </span>
+            </div>
+            <Progress value={leftPercent} className="h-1 mb-2" />
+            <Button variant="outline" size="sm" className="w-full">
+              View Battle
+            </Button>
+          </div>
+        </Link>
+      </Card>
     );
   }
   
   return (
-    <div className="battle-card p-4">
-      <div className="mb-3 flex justify-between items-center">
-        <h3 className="font-bold text-lg">Meme Battle</h3>
-        <div className={`px-2 py-1 text-xs rounded-full ${isActive ? 'bg-brand-orange text-white' : 'bg-muted text-muted-foreground'}`}>
-          {formatTimeRemaining()}
-        </div>
-      </div>
-      
-      <p className="text-sm mb-4 text-muted-foreground">
-        {promptData?.text || "Today's prompt challenge"}
-      </p>
-      
-      <div className="flex flex-col md:flex-row gap-4 mb-4">
-        <div className="flex-1">
-          <div className="aspect-square rounded-lg overflow-hidden mb-2">
-            <img
-              src={memeOneData.imageUrl}
-              alt="Meme One"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <p className="text-sm font-medium text-center">
-            {memeOneData.caption?.split('\n')[0] || ''}
-          </p>
-        </div>
-        
-        <div className="flex items-center justify-center">
-          <div className="bg-muted rounded-full p-3 text-xl font-bold">
-            VS
+    <Card className="overflow-hidden">
+      <Link to={`/battle/${battle.id}`}>
+        <div className="p-4 border-b bg-muted/50">
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium">{battle.promptId || "Meme Battle"}</h3>
+            {isActive && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-800">
+                <span className="w-2 h-2 mr-1 rounded-full bg-green-500"></span>
+                Live
+              </span>
+            )}
           </div>
         </div>
         
-        <div className="flex-1">
-          <div className="aspect-square rounded-lg overflow-hidden mb-2">
-            <img
-              src={memeTwoData.imageUrl}
-              alt="Meme Two"
-              className="w-full h-full object-cover"
-            />
+        <div className="flex">
+          <div className="w-1/2 relative">
+            {battle.memeOne && battle.memeOne.imageUrl ? (
+              <img 
+                src={battle.memeOne.imageUrl} 
+                alt="First meme" 
+                className="w-full h-48 object-cover" 
+              />
+            ) : (
+              <div className="w-full h-48 bg-muted flex items-center justify-center text-muted-foreground">
+                No image available
+              </div>
+            )}
+            <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/50 text-white">
+              {battle.memeOne && battle.memeOne.caption && (
+                <p className="text-xs truncate">{battle.memeOne.caption}</p>
+              )}
+            </div>
           </div>
-          <p className="text-sm font-medium text-center">
-            {memeTwoData.caption?.split('\n')[0] || ''}
-          </p>
-        </div>
-      </div>
-      
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">{battle.voteCount}</span> votes
+          
+          <div className="w-1/2 relative">
+            {battle.memeTwo && battle.memeTwo.imageUrl ? (
+              <img 
+                src={battle.memeTwo.imageUrl} 
+                alt="Second meme" 
+                className="w-full h-48 object-cover" 
+              />
+            ) : (
+              <div className="w-full h-48 bg-muted flex items-center justify-center text-muted-foreground">
+                No image available
+              </div>
+            )}
+            <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/50 text-white">
+              {battle.memeTwo && battle.memeTwo.caption && (
+                <p className="text-xs truncate">{battle.memeTwo.caption}</p>
+              )}
+            </div>
+          </div>
         </div>
         
-        <Link to={`/battle/${battle.id}`}>
-          <Button className="flex items-center gap-1">
-            Vote Now
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
-      </div>
-    </div>
+        <div className="p-4">
+          <div className="flex justify-between items-center mb-2">
+            <div className="flex space-x-4">
+              {battle.memeOne && battle.memeOne.creatorId && (
+                <UserAvatar user={{ id: battle.memeOne.creatorId }} showUsername />
+              )}
+            </div>
+            <div className="flex items-center">
+              <span className="text-sm font-medium">{totalVotes} votes</span>
+            </div>
+            <div className="flex space-x-4 justify-end">
+              {battle.memeTwo && battle.memeTwo.creatorId && (
+                <UserAvatar user={{ id: battle.memeTwo.creatorId }} showUsername />
+              )}
+            </div>
+          </div>
+          
+          <Progress value={leftPercent} className="h-2 mb-4" />
+          
+          <div className="flex justify-between items-center text-sm text-muted-foreground">
+            <span>
+              {isActive ? (
+                <span className="flex items-center">
+                  <Clock className="w-4 h-4 mr-1" />
+                  {formatDistanceToNow(new Date(battle.endTime), { addSuffix: true })}
+                </span>
+              ) : (
+                battle.status === 'completed' ? 'Battle completed' : battle.status
+              )}
+            </span>
+            <Button>View Battle</Button>
+          </div>
+        </div>
+      </Link>
+    </Card>
   );
 };
 
