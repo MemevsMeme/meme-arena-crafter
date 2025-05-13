@@ -49,9 +49,18 @@ const PromptOfTheDay = ({
     );
   }
 
+  const isOfficialChallenge = promptToShow.challengeDay !== undefined;
+
   return (
     <div className="prompt-card animate-float">
-      <h3 className="text-lg font-medium mb-1">Today's Meme Challenge</h3>
+      <div className="flex justify-between items-center mb-1">
+        <h3 className="text-lg font-medium">Today's Meme Challenge</h3>
+        {isOfficialChallenge && (
+          <span className="px-2 py-0.5 bg-brand-purple/20 text-brand-purple rounded-full text-xs font-medium">
+            Official
+          </span>
+        )}
+      </div>
       <p className="text-2xl font-bold mb-4">{promptToShow.text}</p>
       <div className="flex justify-between items-center">
         <div className="flex gap-1 flex-wrap">

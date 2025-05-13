@@ -1,164 +1,211 @@
 
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { TagsInput } from '@/components/ui/tags-input';
-import { createPrompt } from '@/lib/database';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
 
-// Form schema for battle creation
-const battleSchema = z.object({
-  title: z.string().min(5, { message: "Title must be at least 5 characters" }).max(100),
-  description: z.string().min(10, { message: "Description must be at least 10 characters" }),
-  tags: z.array(z.string()).min(1, { message: "Add at least one tag" }),
-});
+interface BattleFormData {
+  promptText: string;
+  theme?: string;
+  description?: string;
+  tags: string;
+  duration: string;
+}
 
 const CreateBattle = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Initialize form
-  const form = useForm<z.infer<typeof battleSchema>>({
-    resolver: zodResolver(battleSchema),
+  const navigate = useNavigate();
+  const [isCreating, setIsCreating] = useState(false);
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<BattleFormData>({
     defaultValues: {
-      title: '',
+      promptText: '',
+      theme: '',
       description: '',
-      tags: [],
-    },
+      tags: '',
+      duration: '24'
+    }
   });
-
-  const onSubmit = async (values: z.infer<typeof battleSchema>) => {
+  
+  const onSubmit = async (data: BattleFormData) => {
     if (!user) {
-      toast.error("You must be logged in to create a battle");
+      toast.error('You need to be logged in to create battles');
+      navigate('/login', { state: { returnPath: '/create-battle' } });
       return;
     }
     
-    setIsSubmitting(true);
+    setIsCreating(true);
     
     try {
-      // Create a new battle prompt using our database utility
-      const prompt = await createPrompt({
-        text: values.title,
-        theme: values.tags.join(', '),
-        tags: values.tags,
-        description: values.description,
-        is_community: true,  // Fixed property name to match type definition
-        creator_id: user.id, // Changed from creatorId to creator_id to match type definition
-        startDate: new Date(),
-        endDate: new Date(new Date().setDate(new Date().getDate() + 7))  // 7 days from now
-      });
+      // Parse tags
+      const parsedTags = data.tags
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
       
-      if (!prompt) {
-        throw new Error("Failed to create battle");
+      // Parse duration
+      const durationHours = parseInt(data.duration, 10);
+      
+      // Calculate end time
+      const startTime = new Date();
+      const endTime = new Date(startTime.getTime() + (durationHours * 60 * 60 * 1000)); // hours to milliseconds
+      
+      // First create a prompt
+      const { data: promptData, error: promptError } = await supabase
+        .from('prompts')
+        .insert({
+          text: data.promptText,
+          theme: data.theme || null,
+          description: data.description || null,
+          tags: parsedTags,
+          active: true,
+          is_community: true,
+          creator_id: user.id,
+          start_date: startTime.toISOString(),
+          end_date: endTime.toISOString(),
+        })
+        .select()
+        .single();
+      
+      if (promptError) {
+        throw new Error(`Error creating prompt: ${promptError.message}`);
       }
       
-      toast.success("Battle created successfully!");
-      navigate(`/battles`);
+      // Then create an empty battle
+      const { data: battleData, error: battleError } = await supabase
+        .from('battles')
+        .insert({
+          prompt_id: promptData.id,
+          is_community: true,
+          creator_id: user.id,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+        })
+        .select()
+        .single();
+      
+      if (battleError) {
+        throw new Error(`Error creating battle: ${battleError.message}`);
+      }
+      
+      toast.success('Battle created successfully!', {
+        description: 'Now others can submit memes for your battle.'
+      });
+      
+      navigate('/battles');
+      
     } catch (error) {
-      console.error("Error creating battle:", error);
-      toast.error("Failed to create battle. Please try again.");
+      console.error('Error creating battle:', error);
+      toast.error('Failed to create battle', {
+        description: error instanceof Error ? error.message : 'An unknown error occurred'
+      });
     } finally {
-      setIsSubmitting(false);
+      setIsCreating(false);
     }
   };
-
+  
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-8 flex-grow">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-heading mb-6">Create a New Battle</h1>
+      <main className="container mx-auto px-4 py-6 flex-grow">
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-3xl font-heading mb-6">Create a Meme Battle</h1>
           
-          <div className="bg-background rounded-lg border p-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Battle Title</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter a catchy title for your battle" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        This will be the prompt that others will create memes for
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Provide some context or guidelines for the battle" 
-                          className="min-h-[100px]"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="tags"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tags</FormLabel>
-                      <FormControl>
-                        <TagsInput 
-                          placeholder="Add tags and press enter" 
-                          tags={field.value} 
-                          setTags={field.onChange} 
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Add relevant tags to help others find your battle
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="flex justify-end gap-3">
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={() => navigate(-1)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="bg-brand-purple hover:bg-brand-purple/90"
-                  >
-                    {isSubmitting ? "Creating..." : "Create Battle"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
+          {!user ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Sign in required</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>You need to be logged in to create a battle.</p>
+                <Button className="mt-4" onClick={() => navigate('/login', { state: { returnPath: '/create-battle' } })}>
+                  Sign In
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Battle Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                  <div>
+                    <Label htmlFor="promptText">Challenge Prompt *</Label>
+                    <Textarea 
+                      id="promptText"
+                      placeholder="Enter a challenge prompt for the battle (e.g. 'Most awkward moment in a job interview')"
+                      {...register("promptText", { required: true })}
+                      className={errors.promptText ? "border-destructive" : ""}
+                    />
+                    {errors.promptText && <p className="text-destructive text-sm mt-1">Prompt is required</p>}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="theme">Theme (Optional)</Label>
+                    <Input 
+                      id="theme"
+                      placeholder="Theme for this battle"
+                      {...register("theme")}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="description">Description (Optional)</Label>
+                    <Textarea 
+                      id="description"
+                      placeholder="Additional details or context for the battle"
+                      {...register("description")}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="tags">Tags (Comma separated)</Label>
+                    <Input 
+                      id="tags"
+                      placeholder="funny, challenge, interview"
+                      {...register("tags")}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="duration">Battle Duration</Label>
+                    <Select 
+                      defaultValue="24"
+                      onValueChange={(value) => setValue("duration", value)}
+                    >
+                      <SelectTrigger id="duration">
+                        <SelectValue placeholder="Select duration" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="12">12 hours</SelectItem>
+                        <SelectItem value="24">24 hours</SelectItem>
+                        <SelectItem value="48">2 days</SelectItem>
+                        <SelectItem value="72">3 days</SelectItem>
+                        <SelectItem value="168">1 week</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <Button type="submit" disabled={isCreating} className="w-full">
+                      {isCreating ? 'Creating Battle...' : 'Create Battle'}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </main>
       

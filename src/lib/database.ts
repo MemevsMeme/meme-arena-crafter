@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 import { User, Meme, Prompt, Battle, Vote } from './types';
 import { getFallbackChallenge } from './dailyChallenges';
@@ -369,11 +368,12 @@ export async function getDailyChallenge(): Promise<Prompt | null> {
     if (challengeError) {
       console.error('Error fetching daily challenge:', challengeError);
       
-      // Try to get from the prompts table with daily_challenge_id
+      // Try to get from the prompts table with daily_challenge flag set to true
       const { data: promptData, error: promptError } = await supabase
         .from('prompts')
         .select('*')
         .eq('active', true)
+        .is('is_community', false)
         .order('start_date', { ascending: false })
         .limit(1)
         .single();
@@ -436,7 +436,8 @@ export async function getDailyChallenge(): Promise<Prompt | null> {
       active: true,
       start_date: now.toISOString(),
       end_date: tomorrow.toISOString(),
-      daily_challenge_id: challengeData.id
+      daily_challenge_id: challengeData.id,
+      is_community: false,
     };
     
     const { data: createdPrompt, error: createError } = await supabase
@@ -470,7 +471,6 @@ export async function getDailyChallenge(): Promise<Prompt | null> {
   }
 }
 
-// Prompt functions
 export async function getActivePrompt(): Promise<Prompt | null> {
   try {
     // First try to get today's challenge
@@ -711,63 +711,82 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
   }
 }
 
-export async function getBattleById(battleId: string): Promise<Battle | null> {
+// New function to get top memes for a battle
+export async function getTopMemesForBattle(battleId: string, limit: number = 2): Promise<Meme[]> {
   try {
     const { data, error } = await supabase
-      .from('battles')
-      .select(`
-        *,
-        memeOne:meme_one_id(*),
-        memeTwo:meme_two_id(*)
-      `)
-      .eq('id', battleId)
-      .single();
+      .from('memes')
+      .select('*, creator:creator_id(id, username, avatar_url)')
+      .eq('battle_id', battleId)
+      .eq('is_battle_submission', true)
+      .order('votes', { ascending: false })
+      .limit(limit);
     
-    if (error || !data) {
-      console.error('Error fetching battle by ID:', error);
-      return null;
+    if (error) {
+      console.error('Error fetching top memes for battle:', error);
+      return [];
     }
     
-    return {
-      id: data.id,
-      promptId: data.prompt_id || '',
-      memeOneId: data.meme_one_id,
-      memeTwoId: data.meme_two_id,
-      memeOne: data.memeOne ? {
-        id: data.memeOne.id,
-        prompt: data.memeOne.prompt || '',
-        prompt_id: data.memeOne.prompt_id || undefined,
-        imageUrl: data.memeOne.image_url,
-        ipfsCid: data.memeOne.ipfs_cid || '',
-        caption: data.memeOne.caption,
-        creatorId: data.memeOne.creator_id,
-        votes: data.memeOne.votes || 0,
-        createdAt: new Date(data.memeOne.created_at),
-        tags: data.memeOne.tags || []
+    return data.map(m => ({
+      id: m.id,
+      prompt: m.prompt || '',
+      prompt_id: m.prompt_id || undefined,
+      imageUrl: m.image_url,
+      ipfsCid: m.ipfs_cid || '',
+      caption: m.caption,
+      creatorId: m.creator_id,
+      creator: m.creator ? {
+        id: m.creator.id,
+        username: m.creator.username,
+        avatarUrl: m.creator.avatar_url || '',
+        memeStreak: 0,
+        wins: 0,
+        losses: 0,
+        level: 1,
+        xp: 0,
+        createdAt: new Date()
       } : undefined,
-      memeTwo: data.memeTwo ? {
-        id: data.memeTwo.id,
-        prompt: data.memeTwo.prompt || '',
-        prompt_id: data.memeTwo.prompt_id || undefined,
-        imageUrl: data.memeTwo.image_url,
-        ipfsCid: data.memeTwo.ipfs_cid || '',
-        caption: data.memeTwo.caption,
-        creatorId: data.memeTwo.creator_id,
-        votes: data.memeTwo.votes || 0,
-        createdAt: new Date(data.memeTwo.created_at),
-        tags: data.memeTwo.tags || []
-      } : undefined,
-      winnerId: data.winner_id || undefined,
-      voteCount: data.vote_count || 0,
-      startTime: new Date(data.start_time),
-      endTime: new Date(data.end_time),
-      status: data.status as 'active' | 'completed' | 'cancelled',
-      is_community: data.is_community || false,
-      creator_id: data.creator_id || undefined
-    };
+      votes: m.votes || 0,
+      createdAt: new Date(m.created_at),
+      tags: m.tags || [],
+      isBattleSubmission: m.is_battle_submission || false,
+      battleId: m.battle_id || undefined,
+      challengeDay: m.challenge_day || undefined
+    }));
   } catch (error) {
-    console.error('Error in getBattleById:', error);
-    return null;
+    console.error('Error in getTopMemesForBattle:', error);
+    return [];
+  }
+}
+
+// New function to update battle with top memes
+export async function updateBattleWithTopMemes(battleId: string): Promise<boolean> {
+  try {
+    // Get top two memes for this battle
+    const topMemes = await getTopMemesForBattle(battleId, 2);
+    
+    if (topMemes.length < 2) {
+      console.log('Not enough memes for battle:', battleId);
+      return false;
+    }
+    
+    const { data, error } = await supabase
+      .from('battles')
+      .update({
+        meme_one_id: topMemes[0].id,
+        meme_two_id: topMemes[1].id
+      })
+      .eq('id', battleId);
+    
+    if (error) {
+      console.error('Error updating battle with top memes:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in updateBattleWithTopMemes:', error);
+    return false;
   }
 }
 

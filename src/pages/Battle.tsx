@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -12,13 +13,14 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Battle as BattleType, Meme as MemeType } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { getBattleById, getPromptById, castVote } from '@/lib/database';
+import { getBattleById, getPromptById, castVote, updateBattleWithTopMemes, getTopMemesForBattle } from '@/lib/database';
 
 const Battle = () => {
   const { id } = useParams<{ id: string }>();
   const [voteSubmitted, setVoteSubmitted] = useState<'one' | 'two' | null>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   // Query battle data
   const { data: battle, isLoading: battleLoading } = useQuery({
@@ -27,7 +29,8 @@ const Battle = () => {
       if (!id) return null;
       return await getBattleById(id);
     },
-    enabled: !!id
+    enabled: !!id,
+    refetchInterval: 30000, // Refetch every 30 seconds to keep battles updated
   });
 
   // Get prompt data if available
@@ -39,6 +42,39 @@ const Battle = () => {
     },
     enabled: !!battle?.promptId
   });
+  
+  // Get top memes for this battle
+  const { data: topMemes } = useQuery({
+    queryKey: ['topMemes', id],
+    queryFn: async () => {
+      if (!id) return null;
+      return await getTopMemesForBattle(id);
+    },
+    enabled: !!id,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+  
+  // Update battle with top memes if needed
+  useEffect(() => {
+    const updateBattleMemes = async () => {
+      if (id && topMemes && topMemes.length >= 2) {
+        // Check if current battle memes are different from top memes
+        if (
+          !battle?.memeOne || 
+          !battle?.memeTwo || 
+          (battle.memeOne.id !== topMemes[0].id && battle.memeTwo.id !== topMemes[0].id) ||
+          (battle.memeOne.id !== topMemes[1].id && battle.memeTwo.id !== topMemes[1].id)
+        ) {
+          console.log('Updating battle memes...');
+          await updateBattleWithTopMemes(id);
+          // Refetch battle to get updated memes
+          queryClient.invalidateQueries({ queryKey: ['battle', id] });
+        }
+      }
+    };
+
+    updateBattleMemes();
+  }, [topMemes, battle, id, queryClient]);
   
   // Check if user has already voted
   const { data: userVote } = useQuery({
@@ -58,10 +94,10 @@ const Battle = () => {
         return null;
       }
       
-      if (data) {
-        if (battle?.memeOneId === data.meme_id) {
+      if (data && battle) {
+        if (battle.memeOneId === data.meme_id) {
           return 'one';
-        } else if (battle?.memeTwoId === data.meme_id) {
+        } else if (battle.memeTwoId === data.meme_id) {
           return 'two';
         }
       }
@@ -72,7 +108,7 @@ const Battle = () => {
   });
   
   // Set vote state based on query result
-  React.useEffect(() => {
+  useEffect(() => {
     if (userVote) {
       setVoteSubmitted(userVote);
     }
@@ -86,11 +122,18 @@ const Battle = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['battle', id] });
       queryClient.invalidateQueries({ queryKey: ['user_vote', id, user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['topMemes', id] });
     }
   });
   
   const handleVote = (meme: 'one' | 'two') => {
-    if (voteSubmitted || !user || !battle) return;
+    if (voteSubmitted || !user || !battle) {
+      if (!user) {
+        toast.error('You need to be logged in to vote');
+        navigate('/login', { state: { returnPath: `/battle/${id}` } });
+      }
+      return;
+    }
     
     const memeId = meme === 'one' ? battle.memeOneId : battle.memeTwoId;
     setVoteSubmitted(meme);
@@ -160,10 +203,27 @@ const Battle = () => {
         <Navbar />
         <main className="container mx-auto px-4 py-6 flex-grow">
           <div className="text-center p-10">
-            <p>This battle is missing one or both memes.</p>
-            <Link to="/battles" className="mt-4 inline-block">
-              <Button>Back to Battles</Button>
-            </Link>
+            <p>This battle needs more meme submissions before voting begins.</p>
+            {prompt && (
+              <div className="mt-4">
+                <p>Create a meme for this prompt:</p>
+                <p className="font-bold text-xl mt-2">{prompt.text}</p>
+              </div>
+            )}
+            {user ? (
+              <Link to={battle.promptId ? `/create?promptId=${battle.promptId}` : "/create"} className="mt-4 inline-block">
+                <Button>Submit a Meme</Button>
+              </Link>
+            ) : (
+              <Link to="/login" className="mt-4 inline-block">
+                <Button>Sign in to Submit</Button>
+              </Link>
+            )}
+            <div className="mt-4">
+              <Link to="/battles" className="inline-block">
+                <Button variant="outline">Back to Battles</Button>
+              </Link>
+            </div>
           </div>
         </main>
         <Footer />
@@ -173,7 +233,7 @@ const Battle = () => {
 
   // Calculate votes
   const totalVotes = battle.voteCount || 0;
-  const percentOne = totalVotes > 0 && battle.voteCount ? Math.round((memeOne.votes / totalVotes) * 100) : 50;
+  const percentOne = totalVotes > 0 ? Math.round((memeOne.votes / totalVotes) * 100) : 50;
   const percentTwo = 100 - percentOne;
   
   const timeRemaining = new Date(battle.endTime).getTime() - Date.now();

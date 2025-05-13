@@ -23,6 +23,9 @@ interface MemeGeneratorProps {
   onSave?: (meme: { id: string; caption: string; imageUrl: string }) => void;
   defaultEditMode?: boolean;
   defaultTemplate?: any;
+  isBattleSubmission?: boolean;
+  challengeDay?: number;
+  battleId?: string;
 }
 
 const MemeGenerator: React.FC<MemeGeneratorProps> = ({
@@ -30,7 +33,10 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   promptId,
   onSave,
   defaultEditMode = false,
-  defaultTemplate = null
+  defaultTemplate = null,
+  isBattleSubmission = false,
+  challengeDay,
+  battleId
 }) => {
   const { user } = useAuth();
   
@@ -332,6 +338,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
                     position.text,
                     x,
                     (position.y / 100) * canvas.height,
+                    (position.y / 100) * canvas.height,
                     position.maxWidth
                   );
                 }
@@ -465,7 +472,10 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         creatorId: user.id,
         votes: 0,
         createdAt: new Date(),
-        tags: []
+        tags: [],
+        isBattleSubmission: isBattleSubmission,
+        battleId: battleId,
+        challengeDay: challengeDay
       });
       
       console.log('Meme created:', newMeme);
