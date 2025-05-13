@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -60,16 +59,14 @@ const MemeCard = ({
       })
       .catch(err => {
         console.error('Error sharing:', err);
-        toast({
-          title: "Link Copied",
+        toast("Link Copied", {
           description: "Share URL copied to clipboard!"
         });
       });
     } else {
       // Fallback for browsers that don't support the Web Share API
       navigator.clipboard.writeText(window.location.href)
-        .then(() => toast({
-          title: "Link Copied",
+        .then(() => toast("Link Copied", {
           description: "Share URL copied to clipboard!"
         }))
         .catch(err => console.error('Could not copy URL:', err));

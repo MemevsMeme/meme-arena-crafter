@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Caption } from './types';
 import { toast } from 'sonner';
@@ -46,43 +45,28 @@ export const generateMemeImage = async (prompt: string, style: string = 'meme'):
   console.log(`Generating AI image for prompt: "${prompt}" with style: ${style}`);
   
   try {
-    // First attempt: Try Imagen 2.0 via our Supabase function
-    try {
-      const { data, error } = await supabase.functions.invoke('gemini-ai', {
-        body: {
-          type: 'generate-image',
-          prompt,
-          style
-        }
-      });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
+    const { data, error } = await supabase.functions.invoke('gemini-ai', {
+      body: {
+        type: 'generate-image',
+        prompt,
+        style
       }
+    });
 
-      if (data && data.imageData) {
-        console.log('Imagen 2.0 image generated successfully');
-        return data.imageData; // This will be a base64 data URL
-      }
-      
-      throw new Error('No image data received from Imagen 2.0');
-    } catch (primaryError) {
-      console.error('Error with primary image generation:', primaryError);
-      
-      // Fallback: Try a different model or approach
-      // For example, you could add OpenAI DALL-E integration here
-      // For now, return a placeholder to prevent page refresh
-      console.log('Using fallback image generation');
-      
-      // Return a placeholder image URL to prevent errors
-      return '/placeholder.svg';
+    if (error) {
+      console.error('Supabase function error:', error);
+      throw error;
     }
-  } catch (error) {
-    console.error('All image generation methods failed:', error);
-    toast.error('Image generation failed. Please try again later.');
+
+    if (data && data.imageData) {
+      console.log('Imagen 2.0 image generated successfully');
+      return data.imageData; // This will be a base64 data URL
+    }
     
-    // Return null but don't throw an error to prevent page refresh
+    throw new Error('No image data received from Imagen 2.0');
+  } catch (error) {
+    console.error('Error in generateMemeImage:', error);
+    toast.error('Image generation failed. Please try again later.');
     return null;
   }
 };
