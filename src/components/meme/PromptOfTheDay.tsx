@@ -48,6 +48,15 @@ const PromptOfTheDay = ({
     );
   }
 
+  // Type guard to ensure promptToShow is a Prompt object and not a Promise
+  if (promptToShow instanceof Promise) {
+    return (
+      <div className="prompt-card animate-pulse bg-muted">
+        <p className="text-2xl font-bold mb-4">Loading prompt...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="prompt-card animate-float">
       <h3 className="text-lg font-medium mb-1">Today's Meme Challenge</h3>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/layout/Navbar';
@@ -11,12 +12,13 @@ import { getActivePrompt, getActiveBattles, getTrendingMemes, getNewestMemes } f
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getFallbackChallenge } from '@/lib/dailyChallenges';
+import { Prompt } from '@/lib/types';
 
 const Index = () => {
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
   const { user } = useAuth();
   
-  // Setup query for active prompt - make sure it returns a Prompt object, not a Promise
+  // Setup query for active prompt - ensure it returns a Prompt object, not a Promise
   const { data: activePrompt, isLoading: promptLoading } = useQuery({
     queryKey: ['activePrompt'],
     queryFn: async () => {
@@ -26,13 +28,17 @@ const Index = () => {
         
         if (!prompt) {
           console.log('No active prompt found, using local challenge');
-          return getFallbackChallenge(); // Fallback to local challenge
+          // Use the fallback and ensure it's not a Promise
+          const fallback = getFallbackChallenge();
+          return fallback;
         }
         
         return prompt;
       } catch (error) {
         console.error('Failed to fetch active prompt:', error);
-        return getFallbackChallenge(); // Fallback to local challenge
+        // Use the fallback and ensure it's not a Promise
+        const fallback = getFallbackChallenge();
+        return fallback;
       }
     },
   });
@@ -83,7 +89,7 @@ const Index = () => {
             <section>
               <h2 className="text-2xl font-heading mb-3">Today's Challenge</h2>
               <PromptOfTheDay 
-                prompt={activePrompt} 
+                prompt={activePrompt as Prompt | null} 
                 isLoading={promptLoading} 
               />
             </section>

@@ -348,7 +348,7 @@ export async function getTodaysChallenge(): Promise<Prompt> {
   return getFallbackChallenge();
 }
 
-// Fallback function that uses local data
+// Fallback function that uses local data - synchronous, not async
 export function getFallbackChallenge(): Prompt {
   // Get current date
   const now = new Date();
