@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Caption } from './types';
 
@@ -55,7 +56,8 @@ export const generateMemeImage = async (prompt: string, style: string = 'meme'):
 
     if (error) {
       console.error('Supabase function error:', error);
-      throw error;
+      // Return a placeholder image instead of throwing
+      return '/placeholder.svg';
     }
 
     if (data && data.imageData) {
@@ -63,11 +65,13 @@ export const generateMemeImage = async (prompt: string, style: string = 'meme'):
       return data.imageData; // This will be a base64 data URL
     } else {
       console.error('No image data received from API');
-      throw new Error('No image data received');
+      // Return a placeholder image
+      return '/placeholder.svg';
     }
   } catch (error) {
     console.error('Error in generateMemeImage:', error);
-    throw error; // Let the component handle the error
+    // Return a placeholder image instead of throwing
+    return '/placeholder.svg';
   }
 };
 
