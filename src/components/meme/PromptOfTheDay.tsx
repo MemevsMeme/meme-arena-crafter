@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { getFallbackChallenge } from '@/lib/dailyChallenges';
 import { toast } from '@/components/ui/use-toast';
@@ -62,9 +62,7 @@ const PromptOfTheDay = ({
     );
   }
 
-  const handleAcceptChallenge = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent the default link behavior
-    
+  const handleAcceptChallenge = () => {
     toast({
       title: "Challenge Accepted!",
       description: `You've accepted the "${displayPrompt.text}" challenge. Create something amazing!`,

@@ -8,12 +8,11 @@ import MemeCard from '@/components/meme/MemeCard';
 import BattleCard from '@/components/battle/BattleCard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getActivePrompt, getActiveBattles, getTrendingMemes, getNewestMemes } from '@/lib/database';
+import { getActiveBattles, getTrendingMemes, getNewestMemes } from '@/lib/database';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTodaysChallenge } from '@/lib/dailyChallenges';
 import { toast } from '@/components/ui/use-toast';
-import { Prompt } from '@/lib/types';
 
 const Index = () => {
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
