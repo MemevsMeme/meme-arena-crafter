@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTodaysChallenge, getFallbackChallenge } from '@/lib/dailyChallenges';
@@ -232,7 +231,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         tags: activePrompt.tags || [],
         challengeDay: dayOfYear,
         isBattleSubmission, // Fixed property name to match database schema
-        battle_id: battleId
+        battleId // Use battleId instead of battle_id to match the schema
       });
 
       if (meme) {
@@ -367,10 +366,25 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
           </Card>
           
           <TextEditor
-            texts={memeTexts}
-            onAdd={handleAddText}
-            onUpdate={handleUpdateText}
-            onDelete={handleDeleteText}
+            textPositions={memeTexts.map(text => ({
+              text: text.text,
+              x: text.position.x,
+              y: text.position.y,
+              fontSize: 24, // Default value
+              maxWidth: 300, // Default value
+              alignment: 'center', // Default value
+              color: '#ffffff', // Default value
+              fontFamily: 'Impact', // Default value
+              stretch: 1.0 // Default value
+            }))}
+            onChange={(newPositions) => {
+              setMemeTexts(newPositions.map(pos => ({
+                text: pos.text,
+                position: { x: pos.x, y: pos.y }
+              })));
+            }}
+            onRemoveText={handleDeleteText}
+            onAddText={handleAddText}
           />
           
           <SaveActions 
