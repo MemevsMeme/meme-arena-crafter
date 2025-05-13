@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -7,7 +6,7 @@ import MemeGenerator from '@/components/meme/MemeGenerator';
 import { getActivePrompt } from '@/lib/database';
 import { Prompt } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 import { getTodaysChallenge } from '@/lib/dailyChallenges';
 import { MEME_TEMPLATES } from '@/lib/constants';
 
@@ -39,31 +38,38 @@ const Create = () => {
         }
         
         // Otherwise try to get the prompt from the database
-        const prompt = await getActivePrompt();
+        const todaysChallenge = await getTodaysChallenge();
         
-        if (prompt) {
-          console.log('Active prompt from DB:', prompt);
-          setActivePrompt(prompt);
+        if (todaysChallenge) {
+          console.log('Today\'s challenge:', todaysChallenge);
+          setActivePrompt(todaysChallenge);
         } else {
-          // If no prompt from database, use our daily challenge as fallback
-          const fallbackPrompt = await getTodaysChallenge();
-          console.log('Using fallback prompt:', fallbackPrompt);
-          setActivePrompt(fallbackPrompt);
+          console.error('Could not get today\'s challenge');
+          // Fallback to a generic prompt
+          setActivePrompt({
+            id: 'fallback',
+            text: 'Create a funny meme!',
+            tags: ['funny', 'meme'],
+            active: true,
+            startDate: new Date(),
+            endDate: new Date(new Date().getTime() + 86400000)
+          });
         }
       } catch (error) {
         console.error('Error fetching active prompt:', error);
-        // Use the fallback prompt on error
-        try {
-          const fallbackPrompt = await getTodaysChallenge();
-          console.log('Using fallback prompt after error:', fallbackPrompt);
-          setActivePrompt(fallbackPrompt);
-        } catch (fallbackError) {
-          console.error('Error getting fallback prompt:', fallbackError);
-        }
+        // Use a simple fallback prompt on error
+        setActivePrompt({
+          id: 'fallback',
+          text: 'Create a funny meme!',
+          tags: ['funny', 'meme'],
+          active: true,
+          startDate: new Date(),
+          endDate: new Date(new Date().getTime() + 86400000)
+        });
         
         toast({
           title: "Notice",
-          description: "Using today's default challenge",
+          description: "Using a generic challenge prompt",
           variant: "default"
         });
       } finally {
