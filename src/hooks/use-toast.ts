@@ -3,4 +3,3 @@ import { useToast as useToastHook, toast as toastAction } from "@/components/ui/
 
 export const useToast = useToastHook;
 export const toast = toastAction;
-

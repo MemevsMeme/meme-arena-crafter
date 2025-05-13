@@ -29,7 +29,7 @@ async function generateText(prompt: string, style: string) {
       systemPrompt += "Make them witty and sarcastic.";
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ async function analyzeImage(imageUrl: string) {
     const imageBlob = await imageResponse.blob();
     const imageBase64 = await blobToBase64(imageBlob);
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -131,7 +131,7 @@ async function analyzeImage(imageUrl: string) {
   }
 }
 
-// Function to generate images using Gemini 1.5 Flash with image generation capability
+// Function to generate images using Imagen 2.0
 async function generateImage(prompt: string) {
   try {
     const apiKey = Deno.env.get('GEM_API');
@@ -145,8 +145,8 @@ async function generateImage(prompt: string) {
     The image should be clean with no text overlays. 
     Make it humorous and suitable for a meme.`;
 
-    // Using the Gemini 1.5 Flash model for image generation with the image generation capability flag
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+    // Using Imagen 2.0 for image generation
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagegeneration@002:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -174,7 +174,7 @@ async function generateImage(prompt: string) {
       throw new Error(data.error.message || 'Error generating image');
     }
     
-    // Check for the image data in the response
+    // Check for the image data in the response - Imagen 2.0 specific format
     if (data.candidates && data.candidates[0]?.content?.parts) {
       const parts = data.candidates[0].content.parts;
       for (const part of parts) {
