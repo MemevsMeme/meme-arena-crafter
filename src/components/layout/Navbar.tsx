@@ -23,7 +23,7 @@ const Navbar = () => {
         <Link to="/" className="flex items-center gap-2">
           <div className="rounded-lg">
             <img 
-              src="/lovable-uploads/88a9df58-1bce-4ab2-b65e-ec70cfcc63ca.png" 
+              src="/lovable-uploads/4e6ace2e-5f8b-4a08-8561-c01c62c163d4.png" 
               alt="MemeVsMeme Logo" 
               className="h-8 w-8"
             />
