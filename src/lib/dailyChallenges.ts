@@ -984,7 +984,8 @@ export const DAILY_CHALLENGES: Prompt[] = [
  */
 export function getFallbackChallenge(): Prompt {
   const today = new Date();
-  const dayOfYear = getCurrentDayOfYear(today);
+  // The getCurrentDayOfYear function doesn't take any arguments
+  const dayOfYear = getCurrentDayOfYear();
   
   // Use modulo to cycle through challenges if we have fewer than 365
   const index = dayOfYear % DAILY_CHALLENGES.length;
