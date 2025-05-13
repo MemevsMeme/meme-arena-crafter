@@ -29,7 +29,8 @@ const Create = () => {
       setLoading(true);
       try {
         // First check if prompt was passed via navigation state
-        const passedPrompt = location.state?.challengePrompt as Prompt | undefined;
+        const locationState = location.state as { challengePrompt?: Prompt } | null;
+        const passedPrompt = locationState?.challengePrompt;
         
         if (passedPrompt) {
           console.log('Using prompt from navigation state:', passedPrompt);

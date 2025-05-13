@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { getFallbackChallenge } from '@/lib/dailyChallenges';
 import { toast } from '@/components/ui/use-toast';
@@ -16,6 +16,7 @@ const PromptOfTheDay = ({
   prompt,
   isLoading = false 
 }: PromptOfTheDayProps) => {
+  const navigate = useNavigate();
   // Always get a default prompt from our local challenges in case the database query fails
   // This is synchronous and returns a plain Prompt object
   const defaultPrompt = getFallbackChallenge();
@@ -61,10 +62,17 @@ const PromptOfTheDay = ({
     );
   }
 
-  const handleAcceptChallenge = () => {
+  const handleAcceptChallenge = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent the default link behavior
+    
     toast({
       title: "Challenge Accepted!",
       description: `You've accepted the "${displayPrompt.text}" challenge. Create something amazing!`,
+    });
+    
+    // Use navigate to programmatically go to the create page with state
+    navigate('/create', { 
+      state: { challengePrompt: displayPrompt } 
     });
   };
 
@@ -80,12 +88,13 @@ const PromptOfTheDay = ({
             </span>
           ))}
         </div>
-        <Link to="/create" state={{ challengePrompt: displayPrompt }} onClick={handleAcceptChallenge}>
-          <Button className="gap-1 bg-white text-brand-purple hover:bg-white/90">
-            Accept Challenge
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
+        <Button 
+          className="gap-1 bg-white text-brand-purple hover:bg-white/90"
+          onClick={handleAcceptChallenge}
+        >
+          Accept Challenge
+          <ArrowRight className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
