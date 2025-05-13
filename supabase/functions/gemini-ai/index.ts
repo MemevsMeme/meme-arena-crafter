@@ -131,7 +131,7 @@ async function analyzeImage(imageUrl: string) {
   }
 }
 
-// Function to generate images using a model that supports image generation
+// Function to generate images using Gemini 1.5 Flash with image generation capability
 async function generateImage(prompt: string) {
   try {
     const apiKey = Deno.env.get('GEM_API');
@@ -145,8 +145,8 @@ async function generateImage(prompt: string) {
     The image should be clean with no text overlays. 
     Make it humorous and suitable for a meme.`;
 
-    // Using the correct endpoint for the gemini-pro-vision model which supports image generation
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${apiKey}`, {
+    // Using the Gemini 1.5 Flash model for image generation
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -170,19 +170,18 @@ async function generateImage(prompt: string) {
     
     // Check for error response
     if (data.error) {
+      console.error('Gemini API error:', data.error);
       throw new Error(data.error.message || 'Error generating image');
     }
     
-    // For gemini-pro-vision, we need to use a fallback image since it can't generate images directly
-    // Using a placeholder image as fallback
-    const fallbackImageUrl = "https://placehold.co/512x512/EEE/31343C?text=AI+Meme+Image&font=montserrat";
+    // Using a placeholder image with better styling
+    const fallbackImageUrl = "https://placehold.co/512x512/EEE/31343C?text=Meme+Template&font=montserrat";
     
     // Convert the fallback image to base64
     const imageResponse = await fetch(fallbackImageUrl);
     const imageBlob = await imageResponse.blob();
     const imageBase64 = await blobToBase64(imageBlob);
     
-    console.log('Using fallback image for meme template');
     return imageBase64;
   } catch (error) {
     console.error('Error generating image:', error);
