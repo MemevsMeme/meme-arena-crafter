@@ -16,7 +16,7 @@ const Index = () => {
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
   const { user } = useAuth();
   
-  // Setup query for active prompt
+  // Setup query for active prompt - make sure it returns a Prompt object, not a Promise
   const { data: activePrompt, isLoading: promptLoading } = useQuery({
     queryKey: ['activePrompt'],
     queryFn: async () => {

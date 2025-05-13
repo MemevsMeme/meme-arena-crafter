@@ -7,7 +7,7 @@ import { Prompt } from '@/lib/types';
 import { getTodaysChallenge } from '@/lib/dailyChallenges';
 
 interface PromptOfTheDayProps {
-  prompt?: Prompt | null; // Changed to accept null
+  prompt?: Prompt | null; // Accept Prompt object or null
   isLoading?: boolean;
 }
 
