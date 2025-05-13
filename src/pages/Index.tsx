@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/layout/Navbar';
@@ -87,7 +86,7 @@ const Index = () => {
             <section>
               <h2 className="text-2xl font-heading mb-3">Today's Challenge</h2>
               <PromptOfTheDay 
-                prompt={activePrompt as Prompt | null}
+                prompt={activePrompt}
                 isLoading={promptLoading} 
               />
             </section>

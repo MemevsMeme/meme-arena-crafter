@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
-import { getTodaysChallenge } from '@/lib/dailyChallenges';
+import { getFallbackChallenge } from '@/lib/dailyChallenges';
 
 interface PromptOfTheDayProps {
   prompt?: Prompt | null; // Accept Prompt object or null
@@ -16,7 +16,8 @@ const PromptOfTheDay = ({
   isLoading = false 
 }: PromptOfTheDayProps) => {
   // Always get a default prompt from our local challenges in case the database query fails
-  const defaultPrompt = getTodaysChallenge();
+  // This is synchronous and returns a plain Prompt object
+  const defaultPrompt = getFallbackChallenge();
 
   if (isLoading) {
     return (
@@ -36,7 +37,6 @@ const PromptOfTheDay = ({
   }
 
   // If no prompt is provided from the database, use our local default
-  // Ensure promptToShow is definitely a Prompt object, not a Promise
   const promptToShow = prompt || defaultPrompt;
 
   if (!promptToShow) {
