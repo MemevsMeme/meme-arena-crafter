@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase';
 import { User, Meme, Prompt, Battle, Vote } from './types';
 import { getFallbackChallenge } from './dailyChallenges';
@@ -899,3 +900,35 @@ export async function castVote(battleId: string, memeId: string, userId: string)
       .single();
     
     if (voteError) {
+      console.error('Error casting vote:', voteError);
+      return null;
+    }
+    
+    // Increment vote count for the meme
+    const { error: memeError } = await supabase
+      .rpc('increment_meme_votes', { meme_id: memeId });
+      
+    if (memeError) {
+      console.error('Error incrementing meme votes:', memeError);
+    }
+    
+    // Increment vote count for the battle
+    const { error: battleError } = await supabase
+      .rpc('increment_battle_vote_count', { battle_id: battleId });
+      
+    if (battleError) {
+      console.error('Error incrementing battle vote count:', battleError);
+    }
+    
+    return {
+      id: newVote.id,
+      userId: newVote.user_id,
+      battleId: newVote.battle_id,
+      memeId: newVote.meme_id,
+      createdAt: new Date(newVote.created_at)
+    };
+  } catch (error) {
+    console.error('Error in castVote:', error);
+    return null;
+  }
+}
