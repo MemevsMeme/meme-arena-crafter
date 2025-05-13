@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTodaysChallenge, getFallbackChallenge } from '@/lib/dailyChallenges';
@@ -19,7 +18,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PromptOfTheDay from '@/components/meme/PromptOfTheDay';
 import { getCurrentDayOfYear } from '@/lib/database';
 
-const MemeGenerator: React.FC = () => {
+interface MemeGeneratorProps {
+  promptText?: string;
+  promptId?: string;
+  onSave?: (meme: { id: string; caption: string; imageUrl: string }) => void;
+  isBattleSubmission?: boolean;
+  challengeDay?: number;
+  battleId?: string;
+}
+
+const MemeGenerator: React.FC<MemeGeneratorProps> = ({ 
+  promptText: initialPromptText,
+  promptId: initialPromptId,
+  onSave,
+  isBattleSubmission = false,
+  challengeDay,
+  battleId
+}) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
@@ -33,10 +48,24 @@ const MemeGenerator: React.FC = () => {
   const [selectedStyle, setSelectedStyle] = useState('funny');
   const [generatedCaptions, setGeneratedCaptions] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('templates');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isCreatingMeme, setIsCreatingMeme] = useState(false);
+  const [isUploadingToIPFS, setIsUploadingToIPFS] = useState(false);
 
   useEffect(() => {
     const loadDailyChallenge = async () => {
       try {
+        // If we have an initial prompt text and id, use that
+        if (initialPromptText && initialPromptId) {
+          setActivePrompt({
+            id: initialPromptId,
+            text: initialPromptText,
+            challengeDay
+          } as Prompt);
+          return;
+        }
+
+        // Otherwise load the daily challenge
         const challenge = await getTodaysChallenge();
         console.log('Daily challenge loaded:', challenge);
         setActivePrompt(challenge);
@@ -50,7 +79,7 @@ const MemeGenerator: React.FC = () => {
     };
 
     loadDailyChallenge();
-  }, []);
+  }, [initialPromptText, initialPromptId, challengeDay]);
 
   const handleAddText = useCallback(() => {
     setMemeTexts([
@@ -82,16 +111,25 @@ const MemeGenerator: React.FC = () => {
     setMemeTexts(memeTexts.filter((_, i) => i !== index));
   }, [memeTexts]);
 
-  const handleSelectTemplate = useCallback((templateUrl: string) => {
-    setSelectedTemplate(templateUrl);
+  const handleSelectTemplate = useCallback((template: any) => {
+    setSelectedTemplate(template.url);
     setUploadedImage(null);
     setGeneratedImage(null);
   }, []);
 
-  const handleImageUpload = useCallback((imageUrl: string) => {
-    setUploadedImage(imageUrl);
-    setSelectedTemplate('');
-    setGeneratedImage(null);
+  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        setUploadedImage(e.target.result as string);
+        setSelectedTemplate('');
+        setGeneratedImage(null);
+      }
+    };
+    reader.readAsDataURL(file);
   }, []);
 
   const handleUpdateCaption = useCallback((newCaption: string) => {
@@ -156,7 +194,7 @@ const MemeGenerator: React.FC = () => {
     }
   }, [activePrompt, toast]);
 
-  const handleSaveMeme = useCallback(async (canvasDataUrl: string) => {
+  const handleSaveMeme = useCallback(async () => {
     if (!user) {
       toast({
         title: 'Please log in',
@@ -175,8 +213,14 @@ const MemeGenerator: React.FC = () => {
       return;
     }
 
+    // Get canvas data URL
+    const canvas = document.createElement('canvas');
+    // TODO: Implement actual canvas capture logic
+    const canvasDataUrl = canvas.toDataURL();
+
+    setIsCreatingMeme(true);
     try {
-      const dayOfYear = getCurrentDayOfYear();
+      const dayOfYear = challengeDay || getCurrentDayOfYear();
       
       const meme = await createMeme({
         prompt: activePrompt.text,
@@ -185,7 +229,9 @@ const MemeGenerator: React.FC = () => {
         caption,
         creatorId: user.id,
         tags: activePrompt.tags || [],
-        challengeDay: dayOfYear
+        challengeDay: dayOfYear,
+        is_battle_submission: isBattleSubmission,
+        battle_id: battleId
       });
 
       if (meme) {
@@ -193,6 +239,10 @@ const MemeGenerator: React.FC = () => {
           title: 'Meme created!',
           description: 'Your meme has been saved successfully',
         });
+        
+        if (onSave) {
+          onSave(meme);
+        }
       }
     } catch (error) {
       console.error('Error saving meme:', error);
@@ -201,13 +251,17 @@ const MemeGenerator: React.FC = () => {
         description: 'Please try again later',
         variant: 'destructive',
       });
+    } finally {
+      setIsCreatingMeme(false);
     }
-  }, [user, activePrompt, caption, toast]);
+  }, [user, activePrompt, caption, toast, challengeDay, isBattleSubmission, battleId, onSave]);
 
   const handleSaveAsTemplate = useCallback((imageUrl: string, promptText: string) => {
     setGeneratedImage(null);
     setUploadedImage(imageUrl);
   }, []);
+
+  const isGif = false; // Placeholder for GIF detection
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
@@ -230,7 +284,10 @@ const MemeGenerator: React.FC = () => {
                   <CardTitle>Choose a Template</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <TemplateSelector onSelectTemplate={handleSelectTemplate} />
+                  <TemplateSelector 
+                    selectedTemplate={selectedTemplate ? {id: '1', url: selectedTemplate} : null} 
+                    setSelectedTemplate={handleSelectTemplate} 
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -241,7 +298,11 @@ const MemeGenerator: React.FC = () => {
                   <CardTitle>Upload Your Own Image</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ImageUploader onImageUpload={handleImageUpload} />
+                  <ImageUploader 
+                    uploadedImage={uploadedImage} 
+                    isGif={isGif} 
+                    handleImageUpload={handleImageUpload} 
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -295,25 +356,28 @@ const MemeGenerator: React.FC = () => {
             </CardHeader>
             <CardContent>
               <MemeCanvas 
-                templateUrl={selectedTemplate}
+                selectedImage={selectedTemplate}
                 uploadedImage={uploadedImage}
                 generatedImage={generatedImage}
-                memeTexts={memeTexts}
+                texts={memeTexts}
                 caption={caption}
               />
             </CardContent>
           </Card>
           
           <TextEditor
-            memeTexts={memeTexts}
-            onAddText={handleAddText}
-            onUpdateText={handleUpdateText}
-            onDeleteText={handleDeleteText}
+            texts={memeTexts}
+            onAdd={handleAddText}
+            onUpdate={handleUpdateText}
+            onDelete={handleDeleteText}
           />
           
           <SaveActions 
-            canSave={!!(selectedTemplate || uploadedImage || generatedImage)}
-            onSave={handleSaveMeme}
+            isEditMode={isEditMode}
+            isCreatingMeme={isCreatingMeme}
+            isUploadingToIPFS={isUploadingToIPFS}
+            setIsEditMode={setIsEditMode}
+            handleSaveMeme={handleSaveMeme}
           />
         </div>
       </div>
