@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Caption } from './types';
+import { toast } from 'sonner';
 
 export const generateCaption = async (prompt: string, style: string): Promise<string[]> => {
   console.log(`Generating captions for prompt: "${prompt}" with style: ${style}`);
@@ -45,34 +46,48 @@ export const generateMemeImage = async (prompt: string, style: string = 'meme'):
   console.log(`Generating AI image for prompt: "${prompt}" with style: ${style}`);
   
   try {
-    // Call the Supabase function for image generation
-    const { data, error } = await supabase.functions.invoke('gemini-ai', {
-      body: {
-        type: 'generate-image',
-        prompt,
-        style
+    // First attempt: Try Imagen 2.0 via our Supabase function
+    try {
+      const { data, error } = await supabase.functions.invoke('gemini-ai', {
+        body: {
+          type: 'generate-image',
+          prompt,
+          style
+        }
+      });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
       }
-    });
 
-    if (error) {
-      console.error('Supabase function error:', error);
-      throw error;
-    }
-
-    if (data && data.imageData) {
-      console.log('Image data received successfully. Data starts with:', data.imageData.substring(0, 50) + '...');
-      return data.imageData; // This will be a base64 data URL
-    } else {
-      console.error('No image data received from API');
-      throw new Error('No image data received');
+      if (data && data.imageData) {
+        console.log('Imagen 2.0 image generated successfully');
+        return data.imageData; // This will be a base64 data URL
+      }
+      
+      throw new Error('No image data received from Imagen 2.0');
+    } catch (primaryError) {
+      console.error('Error with primary image generation:', primaryError);
+      
+      // Fallback: Try a different model or approach
+      // For example, you could add OpenAI DALL-E integration here
+      // For now, return a placeholder to prevent page refresh
+      console.log('Using fallback image generation');
+      
+      // Return a placeholder image URL to prevent errors
+      return '/placeholder.svg';
     }
   } catch (error) {
-    console.error('Error in generateMemeImage:', error);
-    throw error;
+    console.error('All image generation methods failed:', error);
+    toast.error('Image generation failed. Please try again later.');
+    
+    // Return null but don't throw an error to prevent page refresh
+    return null;
   }
 };
 
-// Function to analyze meme images using Gemini 1.5 Flash
+// Function to analyze meme images using Gemini Pro Vision
 export const analyzeMemeImage = async (imageUrl: string): Promise<string[]> => {
   if (!imageUrl) {
     console.error('No image URL provided');

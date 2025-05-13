@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Wand, Save } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 interface AiImageGeneratorProps {
   promptText: string;
@@ -23,19 +23,16 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
 }) => {
   const [customPrompt, setCustomPrompt] = useState("");
   
-  const handleImageGeneration = () => {
+  const handleImageGeneration = (e: React.MouseEvent) => {
+    // Prevent default behavior to avoid page refresh
+    e.preventDefault();
+    
     if (!promptText && !customPrompt) {
-      toast({
-        title: "Missing prompt",
-        description: "A prompt is needed to generate an image",
-      });
+      toast.error("A prompt is needed to generate an image");
       return;
     }
     
-    toast({
-      title: "Generating...",
-      description: "Generating image with AI..."
-    });
+    toast.success("Generating image with AI...");
     
     handleGenerateImage();
   };
@@ -43,10 +40,7 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
   const handleSaveAsTemplate = () => {
     if (generatedImage && onSaveAsTemplate) {
       onSaveAsTemplate(generatedImage, promptText || customPrompt);
-      toast({
-        title: "Image saved",
-        description: "You can now use this as a template"
-      });
+      toast.success("Saved as template");
     }
   };
 
