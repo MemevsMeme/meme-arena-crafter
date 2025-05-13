@@ -1,3 +1,4 @@
+
 import { Prompt } from './types';
 import { getDailyChallenge, getCurrentDayOfYear } from './database';
 
@@ -845,4 +846,158 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "Summer Weddings In The Heat",
     theme: "events",
     tags: ["weddings", "summer", "heat"],
-    active
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-17',
+    text: "When You Find Out Your Vacation Destination Has No WiFi",
+    theme: "travel",
+    tags: ["vacation", "wifi", "disconnected"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-18',
+    text: "Trying To Sleep With The Window Open In Summer",
+    theme: "sleep",
+    tags: ["summer", "heat", "insomnia"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-19',
+    text: "When The Office Brings In Summer Interns",
+    theme: "work",
+    tags: ["interns", "summer", "office"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-20',
+    text: "Summer Solstice: The Longest Day Of The Year",
+    theme: "seasonal",
+    tags: ["solstice", "summer", "daylight"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-21',
+    text: "When Your Summer Vacation Photos Don't Match Reality",
+    theme: "travel",
+    tags: ["vacation", "photos", "reality"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-22',
+    text: "Backyard BBQ Disaster Stories",
+    theme: "food",
+    tags: ["bbq", "cooking", "fail"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-23',
+    text: "When You Realize Summer Is Already Flying By",
+    theme: "seasonal",
+    tags: ["summer", "time", "flying"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-24',
+    text: "Summer Fashion Choices You Regret Later",
+    theme: "fashion",
+    tags: ["summer", "clothes", "regret"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-25',
+    text: "When You See Your First Summer Utility Bill",
+    theme: "home",
+    tags: ["bills", "ac", "summer"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-26',
+    text: "Summer Roadtrip Car Games",
+    theme: "travel",
+    tags: ["roadtrip", "games", "family"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-27',
+    text: "Public Pool People Watching",
+    theme: "summer",
+    tags: ["pool", "people", "watching"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-28',
+    text: "When Summer Allergies Hit Differently",
+    theme: "health",
+    tags: ["allergies", "summer", "suffering"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-29',
+    text: "Trying To Look Cool While Sweating Profusely",
+    theme: "summer",
+    tags: ["heat", "sweating", "appearance"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-30',
+    text: "Half Year Review: New Year's Resolutions Status",
+    theme: "goals",
+    tags: ["resolutions", "halfyear", "progress"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  }
+];
+
+/**
+ * Gets a fallback challenge in case the database query fails
+ * @returns A default Prompt object
+ */
+export function getFallbackChallenge(): Prompt {
+  const today = new Date();
+  const dayOfYear = getCurrentDayOfYear(today);
+  
+  // Use modulo to cycle through challenges if we have fewer than 365
+  const index = dayOfYear % DAILY_CHALLENGES.length;
+  
+  return DAILY_CHALLENGES[index];
+}
+
+/**
+ * Gets today's challenge using the current date
+ * @returns The challenge for today
+ */
+export function getTodaysChallenge(): Prompt {
+  // This is a simple implementation that just returns the fallback
+  // In a real app, we might query a database first
+  return getFallbackChallenge();
+}
