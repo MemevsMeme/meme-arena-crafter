@@ -145,7 +145,7 @@ async function generateImage(prompt: string) {
     The image should be clean with no text overlays. 
     Make it humorous and suitable for a meme.`;
 
-    // Using the Gemini 1.5 Flash model for image generation
+    // Using the Gemini 1.5 Flash model for image generation with the image generation capability flag
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
@@ -174,15 +174,19 @@ async function generateImage(prompt: string) {
       throw new Error(data.error.message || 'Error generating image');
     }
     
-    // Using a placeholder image with better styling
-    const fallbackImageUrl = "https://placehold.co/512x512/EEE/31343C?text=Meme+Template&font=montserrat";
+    // Check for the image data in the response
+    if (data.candidates && data.candidates[0]?.content?.parts) {
+      const parts = data.candidates[0].content.parts;
+      for (const part of parts) {
+        if (part.inlineData && part.inlineData.data) {
+          // Return the base64 image data with correct mime type
+          return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+        }
+      }
+    }
     
-    // Convert the fallback image to base64
-    const imageResponse = await fetch(fallbackImageUrl);
-    const imageBlob = await imageResponse.blob();
-    const imageBase64 = await blobToBase64(imageBlob);
-    
-    return imageBase64;
+    // If we can't find image data, throw an error
+    throw new Error('No image data found in response');
   } catch (error) {
     console.error('Error generating image:', error);
     throw error;

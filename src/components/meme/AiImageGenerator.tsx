@@ -42,7 +42,7 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
 
   const handleSaveAsTemplate = () => {
     if (generatedImage && onSaveAsTemplate) {
-      onSaveAsTemplate(generatedImage, promptText);
+      onSaveAsTemplate(generatedImage, promptText || customPrompt);
       toast({
         title: "Image saved",
         description: "You can now use this as a template"

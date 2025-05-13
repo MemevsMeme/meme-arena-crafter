@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Caption } from './types';
 
@@ -55,7 +56,7 @@ export const generateMemeImage = async (prompt: string, style: string = 'meme'):
 
     if (error) {
       console.error('Supabase function error:', error);
-      throw error; // Don't use fallback image - let the component handle the error
+      throw error;
     }
 
     if (data && data.imageData) {
@@ -67,7 +68,7 @@ export const generateMemeImage = async (prompt: string, style: string = 'meme'):
     }
   } catch (error) {
     console.error('Error in generateMemeImage:', error);
-    throw error; // Let the component handle the error
+    throw error;
   }
 };
 
