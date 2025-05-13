@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -20,6 +20,20 @@ const PromptOfTheDay = ({
   // This is synchronous and returns a plain Prompt object
   const defaultPrompt = getFallbackChallenge();
 
+  // Store the actual prompt to display
+  const [displayPrompt, setDisplayPrompt] = useState<Prompt | null>(null);
+
+  // Handle prompt loading and ensure we always have a valid prompt to display
+  useEffect(() => {
+    if (prompt) {
+      // If we have a prompt from props (database), use it
+      setDisplayPrompt(prompt);
+    } else if (!isLoading) {
+      // If we're not loading and don't have a prompt, use the fallback
+      setDisplayPrompt(defaultPrompt);
+    }
+  }, [prompt, isLoading, defaultPrompt]);
+
   if (isLoading) {
     return (
       <div className="prompt-card animate-pulse bg-muted">
@@ -37,11 +51,8 @@ const PromptOfTheDay = ({
     );
   }
 
-  // If no prompt is provided from the database, use our local default
-  const promptToShow = prompt || defaultPrompt;
-
-  if (!promptToShow) {
-    // This should rarely happen since we have a local fallback
+  // If somehow we still don't have a prompt, show a message
+  if (!displayPrompt) {
     return (
       <div className="prompt-card bg-muted">
         <h3 className="text-lg font-medium mb-1">No Active Prompt</h3>
@@ -53,23 +64,23 @@ const PromptOfTheDay = ({
   const handleAcceptChallenge = () => {
     toast({
       title: "Challenge Accepted!",
-      description: `You've accepted the "${promptToShow.text}" challenge. Create something amazing!`,
+      description: `You've accepted the "${displayPrompt.text}" challenge. Create something amazing!`,
     });
   };
 
   return (
     <div className="prompt-card animate-float">
       <h3 className="text-lg font-medium mb-1">Today's Meme Challenge</h3>
-      <p className="text-2xl font-bold mb-4">{promptToShow.text}</p>
+      <p className="text-2xl font-bold mb-4">{displayPrompt.text}</p>
       <div className="flex justify-between items-center">
         <div className="flex gap-1 flex-wrap">
-          {promptToShow.tags && promptToShow.tags.map((tag) => (
+          {displayPrompt.tags && displayPrompt.tags.map((tag) => (
             <span key={tag} className="px-2 py-0.5 bg-white/20 rounded-full text-xs">
               #{tag}
             </span>
           ))}
         </div>
-        <Link to="/create" state={{ challengePrompt: promptToShow }} onClick={handleAcceptChallenge}>
+        <Link to="/create" state={{ challengePrompt: displayPrompt }} onClick={handleAcceptChallenge}>
           <Button className="gap-1 bg-white text-brand-purple hover:bg-white/90">
             Accept Challenge
             <ArrowRight className="h-4 w-4" />
