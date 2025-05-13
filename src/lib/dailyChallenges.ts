@@ -1,3 +1,4 @@
+
 import { Prompt } from './types';
 import { getDailyChallenge, getCurrentDayOfYear } from './database';
 

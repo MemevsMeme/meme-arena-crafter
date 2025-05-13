@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -80,7 +79,12 @@ const CreateBattle = () => {
         throw new Error(`Error creating prompt: ${promptError.message}`);
       }
       
-      // Then create an empty battle
+      // For a new battle, we need placeholder meme IDs since they're required
+      // We'll use the same placeholder for both, and they'll be updated later
+      // when users submit memes and vote on them
+      const placeholderId = '00000000-0000-0000-0000-000000000000';
+      
+      // Then create an empty battle with placeholder meme IDs
       const { data: battleData, error: battleError } = await supabase
         .from('battles')
         .insert({
@@ -89,6 +93,8 @@ const CreateBattle = () => {
           creator_id: user.id,
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
+          meme_one_id: placeholderId,
+          meme_two_id: placeholderId
         })
         .select()
         .single();

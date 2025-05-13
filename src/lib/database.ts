@@ -711,6 +711,80 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
   }
 }
 
+// Add the missing getBattleById function
+export async function getBattleById(battleId: string): Promise<Battle | null> {
+  try {
+    const { data, error } = await supabase
+      .from('battles')
+      .select(`
+        *,
+        memeOne:meme_one_id(*),
+        memeTwo:meme_two_id(*),
+        prompt:prompt_id(*)
+      `)
+      .eq('id', battleId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching battle by ID:', error);
+      return null;
+    }
+    
+    return {
+      id: data.id,
+      promptId: data.prompt_id || '',
+      prompt: data.prompt ? {
+        id: data.prompt.id,
+        text: data.prompt.text,
+        theme: data.prompt.theme || '',
+        tags: data.prompt.tags || [],
+        active: data.prompt.active,
+        startDate: new Date(data.prompt.start_date),
+        endDate: new Date(data.prompt.end_date),
+        description: data.prompt.description || undefined,
+        creator_id: data.prompt.creator_id || undefined,
+        is_community: data.prompt.is_community || false
+      } : undefined,
+      memeOneId: data.meme_one_id,
+      memeTwoId: data.meme_two_id,
+      memeOne: data.memeOne ? {
+        id: data.memeOne.id,
+        prompt: data.memeOne.prompt || '',
+        prompt_id: data.memeOne.prompt_id || undefined,
+        imageUrl: data.memeOne.image_url,
+        ipfsCid: data.memeOne.ipfs_cid || '',
+        caption: data.memeOne.caption,
+        creatorId: data.memeOne.creator_id,
+        votes: data.memeOne.votes || 0,
+        createdAt: new Date(data.memeOne.created_at),
+        tags: data.memeOne.tags || []
+      } : undefined,
+      memeTwo: data.memeTwo ? {
+        id: data.memeTwo.id,
+        prompt: data.memeTwo.prompt || '',
+        prompt_id: data.memeTwo.prompt_id || undefined,
+        imageUrl: data.memeTwo.image_url,
+        ipfsCid: data.memeTwo.ipfs_cid || '',
+        caption: data.memeTwo.caption,
+        creatorId: data.memeTwo.creator_id,
+        votes: data.memeTwo.votes || 0,
+        createdAt: new Date(data.memeTwo.created_at),
+        tags: data.memeTwo.tags || []
+      } : undefined,
+      winnerId: data.winner_id || undefined,
+      voteCount: data.vote_count || 0,
+      startTime: new Date(data.start_time),
+      endTime: new Date(data.end_time),
+      status: data.status as 'active' | 'completed' | 'cancelled',
+      is_community: data.is_community || false,
+      creator_id: data.creator_id || undefined
+    };
+  } catch (error) {
+    console.error('Error in getBattleById:', error);
+    return null;
+  }
+}
+
 // New function to get top memes for a battle
 export async function getTopMemesForBattle(battleId: string, limit: number = 2): Promise<Meme[]> {
   try {
@@ -825,37 +899,3 @@ export async function castVote(battleId: string, memeId: string, userId: string)
       .single();
     
     if (voteError) {
-      console.error('Error creating vote:', voteError);
-      return null;
-    }
-    
-    // Increment the vote count for the meme
-    const { error: memeError } = await supabase.rpc('increment_meme_votes', {
-      p_meme_id: memeId
-    });
-    
-    if (memeError) {
-      console.error('Error incrementing meme votes:', memeError);
-    }
-    
-    // Increment the battle vote count
-    const { error: battleError } = await supabase.rpc('increment_battle_votes', {
-      p_battle_id: battleId
-    });
-    
-    if (battleError) {
-      console.error('Error incrementing battle votes:', battleError);
-    }
-    
-    return {
-      id: newVote.id,
-      userId: newVote.user_id,
-      battleId: newVote.battle_id,
-      memeId: newVote.meme_id,
-      createdAt: new Date(newVote.created_at)
-    };
-  } catch (error) {
-    console.error('Error in castVote:', error);
-    return null;
-  }
-}
