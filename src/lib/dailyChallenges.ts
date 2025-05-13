@@ -332,6 +332,7 @@ export const DAILY_CHALLENGES: Prompt[] = [
 ];
 
 // Function to get today's challenge based on day of year
+// Changed to return Promise<Prompt> to match its async nature
 export async function getTodaysChallenge(): Promise<Prompt> {
   // First try to get the challenge from the database
   try {

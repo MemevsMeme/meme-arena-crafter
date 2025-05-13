@@ -36,6 +36,7 @@ const PromptOfTheDay = ({
   }
 
   // If no prompt is provided from the database, use our local default
+  // Ensure promptToShow is definitely a Prompt object, not a Promise
   const promptToShow = prompt || defaultPrompt;
 
   if (!promptToShow) {

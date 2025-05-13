@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/layout/Navbar';
@@ -20,21 +21,21 @@ const Index = () => {
   // Setup query for active prompt
   const { data: activePrompt, isLoading: promptLoading } = useQuery({
     queryKey: ['activePrompt'],
-    queryFn: async (): Promise<Prompt> => {
+    queryFn: async () => {
       try {
         // First try to get an active prompt from the database
         const prompt = await getActivePrompt();
         
         if (!prompt) {
           console.log('No active prompt found, using local challenge');
-          // Use the fallback which is synchronous and returns a Prompt directly
+          // Use the fallback which is synchronous
           return getFallbackChallenge();
         }
         
         return prompt;
       } catch (error) {
         console.error('Failed to fetch active prompt:', error);
-        // Use the fallback which is synchronous and returns a Prompt directly
+        // Use the fallback which is synchronous
         return getFallbackChallenge();
       }
     },
@@ -86,7 +87,7 @@ const Index = () => {
             <section>
               <h2 className="text-2xl font-heading mb-3">Today's Challenge</h2>
               <PromptOfTheDay 
-                prompt={activePrompt} 
+                prompt={activePrompt as Prompt | null}
                 isLoading={promptLoading} 
               />
             </section>
