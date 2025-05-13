@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useAuth } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Create from "./pages/Create";
 import Battle from "./pages/Battle";
@@ -45,9 +46,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   return <>{children}</>;
 };
-
-// Import useAuth after the ProtectedRoute component is defined
-import { useAuth } from "./contexts/AuthContext";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
