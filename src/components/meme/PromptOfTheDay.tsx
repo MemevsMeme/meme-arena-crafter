@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { getFallbackChallenge } from '@/lib/dailyChallenges';
+import { toast } from '@/components/ui/use-toast';
 
 interface PromptOfTheDayProps {
   prompt?: Prompt | null; // Accept Prompt object or null
@@ -49,6 +50,13 @@ const PromptOfTheDay = ({
     );
   }
 
+  const handleAcceptChallenge = () => {
+    toast({
+      title: "Challenge Accepted!",
+      description: `You've accepted the "${promptToShow.text}" challenge. Create something amazing!`,
+    });
+  };
+
   return (
     <div className="prompt-card animate-float">
       <h3 className="text-lg font-medium mb-1">Today's Meme Challenge</h3>
@@ -61,7 +69,7 @@ const PromptOfTheDay = ({
             </span>
           ))}
         </div>
-        <Link to="/create" state={{ challengePrompt: promptToShow }}>
+        <Link to="/create" state={{ challengePrompt: promptToShow }} onClick={handleAcceptChallenge}>
           <Button className="gap-1 bg-white text-brand-purple hover:bg-white/90">
             Accept Challenge
             <ArrowRight className="h-4 w-4" />

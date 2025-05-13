@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/layout/Navbar';
@@ -10,32 +11,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getActivePrompt, getActiveBattles, getTrendingMemes, getNewestMemes } from '@/lib/database';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getFallbackChallenge } from '@/lib/dailyChallenges';
+import { getTodaysChallenge } from '@/lib/dailyChallenges';
+import { toast } from '@/components/ui/use-toast';
 import { Prompt } from '@/lib/types';
 
 const Index = () => {
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
   const { user } = useAuth();
   
-  // Setup query for active prompt
+  // Setup query for active prompt with better error handling
   const { data: activePrompt, isLoading: promptLoading } = useQuery({
     queryKey: ['activePrompt'],
     queryFn: async () => {
       try {
-        // First try to get an active prompt from the database
-        const prompt = await getActivePrompt();
-        
-        if (!prompt) {
-          console.log('No active prompt found, using local challenge');
-          // Use the fallback which is synchronous
-          return getFallbackChallenge();
-        }
-        
-        return prompt;
+        // Try to get today's challenge from our enhanced function
+        const challenge = await getTodaysChallenge();
+        return challenge;
       } catch (error) {
-        console.error('Failed to fetch active prompt:', error);
-        // Use the fallback which is synchronous
-        return getFallbackChallenge();
+        console.error('Failed to fetch today\'s challenge:', error);
+        return null;
       }
     },
   });
@@ -53,7 +47,7 @@ const Index = () => {
     }
   });
   
-  // Query for memes based on active tab
+  // Query for memes based on active tab with better error handling
   const { data: memes, isLoading: memesLoading } = useQuery({
     queryKey: ['memes', activeFeedTab],
     queryFn: async () => {

@@ -9,45 +9,45 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "New Year's Resolutions Gone Wrong",
     theme: "holiday",
     tags: ["newyear", "resolutions", "humor"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'jan-02',
     text: "When You Finally Check Your Bank Account After The Holidays",
     theme: "relatable",
     tags: ["money", "postholiday", "finances"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'jan-03',
     text: "First Day Back At Work After Vacation",
     theme: "work",
     tags: ["office", "backtowork", "mondaymood"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'jan-04',
     text: "Expectation vs. Reality: New Year's Diet",
     theme: "health",
     tags: ["diet", "fitness", "expectations"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'jan-05',
     text: "When Someone Says 'Winter Is My Favorite Season'",
     theme: "seasonal",
     tags: ["winter", "cold", "seasons"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // More January prompts
   {
@@ -55,18 +55,18 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "Finding Motivation To Exercise In January",
     theme: "fitness",
     tags: ["gym", "motivation", "resolutions"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'jan-07',
     text: "Trying To Remember Your Password After The Break",
     theme: "tech",
     tags: ["password", "forgetting", "backtowork"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // February
   {
@@ -74,27 +74,27 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "Single People On Valentine's Day",
     theme: "holiday",
     tags: ["valentines", "single", "alone"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'feb-02',
     text: "When Groundhog Day Actually Matters",
     theme: "holiday",
     tags: ["groundhogday", "winter", "spring"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'feb-03',
     text: "Valentine's Day Gift Shopping For Someone You Just Started Dating",
     theme: "relationships",
     tags: ["valentines", "dating", "awkward"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // Continue with more months...
   // March
@@ -103,18 +103,18 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "Spring Cleaning Expectations vs. Reality",
     theme: "seasonal",
     tags: ["spring", "cleaning", "procrastination"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'mar-17',
     text: "St. Patrick's Day: Before vs. After",
     theme: "holiday",
     tags: ["stpatricksday", "party", "green"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // April
   {
@@ -122,18 +122,18 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "April Fools' Pranks That Went Too Far",
     theme: "holiday",
     tags: ["aprilfools", "pranks", "jokes"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'apr-15',
     text: "Last Minute Tax Filing Panic",
     theme: "seasonal",
     tags: ["taxes", "deadline", "stress"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // May
   {
@@ -141,18 +141,18 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "When May Arrives But Spring Weather Doesn't",
     theme: "weather",
     tags: ["spring", "weather", "waiting"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'may-04',
     text: "May The 4th Be With You: Star Wars Day",
     theme: "entertainment",
     tags: ["starwars", "maythe4th", "scifi"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // June
   {
@@ -160,18 +160,18 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "Summer Body Goals vs. Reality",
     theme: "seasonal",
     tags: ["summer", "beachbody", "fitness"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'jun-15',
     text: "Dad Jokes For Father's Day",
     theme: "holiday",
     tags: ["fathersday", "dadjokes", "family"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // July
   {
@@ -179,18 +179,18 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "Independence Day BBQ Mishaps",
     theme: "holiday",
     tags: ["4thofjuly", "bbq", "celebration"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'jul-15',
     text: "When The Air Conditioning Breaks In July",
     theme: "seasonal",
     tags: ["summer", "heat", "ac"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // August
   {
@@ -198,18 +198,18 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "Back To School Shopping: Parents vs. Kids",
     theme: "seasonal",
     tags: ["backtoschool", "shopping", "students"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'aug-15',
     text: "Summer Vacation Photos vs. Reality",
     theme: "travel",
     tags: ["vacation", "travel", "expectations"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // September
   {
@@ -217,18 +217,18 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "First Day Of School After Summer Break",
     theme: "education",
     tags: ["school", "students", "teachers"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'sep-15',
     text: "When Pumpkin Spice Everything Returns",
     theme: "seasonal",
     tags: ["fall", "pumpkinspice", "autumn"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // October
   {
@@ -236,18 +236,18 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "Halloween Costume Ideas That No One Gets",
     theme: "holiday",
     tags: ["halloween", "costume", "creative"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'oct-31',
     text: "Last Minute Halloween Costume Attempts",
     theme: "holiday",
     tags: ["halloween", "lastminute", "diy"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // November
   {
@@ -255,18 +255,18 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "Post-Halloween Candy Sale Shopping",
     theme: "holiday",
     tags: ["halloween", "candy", "sales"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'nov-15',
     text: "Thanksgiving Dinner With Relatives Who Don't Agree On Politics",
     theme: "holiday",
     tags: ["thanksgiving", "family", "awkward"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // December
   {
@@ -274,27 +274,27 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "Holiday Shopping: Online vs. In-Store",
     theme: "holiday",
     tags: ["christmas", "shopping", "presents"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'dec-24',
     text: "Christmas Eve Last Minute Gift Wrapping",
     theme: "holiday",
     tags: ["christmas", "presents", "lastminute"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'dec-31',
     text: "New Year's Eve Expectations vs. Reality",
     theme: "holiday",
     tags: ["newyearseve", "party", "expectations"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // Fill in the remaining days to complete 365...
   // This is just a sample - in a real implementation we would have all 365 days
@@ -304,34 +304,81 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "When Your Phone Battery Dies At The Worst Possible Moment",
     theme: "tech",
     tags: ["phone", "battery", "panic"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'sample-02',
     text: "Meeting Someone In Person After Only Talking Online",
     theme: "social",
     tags: ["online", "meeting", "awkward"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   {
     id: 'sample-03',
     text: "Autocorrect Fails That Changed The Entire Meaning",
     theme: "tech",
     tags: ["autocorrect", "texting", "fail"],
-    active: false,
+    active: true,
     startDate: new Date(),
-    endDate: new Date()
+    endDate: new Date(new Date().getTime() + 86400000)
   },
   // Adding more generic challenges to demonstrate the concept
   // In a full implementation, we would have a unique challenge for each day
+  {
+    id: 'generic-01',
+    text: "When Your Phone Dies At The Most Important Moment",
+    theme: "technology",
+    tags: ["phone", "battery", "fail"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'generic-02',
+    text: "That Moment When You Realize You've Been Pronouncing A Word Wrong Your Entire Life",
+    theme: "humor",
+    tags: ["awkward", "language", "realization"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'generic-03',
+    text: "Starting A Diet vs. One Week Into The Diet",
+    theme: "health",
+    tags: ["diet", "motivation", "reality"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'generic-04',
+    text: "When You Try To Take A Nice Photo But Someone Blinks",
+    theme: "photography",
+    tags: ["photo", "fail", "family"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'generic-05',
+    text: "Me Explaining My Job To My Parents vs. What I Actually Do",
+    theme: "work",
+    tags: ["career", "parents", "explanation"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
 ];
 
-// Function to get today's challenge based on day of year
+// Function to get today's challenge based on day of year - improved error handling and fallback mechanism
 export async function getTodaysChallenge(): Promise<Prompt> {
+  console.log('Getting today\'s challenge...');
+  
   // First try to get the challenge from the database
   try {
     const dbChallenge = await getDailyChallenge();
@@ -344,10 +391,11 @@ export async function getTodaysChallenge(): Promise<Prompt> {
   }
   
   // If database query fails, fall back to local challenges
+  console.log('Using fallback challenge');
   return getFallbackChallenge();
 }
 
-// Fallback function that uses local data - synchronous, not async
+// Improved fallback function that uses local data - synchronous, not async
 export function getFallbackChallenge(): Prompt {
   // Get current date
   const now = new Date();
@@ -355,8 +403,12 @@ export function getFallbackChallenge(): Prompt {
   // Calculate day of year (0-364)
   const dayOfYear = getCurrentDayOfYear();
   
+  console.log(`Current day of year: ${dayOfYear}`);
+  
   // Use modulo to ensure we always have a valid index even if array is smaller than 365
   const index = dayOfYear % DAILY_CHALLENGES.length;
+  
+  console.log(`Using challenge index: ${index} out of ${DAILY_CHALLENGES.length} available challenges`);
   
   // Create a copy of the challenge with updated dates
   const challenge = { ...DAILY_CHALLENGES[index] };
@@ -368,6 +420,7 @@ export function getFallbackChallenge(): Prompt {
   tomorrow.setDate(tomorrow.getDate() + 1);
   challenge.endDate = tomorrow;
   
+  console.log('Returning fallback challenge:', challenge);
   return challenge;
 }
 
