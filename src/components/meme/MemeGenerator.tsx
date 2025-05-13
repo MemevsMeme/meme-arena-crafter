@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTodaysChallenge, getFallbackChallenge } from '@/lib/dailyChallenges';
@@ -145,9 +146,9 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
     
     setIsGeneratingCaptions(true);
     try {
+      // Updated to match the expected arguments
       const captions = await generateCaption(
         activePrompt.text,
-        activePrompt.theme || '',
         selectedStyle
       );
       
@@ -230,7 +231,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         creatorId: user.id,
         tags: activePrompt.tags || [],
         challengeDay: dayOfYear,
-        is_battle_submission: isBattleSubmission,
+        isBattleSubmission, // Fixed property name to match database schema
         battle_id: battleId
       });
 
