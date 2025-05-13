@@ -1,260 +1,290 @@
 
-// Import required dependencies for Deno
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-// CORS headers for cross-origin requests
+const GEMINI_API_KEY = Deno.env.get('GEM_API'); // Updated to use GEM_API
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Function to generate text responses using Gemini AI
-async function generateText(prompt: string, style: string) {
-  try {
-    const apiKey = Deno.env.get('GEM_API');
-    if (!apiKey) {
-      throw new Error('API key not found');
-    }
-
-    // Adjust the prompt based on style
-    let systemPrompt = `Generate 3 funny and creative captions for a meme about: "${prompt}". `;
-    
-    if (style === 'funny') {
-      systemPrompt += "Make them humorous and light-hearted.";
-    } else if (style === 'dark') {
-      systemPrompt += "Make them sarcastically dark but still appropriate.";
-    } else if (style === 'wholesome') {
-      systemPrompt += "Make them positive and uplifting.";
-    } else if (style === 'sarcastic') {
-      systemPrompt += "Make them witty and sarcastic.";
-    }
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: systemPrompt }]
-          }
-        ],
-        generationConfig: {
-          temperature: 1.0,
-          maxOutputTokens: 200,
-        },
-      }),
-    });
-
-    const data = await response.json();
-    
-    if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
-      throw new Error('Invalid response format');
-    }
-
-    const generatedText = data.candidates[0].content.parts[0].text;
-    
-    // Parse the text to get individual captions
-    const captions = generatedText.split('\n')
-      .filter(line => line.trim().length > 0)
-      .map(line => line.replace(/^\d+\.\s*/, '').trim())
-      .filter(caption => caption.length > 0)
-      .slice(0, 3);
-    
-    return captions;
-  } catch (error) {
-    console.error('Error generating text:', error);
-    throw error;
-  }
-}
-
-// Function to analyze images using Gemini AI
-async function analyzeImage(imageUrl: string) {
-  try {
-    const apiKey = Deno.env.get('GEM_API');
-    if (!apiKey) {
-      throw new Error('API key not found');
-    }
-
-    // Fetch image data as blob
-    const imageResponse = await fetch(imageUrl);
-    const imageBlob = await imageResponse.blob();
-    const imageBase64 = await blobToBase64(imageBlob);
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: "Analyze this meme image and generate 3-5 relevant hashtags or tags that describe it. Just return the tags as a comma separated list without any additional text." },
-              {
-                inlineData: {
-                  mimeType: imageBlob.type,
-                  data: imageBase64.split(',')[1]
-                }
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 100,
-        },
-      }),
-    });
-
-    const data = await response.json();
-    
-    if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
-      throw new Error('Invalid response format');
-    }
-
-    const tagsText = data.candidates[0].content.parts[0].text;
-    
-    // Parse tags
-    const tags = tagsText.split(',')
-      .map(tag => tag.trim().replace(/^#/, ''))
-      .filter(tag => tag.length > 0)
-      .slice(0, 5);
-    
-    return tags;
-  } catch (error) {
-    console.error('Error analyzing image:', error);
-    throw error;
-  }
-}
-
-// Function to generate images using Imagen 2.0
-async function generateImage(prompt: string) {
-  try {
-    const apiKey = Deno.env.get('GEM_API');
-    if (!apiKey) {
-      throw new Error('API key not found');
-    }
-
-    // Create a prompt that explicitly asks for no text in the image
-    const imagePrompt = `Create an image for a meme based on: ${prompt}. 
-    IMPORTANT: Do NOT include any text, words, or captions in the image itself. 
-    The image should be clean with no text overlays. 
-    Make it humorous and suitable for a meme.`;
-
-    // Using Imagen 2.0 for image generation
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagegeneration@002:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: imagePrompt }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.8
-        }
-      }),
-    });
-
-    const data = await response.json();
-    
-    // Check for error response
-    if (data.error) {
-      console.error('Gemini API error:', data.error);
-      throw new Error(data.error.message || 'Error generating image');
-    }
-    
-    // Check for the image data in the response - Imagen 2.0 specific format
-    if (data.candidates && data.candidates[0]?.content?.parts) {
-      const parts = data.candidates[0].content.parts;
-      for (const part of parts) {
-        if (part.inlineData && part.inlineData.data) {
-          // Return the base64 image data with correct mime type
-          return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-        }
-      }
-    }
-    
-    // If we can't find image data, throw an error
-    throw new Error('No image data found in response');
-  } catch (error) {
-    console.error('Error generating image:', error);
-    throw error;
-  }
-}
-
-// Helper function to convert a Blob to base64
-async function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-// Main request handler
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS pre-flight request
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
-  
+
   try {
-    const { type, prompt, style, imageUrl } = await req.json();
-    
-    if (type === 'text') {
-      // Generate captions
-      const captions = await generateText(prompt, style || 'funny');
-      
-      return new Response(
-        JSON.stringify({ captions }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const url = new URL(req.url);
+    const body = await req.json();
+
+    switch (body.type) {
+      case 'text':
+        try {
+          const { prompt, style } = body;
+          if (!prompt) {
+            throw new Error('Prompt is required');
+          }
+
+          let formattedPrompt = prompt;
+          if (style === 'funny') {
+            formattedPrompt = `Create three funny meme captions based on: ${prompt}. Make them short, humorous, and suitable for meme formats.`;
+          } else if (style === 'serious') {
+            formattedPrompt = `Create three serious, thought-provoking meme captions based on: ${prompt}. Make them impactful and concise.`;
+          } else {
+            formattedPrompt = `Create three meme captions based on: ${prompt}. Make them creative, engaging, and suitable for a wide audience.`;
+          }
+
+          console.log(`Sending to Gemini with prompt: "${formattedPrompt}"`);
+
+          // Using gemini-2.0-flash model for text generation as specified
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{ text: formattedPrompt }]
+              }],
+              generationConfig: {
+                maxOutputTokens: 2048,
+                temperature: 0.7,
+                topK: 32,
+                topP: 1,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            console.error(`API Error: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error(`Error response: ${errorText}`);
+            throw new Error(`API Error: ${response.status} ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          console.log('Response received');
+
+          if (!data.candidates || data.candidates.length === 0) {
+            console.error('No candidates in response');
+            throw new Error('No candidates in response');
+          }
+
+          const captions = data.candidates[0].content.parts.map(part => part.text).join('\n').split('\n').filter(Boolean);
+
+          return new Response(
+            JSON.stringify({ captions }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+        } catch (error) {
+          console.error('Error generating captions:', error.message);
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+          );
         }
-      );
-    } else if (type === 'image') {
-      // Analyze image
-      const tags = await analyzeImage(imageUrl);
-      
-      return new Response(
-        JSON.stringify({ tags }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        break;
+
+      case 'generate-image':
+        try {
+          const { prompt, style } = body;
+          if (!prompt) {
+            throw new Error('Prompt is required for image generation');
+          }
+          
+          let formattedPrompt = prompt;
+          if (style === 'funny') {
+            formattedPrompt = `Create a funny meme image based on: ${prompt}. Make it humorous and suitable for a meme.`;
+          } else if (style === 'serious') {
+            formattedPrompt = `Create a serious, thought-provoking image based on: ${prompt}. Make it suitable for a meme with impact.`;
+          } else {
+            formattedPrompt = `Create a meme image based on: ${prompt}. Make it visually appealing and suitable for adding text captions.`;
+          }
+          
+          console.log(`Sending to Gemini for image generation with prompt: "${formattedPrompt}"`);
+          console.log(`API Key exists: ${!!GEMINI_API_KEY}`); 
+          
+          if (!GEMINI_API_KEY) {
+            console.error("GEM_API is not set");
+            throw new Error("API Key not configured");
+          }
+          
+          // Use Gemini 2.0 Flash Preview Image Generation model for image generation
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${GEMINI_API_KEY}`;
+          console.log(`Using API URL: ${apiUrl}`);
+          
+          // Using the correct format for Gemini 2.0 Flash Preview Image Generation with required responseModalities
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: "user",
+                  parts: [
+                    {
+                      text: formattedPrompt
+                    }
+                  ]
+                }
+              ],
+              generationConfig: {
+                maxOutputTokens: 2048,
+                temperature: 0.7,
+                topK: 32,
+                topP: 1,
+                responseModalities: ["TEXT", "IMAGE"]  // Required to ensure image output
+              }
+            })
+          });
+          
+          if (!response.ok) {
+            console.error(`API Error: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error(`Error response: ${errorText}`);
+            throw new Error(`API Error: ${response.status} ${response.statusText}`);
+          }
+          
+          const responseData = await response.json();
+          console.log('Image generation response received');
+          
+          // Debug the full response structure
+          console.log('Full response structure:', JSON.stringify(responseData, null, 2));
+          
+          if (!responseData.candidates || responseData.candidates.length === 0) {
+            console.error('No candidates in response');
+            throw new Error('No candidates in response');
+          }
+          
+          const candidate = responseData.candidates[0];
+          if (!candidate.content) {
+            console.error('No content in candidate');
+            throw new Error('No content in candidate');
+          }
+          
+          const content = candidate.content;
+          
+          if (!content.parts || content.parts.length === 0) {
+            console.error('No parts in content');
+            throw new Error('No parts in content');
+          }
+          
+          // Debug the parts to see their structure
+          console.log('Parts structure:', JSON.stringify(content.parts.map(p => Object.keys(p))));
+          
+          // Look for the image part in the response (format is different in Gemini 2.0)
+          const imagePart = content.parts.find(part => part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/'));
+          
+          if (!imagePart || !imagePart.inlineData) {
+            console.error('No image data found in the response');
+            throw new Error('No image data found in response');
+          }
+          
+          console.log('Found image data in response');
+          const imageData = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
+          
+          return new Response(
+            JSON.stringify({
+              imageData
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+          
+        } catch (error) {
+          console.error('Error in image generation:', error.message);
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+          );
         }
-      );
-    } else if (type === 'generate-image') {
-      // Generate image
-      const imageData = await generateImage(prompt);
-      
-      return new Response(
-        JSON.stringify({ imageData }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        break;
+
+      case 'image':
+        try {
+          const { imageUrl } = body;
+          if (!imageUrl) {
+            throw new Error('Image URL is required');
+          }
+
+          console.log(`Analyzing image: ${imageUrl}`);
+
+          // Using gemini-2.0-pro-vision model for image analysis as specified
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro-vision:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: "Describe the image with a focus on identifying objects, scenes, and meme-related context. Extract keywords suitable for tagging the image as a meme." },
+                  {
+                    inlineData: {
+                      mimeType: "image/*",
+                      data: imageUrl.split(',')[1]
+                    }
+                  }
+                ]
+              }],
+              generationConfig: {
+                maxOutputTokens: 2048,
+                temperature: 0.4,
+                topK: 32,
+                topP: 1,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            console.error(`API Error: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error(`Error response: ${errorText}`);
+            throw new Error(`API Error: ${response.status} ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          console.log('Image analysis response received');
+
+          if (!data.candidates || data.candidates.length === 0) {
+            console.error('No candidates in response');
+            throw new Error('No candidates in response');
+          }
+
+          const analysis = data.candidates[0].content.parts[0].text;
+          console.log('Image analysis:', analysis);
+
+          // Extract tags from the analysis (example: split by commas and trim)
+          const tags = analysis.split(',').map(tag => tag.trim());
+
+          return new Response(
+            JSON.stringify({ tags }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+        } catch (error) {
+          console.error('Error analyzing image:', error.message);
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+          );
         }
-      );
-    } else {
-      throw new Error(`Unsupported operation type: ${type}`);
+        break;
+
+      default:
+        console.log(`Unknown type: ${body.type}`);
+        return new Response(
+          JSON.stringify({ error: 'Unknown type' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
     }
   } catch (error) {
-    console.error(error);
-    
+    console.error('Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });
+

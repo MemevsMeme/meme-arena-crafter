@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Caption } from './types';
-import { toast } from 'sonner';
 
 export const generateCaption = async (prompt: string, style: string): Promise<string[]> => {
   console.log(`Generating captions for prompt: "${prompt}" with style: ${style}`);
@@ -45,6 +44,7 @@ export const generateMemeImage = async (prompt: string, style: string = 'meme'):
   console.log(`Generating AI image for prompt: "${prompt}" with style: ${style}`);
   
   try {
+    // Call the Supabase function for image generation
     const { data, error } = await supabase.functions.invoke('gemini-ai', {
       body: {
         type: 'generate-image',
@@ -59,19 +59,19 @@ export const generateMemeImage = async (prompt: string, style: string = 'meme'):
     }
 
     if (data && data.imageData) {
-      console.log('Imagen 2.0 image generated successfully');
+      console.log('Image data received successfully. Data starts with:', data.imageData.substring(0, 50) + '...');
       return data.imageData; // This will be a base64 data URL
+    } else {
+      console.error('No image data received from API');
+      throw new Error('No image data received');
     }
-    
-    throw new Error('No image data received from Imagen 2.0');
   } catch (error) {
     console.error('Error in generateMemeImage:', error);
-    toast.error('Image generation failed. Please try again later.');
-    return null;
+    throw error; // Let the component handle the error
   }
 };
 
-// Function to analyze meme images using Gemini Pro Vision
+// Function to analyze meme images using Gemini 2.0 Pro Vision
 export const analyzeMemeImage = async (imageUrl: string): Promise<string[]> => {
   if (!imageUrl) {
     console.error('No image URL provided');

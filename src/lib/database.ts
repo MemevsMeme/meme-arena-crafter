@@ -369,12 +369,11 @@ export async function getDailyChallenge(): Promise<Prompt | null> {
     if (challengeError) {
       console.error('Error fetching daily challenge:', challengeError);
       
-      // Try to get from the prompts table with daily_challenge flag set to true
+      // Try to get from the prompts table with daily_challenge_id
       const { data: promptData, error: promptError } = await supabase
         .from('prompts')
         .select('*')
         .eq('active', true)
-        .is('is_community', false)
         .order('start_date', { ascending: false })
         .limit(1)
         .single();
@@ -437,8 +436,7 @@ export async function getDailyChallenge(): Promise<Prompt | null> {
       active: true,
       start_date: now.toISOString(),
       end_date: tomorrow.toISOString(),
-      daily_challenge_id: challengeData.id,
-      is_community: false,
+      daily_challenge_id: challengeData.id
     };
     
     const { data: createdPrompt, error: createError } = await supabase
@@ -472,6 +470,7 @@ export async function getDailyChallenge(): Promise<Prompt | null> {
   }
 }
 
+// Prompt functions
 export async function getActivePrompt(): Promise<Prompt | null> {
   try {
     // First try to get today's challenge
@@ -712,7 +711,6 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
   }
 }
 
-// Add the missing getBattleById function
 export async function getBattleById(battleId: string): Promise<Battle | null> {
   try {
     const { data, error } = await supabase
@@ -720,13 +718,12 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
       .select(`
         *,
         memeOne:meme_one_id(*),
-        memeTwo:meme_two_id(*),
-        prompt:prompt_id(*)
+        memeTwo:meme_two_id(*)
       `)
       .eq('id', battleId)
       .single();
     
-    if (error) {
+    if (error || !data) {
       console.error('Error fetching battle by ID:', error);
       return null;
     }
@@ -734,18 +731,6 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
     return {
       id: data.id,
       promptId: data.prompt_id || '',
-      prompt: data.prompt ? {
-        id: data.prompt.id,
-        text: data.prompt.text,
-        theme: data.prompt.theme || '',
-        tags: data.prompt.tags || [],
-        active: data.prompt.active,
-        startDate: new Date(data.prompt.start_date),
-        endDate: new Date(data.prompt.end_date),
-        description: data.prompt.description || undefined,
-        creator_id: data.prompt.creator_id || undefined,
-        is_community: data.prompt.is_community || false
-      } : undefined,
       memeOneId: data.meme_one_id,
       memeTwoId: data.meme_two_id,
       memeOne: data.memeOne ? {
@@ -786,85 +771,6 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
   }
 }
 
-// New function to get top memes for a battle
-export async function getTopMemesForBattle(battleId: string, limit: number = 2): Promise<Meme[]> {
-  try {
-    const { data, error } = await supabase
-      .from('memes')
-      .select('*, creator:creator_id(id, username, avatar_url)')
-      .eq('battle_id', battleId)
-      .eq('is_battle_submission', true)
-      .order('votes', { ascending: false })
-      .limit(limit);
-    
-    if (error) {
-      console.error('Error fetching top memes for battle:', error);
-      return [];
-    }
-    
-    return data.map(m => ({
-      id: m.id,
-      prompt: m.prompt || '',
-      prompt_id: m.prompt_id || undefined,
-      imageUrl: m.image_url,
-      ipfsCid: m.ipfs_cid || '',
-      caption: m.caption,
-      creatorId: m.creator_id,
-      creator: m.creator ? {
-        id: m.creator.id,
-        username: m.creator.username,
-        avatarUrl: m.creator.avatar_url || '',
-        memeStreak: 0,
-        wins: 0,
-        losses: 0,
-        level: 1,
-        xp: 0,
-        createdAt: new Date()
-      } : undefined,
-      votes: m.votes || 0,
-      createdAt: new Date(m.created_at),
-      tags: m.tags || [],
-      isBattleSubmission: m.is_battle_submission || false,
-      battleId: m.battle_id || undefined,
-      challengeDay: m.challenge_day || undefined
-    }));
-  } catch (error) {
-    console.error('Error in getTopMemesForBattle:', error);
-    return [];
-  }
-}
-
-// New function to update battle with top memes
-export async function updateBattleWithTopMemes(battleId: string): Promise<boolean> {
-  try {
-    // Get top two memes for this battle
-    const topMemes = await getTopMemesForBattle(battleId, 2);
-    
-    if (topMemes.length < 2) {
-      console.log('Not enough memes for battle:', battleId);
-      return false;
-    }
-    
-    const { data, error } = await supabase
-      .from('battles')
-      .update({
-        meme_one_id: topMemes[0].id,
-        meme_two_id: topMemes[1].id
-      })
-      .eq('id', battleId);
-    
-    if (error) {
-      console.error('Error updating battle with top memes:', error);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error in updateBattleWithTopMemes:', error);
-    return false;
-  }
-}
-
 export async function castVote(battleId: string, memeId: string, userId: string): Promise<Vote | null> {
   try {
     // Begin a transaction
@@ -900,24 +806,26 @@ export async function castVote(battleId: string, memeId: string, userId: string)
       .single();
     
     if (voteError) {
-      console.error('Error casting vote:', voteError);
+      console.error('Error creating vote:', voteError);
       return null;
     }
     
-    // Increment vote count for the meme
-    const { error: memeError } = await supabase
-      .rpc('increment_meme_votes', { meme_id: memeId });
-      
+    // Increment the vote count for the meme
+    const { error: memeError } = await supabase.rpc('increment_meme_votes', {
+      p_meme_id: memeId
+    });
+    
     if (memeError) {
       console.error('Error incrementing meme votes:', memeError);
     }
     
-    // Increment vote count for the battle
-    const { error: battleError } = await supabase
-      .rpc('increment_battle_vote_count', { battle_id: battleId });
-      
+    // Increment the battle vote count
+    const { error: battleError } = await supabase.rpc('increment_battle_votes', {
+      p_battle_id: battleId
+    });
+    
     if (battleError) {
-      console.error('Error incrementing battle vote count:', battleError);
+      console.error('Error incrementing battle votes:', battleError);
     }
     
     return {
