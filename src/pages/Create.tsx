@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -45,10 +46,11 @@ const Create = () => {
           setActivePrompt(todaysChallenge);
         } else {
           console.error('Could not get today\'s challenge');
-          // Fallback to a generic prompt
+          // Fallback to a generic prompt - make sure it includes the theme property
           setActivePrompt({
             id: 'fallback',
             text: 'Create a funny meme!',
+            theme: 'humor',
             tags: ['funny', 'meme'],
             active: true,
             startDate: new Date(),
@@ -57,10 +59,11 @@ const Create = () => {
         }
       } catch (error) {
         console.error('Error fetching active prompt:', error);
-        // Use a simple fallback prompt on error
+        // Use a simple fallback prompt on error - make sure it includes the theme property
         setActivePrompt({
           id: 'fallback',
           text: 'Create a funny meme!',
+          theme: 'humor',
           tags: ['funny', 'meme'],
           active: true,
           startDate: new Date(),
