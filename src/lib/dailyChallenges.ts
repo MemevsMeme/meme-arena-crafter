@@ -1,4 +1,3 @@
-
 import { Prompt } from './types';
 import { getDailyChallenge, getCurrentDayOfYear } from './database';
 
@@ -424,7 +423,7 @@ export const DAILY_CHALLENGES: Prompt[] = [
     startDate: new Date(),
     endDate: new Date(new Date().getTime() + 86400000)
   },
-  // May
+  // May - Complete set for all 31 days
   {
     id: 'may-01',
     text: "When May Arrives But Spring Weather Doesn't",
@@ -515,7 +514,197 @@ export const DAILY_CHALLENGES: Prompt[] = [
     startDate: new Date(),
     endDate: new Date(new Date().getTime() + 86400000)
   },
-  // June
+  {
+    id: 'may-11',
+    text: "When It Rains During Your Outdoor Plans",
+    theme: "weather",
+    tags: ["rain", "plans", "outdoors"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-12',
+    text: "Spring Cleaning: Finding Things You Forgot You Had",
+    theme: "home",
+    tags: ["cleaning", "spring", "discovery"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-13',
+    text: "When Your Allergies Decide To Ruin Your Life",
+    theme: "health",
+    tags: ["allergies", "spring", "suffering"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-14',
+    text: "Last Minute Mother's Day Gift Shopping",
+    theme: "holiday",
+    tags: ["mothersday", "gifts", "lastminute"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-15',
+    text: "When Summer Job Applications Get Rejected",
+    theme: "work",
+    tags: ["summer", "job", "rejection"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-16',
+    text: "When The AC Unit Finally Gets Turned On",
+    theme: "seasonal",
+    tags: ["summer", "ac", "relief"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-17',
+    text: "End of School Year Countdown",
+    theme: "education",
+    tags: ["school", "summer", "countdown"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-18',
+    text: "When You See People Wearing Winter Clothes On A Hot Day",
+    theme: "fashion",
+    tags: ["weather", "clothing", "confusion"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-19',
+    text: "Summer Vacation Planning Stress",
+    theme: "travel",
+    tags: ["vacation", "planning", "stress"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-20',
+    text: "When The Weather App Says Sunny But It's Pouring Rain",
+    theme: "technology",
+    tags: ["weather", "app", "inaccurate"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-21',
+    text: "Memorial Day Weekend Traffic Jams",
+    theme: "holiday",
+    tags: ["memorialday", "traffic", "travel"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-22',
+    text: "When You Finally Clean Out Your Car For Summer",
+    theme: "seasonal",
+    tags: ["car", "cleaning", "summer"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-23',
+    text: "Last Week Of School vs. First Week Of School",
+    theme: "education",
+    tags: ["school", "comparison", "mood"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-24',
+    text: "When You Try On Last Year's Swimsuit For The First Time",
+    theme: "fashion",
+    tags: ["summer", "swimsuit", "seasonal"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-25',
+    text: "When You See The First Mosquito Of The Season",
+    theme: "seasonal",
+    tags: ["mosquito", "summer", "bugs"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-26',
+    text: "Summer Reading List: Expectations vs. Reality",
+    theme: "education",
+    tags: ["reading", "summer", "expectations"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-27',
+    text: "Memorial Day Weekend BBQ Fails",
+    theme: "holiday",
+    tags: ["memorialday", "bbq", "fail"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-28',
+    text: "When The Pool Finally Opens For The Season",
+    theme: "seasonal",
+    tags: ["pool", "summer", "excitement"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-29',
+    text: "Summer Internship First Day Anxiety",
+    theme: "work",
+    tags: ["internship", "summer", "anxiety"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-30',
+    text: "When You Realize You Have No Summer Plans",
+    theme: "seasonal",
+    tags: ["summer", "plans", "panic"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'may-31',
+    text: "Last Day Of School Cleaning Out Lockers",
+    theme: "education",
+    tags: ["school", "lockers", "endofyear"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  
+  // June - Complete set for all 30 days
   {
     id: 'jun-01',
     text: "Summer Body Goals vs. Reality",
@@ -557,6 +746,87 @@ export const DAILY_CHALLENGES: Prompt[] = [
     text: "First Beach Day Of The Season",
     theme: "seasonal",
     tags: ["beach", "summer", "sunburn"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-06',
+    text: "When The Ice Cream Truck Music Starts Playing",
+    theme: "childhood",
+    tags: ["icecream", "summer", "nostalgia"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-07',
+    text: "When You Forget Sunscreen At The Beach",
+    theme: "health",
+    tags: ["sunburn", "beach", "regret"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-08',
+    text: "Summer Camp Drop-Off: Parents vs. Kids",
+    theme: "family",
+    tags: ["summercamp", "parents", "kids"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-09',
+    text: "When The Humidity Ruins Your Hair",
+    theme: "beauty",
+    tags: ["hair", "humidity", "summer"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-10',
+    text: "Summer Movie Blockbuster Disappointments",
+    theme: "entertainment",
+    tags: ["movies", "summer", "disappointment"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-11',
+    text: "When You Have To Work During Perfect Beach Weather",
+    theme: "work",
+    tags: ["work", "beach", "fomo"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-12',
+    text: "Summer Night Insomnia When It's Too Hot To Sleep",
+    theme: "health",
+    tags: ["sleep", "heat", "summer"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-13',
+    text: "Road Trip Car Snacks Tier List",
+    theme: "travel",
+    tags: ["roadtrip", "snacks", "ranking"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-14',
+    text: "Finding Sand Everywhere After A Beach Day",
+    theme: "beach",
+    tags: ["sand", "beach", "annoying"],
     active: true,
     startDate: new Date(),
     endDate: new Date(new Date().getTime() + 86400000)
@@ -606,6 +876,106 @@ export const DAILY_CHALLENGES: Prompt[] = [
     startDate: new Date(),
     endDate: new Date(new Date().getTime() + 86400000)
   },
+  {
+    id: 'jun-20',
+    text: "First Day Of Summer Celebration Memes",
+    theme: "seasonal",
+    tags: ["summer", "celebration", "solstice"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-21',
+    text: "The Longest Day Of The Year: How You Use Those Extra Daylight Hours",
+    theme: "seasonal",
+    tags: ["solstice", "summer", "daylight"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-22',
+    text: "When The Neighbor's Kids Are Home All Day For Summer Break",
+    theme: "neighborhood",
+    tags: ["kids", "noise", "summer"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-23',
+    text: "When You Find Out Your Vacation Destination Has No WiFi",
+    theme: "travel",
+    tags: ["vacation", "wifi", "disconnected"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-24',
+    text: "Summer Festival FOMO On Social Media",
+    theme: "social",
+    tags: ["festival", "fomo", "socialmedia"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-25',
+    text: "When Your Summer Plans Get Canceled Last Minute",
+    theme: "disappointment",
+    tags: ["plans", "canceled", "summer"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-26',
+    text: "Expectations vs. Reality: Outdoor Yoga",
+    theme: "fitness",
+    tags: ["yoga", "outdoors", "expectations"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-27',
+    text: "When Sunscreen Gets In Your Eyes At The Beach",
+    theme: "beach",
+    tags: ["sunscreen", "beach", "pain"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-28',
+    text: "Summer TV Show Binge Watching Marathon",
+    theme: "entertainment",
+    tags: ["tv", "binge", "summer"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-29',
+    text: "When The Forecast Says 'Chance Of Rain' All Summer Long",
+    theme: "weather",
+    tags: ["rain", "forecast", "uncertainty"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  {
+    id: 'jun-30',
+    text: "When You Realize Summer Is Already 1/3 Over",
+    theme: "realization",
+    tags: ["summer", "time", "panic"],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 86400000)
+  },
+  
   // July
   {
     id: 'jul-01',
