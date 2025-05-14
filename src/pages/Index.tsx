@@ -8,10 +8,9 @@ import MemeCard from '@/components/meme/MemeCard';
 import BattleCard from '@/components/battle/BattleCard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getActiveBattles, getTrendingMemes, getNewestMemes } from '@/lib/database';
+import { getActiveBattles, getTrendingMemes, getNewestMemes, getDailyChallenge } from '@/lib/database';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getTodaysChallenge } from '@/lib/dailyChallenges';
 import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
@@ -23,9 +22,8 @@ const Index = () => {
     queryKey: ['activePrompt'],
     queryFn: async () => {
       try {
-        // Try to get today's challenge from our enhanced function
-        const challenge = await getTodaysChallenge();
-        return challenge;
+        // Get today's challenge from the database
+        return await getDailyChallenge();
       } catch (error) {
         console.error('Failed to fetch today\'s challenge:', error);
         return null;
