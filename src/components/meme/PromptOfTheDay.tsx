@@ -75,9 +75,8 @@ const PromptOfTheDay = ({
       sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
       console.log('Challenge prompt stored successfully in sessionStorage');
       
-      // Use navigate with replace: true to avoid history issues
-      navigate('/create');
-      
+      // Direct navigation to create page with a special flag to prevent looping
+      navigate('/create', { state: { fromChallenge: true } });
     } catch (error) {
       console.error("Error accepting challenge:", error);
     }

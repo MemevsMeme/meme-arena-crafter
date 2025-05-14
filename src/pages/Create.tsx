@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import MemeGenerator from '@/components/meme/MemeGenerator';
@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Create = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading } = useAuth();
   const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,15 +21,18 @@ const Create = () => {
   const [defaultEditMode] = useState<boolean>(false);
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
   const [hasInitialized, setHasInitialized] = useState(false);
+  
+  // Track if this navigation came from accepting a challenge
+  const fromChallenge = location.state?.fromChallenge === true;
 
-  console.log('Create component rendered, Auth status:', { user, loading, hasInitialized });
+  console.log('Create component rendered, Auth status:', { user, loading, hasInitialized, fromChallenge });
 
   // Modified to prevent infinite loops
   useEffect(() => {
     // Only proceed with initialization after auth check is complete and not yet initialized
     if (loading || hasInitialized) return;
 
-    console.log('Create component initializing, Auth status:', { user, loading });
+    console.log('Create component initializing, Auth status:', { user, loading, fromChallenge });
     
     // If user is not authenticated, redirect to login
     if (!user) {
@@ -81,7 +85,17 @@ const Create = () => {
     }
     
     setIsLoading(false);
-  }, [user, loading, navigate, hasInitialized]);
+  }, [user, loading, navigate, hasInitialized, fromChallenge]);
+
+  // Clear navigation state when component unmounts to prevent future issues
+  useEffect(() => {
+    return () => {
+      if (fromChallenge && location.state?.fromChallenge) {
+        // This helps prevent the location state from persisting
+        window.history.replaceState({}, document.title);
+      }
+    };
+  }, [fromChallenge, location.state]);
 
   const setFallbackPrompt = () => {
     setActivePrompt({
