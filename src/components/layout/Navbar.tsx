@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Bell, Home, Crown, Plus, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,11 +10,13 @@ import UserAvatar from '@/components/ui/UserAvatar';
 
 const Navbar = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const unreadNotifications = 3; // This will be dynamic in the future
 
   const handleSignOut = async () => {
     await signOut();
     toast.success('Logged out successfully');
+    navigate('/');
   };
 
   return (
@@ -32,24 +34,28 @@ const Navbar = () => {
         </Link>
 
         <div className="flex items-center gap-1 sm:gap-2">
-          <Link to="/">
-            <Button variant="ghost" size="icon" aria-label="Home">
-              <Home className="h-5 w-5" />
-            </Button>
-          </Link>
+          <Button variant="ghost" size="icon" aria-label="Home" onClick={() => navigate('/')}>
+            <Home className="h-5 w-5" />
+          </Button>
           
-          <Link to="/create">
-            <Button variant="default" size="sm" className="gap-1 rounded-full bg-gradient-to-r from-brand-purple to-brand-orange">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline-block">Create</span>
-            </Button>
-          </Link>
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="gap-1 rounded-full bg-gradient-to-r from-brand-purple to-brand-orange"
+            onClick={() => navigate('/create')}
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline-block">Create</span>
+          </Button>
           
-          <Link to="/leaderboard">
-            <Button variant="ghost" size="icon" aria-label="Leaderboard">
-              <Crown className="h-5 w-5" />
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            aria-label="Leaderboard"
+            onClick={() => navigate('/leaderboard')}
+          >
+            <Crown className="h-5 w-5" />
+          </Button>
 
           {user ? (
             <>
@@ -77,10 +83,8 @@ const Navbar = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link to={`/profile/${user.id}`} className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" /> Profile
-                    </Link>
+                  <DropdownMenuItem onClick={() => navigate(`/profile/${user.id}`)}>
+                    <User className="mr-2 h-4 w-4" /> Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" /> Logout
@@ -90,16 +94,17 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <Link to="/login">
-                <Button variant="outline" size="sm">
-                  Login
-                </Button>
-              </Link>
-              <Link to="/register">
-                <Button variant="default" size="sm" className="hidden sm:inline-flex">
-                  Sign Up
-                </Button>
-              </Link>
+              <Button variant="outline" size="sm" onClick={() => navigate('/login')}>
+                Login
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="hidden sm:inline-flex"
+                onClick={() => navigate('/register')}
+              >
+                Sign Up
+              </Button>
             </>
           )}
         </div>

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import PromptOfTheDay from '@/components/meme/PromptOfTheDay';
@@ -9,12 +10,12 @@ import BattleCard from '@/components/battle/BattleCard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getActiveBattles, getTrendingMemes, getNewestMemes } from '@/lib/database';
-import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTodaysChallenge } from '@/lib/dailyChallenges';
 import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
+  const navigate = useNavigate();
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
   const { user } = useAuth();
   
@@ -87,8 +88,12 @@ const Index = () => {
             <section>
               <div className="flex justify-between items-center mb-3">
                 <h2 className="text-2xl font-heading">Live Battles</h2>
-                <Button variant="link" className="text-sm" asChild>
-                  <Link to="/battles">View all</Link>
+                <Button 
+                  variant="link" 
+                  className="text-sm"
+                  onClick={() => navigate('/battles')}
+                >
+                  View all
                 </Button>
               </div>
               
@@ -108,9 +113,13 @@ const Index = () => {
                     <div className="text-center p-6 bg-muted rounded-lg">
                       <p className="text-muted-foreground">No active battles. Create a meme to start one!</p>
                       {user && (
-                        <Link to="/create" className="mt-2 inline-block">
-                          <Button size="sm">Create Meme</Button>
-                        </Link>
+                        <Button 
+                          size="sm" 
+                          onClick={() => navigate('/create')}
+                          className="mt-2"
+                        >
+                          Create Meme
+                        </Button>
                       )}
                     </div>
                   )}
@@ -152,14 +161,20 @@ const Index = () => {
                     <div className="col-span-full text-center p-10 bg-muted rounded-lg">
                       <p className="text-muted-foreground">No memes found for this filter.</p>
                       {user && (
-                        <Link to="/create" className="mt-4 inline-block">
-                          <Button>Create a Meme</Button>
-                        </Link>
+                        <Button
+                          onClick={() => navigate('/create')}
+                          className="mt-4"
+                        >
+                          Create a Meme
+                        </Button>
                       )}
                       {!user && (
-                        <Link to="/login" className="mt-4 inline-block">
-                          <Button>Sign in to Create Memes</Button>
-                        </Link>
+                        <Button
+                          onClick={() => navigate('/login')}
+                          className="mt-4"
+                        >
+                          Sign in to Create Memes
+                        </Button>
                       )}
                     </div>
                   )}

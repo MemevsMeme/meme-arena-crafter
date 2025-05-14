@@ -68,7 +68,7 @@ const PromptOfTheDay = ({
       description: `You've accepted the "${displayPrompt.text}" challenge. Create something amazing!`,
     });
     
-    // Use navigate to programmatically go to the create page with state
+    // Pass the challenge prompt as state when navigating
     navigate('/create', { 
       state: { challengePrompt: displayPrompt } 
     });

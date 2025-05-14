@@ -23,6 +23,7 @@ const Create = () => {
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
 
   useEffect(() => {
+    console.log('Create page mounted, checking for challenge prompt');
     const fetchActivePrompt = async () => {
       setLoading(true);
       try {
@@ -80,7 +81,7 @@ const Create = () => {
     };
 
     fetchActivePrompt();
-  }, [location.state]);
+  }, [location]);
 
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);
