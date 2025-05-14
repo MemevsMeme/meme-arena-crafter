@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -156,7 +157,7 @@ const Index = () => {
                       <p className="text-muted-foreground">No memes found for this filter.</p>
                       {user && (
                         <Button
-                          onClick={() => navigate('/create')}
+                          onClick={() => navigate('/create', { replace: true })}
                           className="mt-4"
                         >
                           Create a Meme

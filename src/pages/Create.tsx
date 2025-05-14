@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -20,7 +21,13 @@ const Create = () => {
   const [defaultEditMode] = useState<boolean>(false);
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
 
+  // Flag to prevent infinite loops
+  const [hasInitialized, setHasInitialized] = useState(false);
+
   useEffect(() => {
+    // Prevent the effect from running more than once
+    if (hasInitialized) return;
+    
     console.log('Create page mounted, checking for challenge prompt');
     
     const fetchActivePrompt = async () => {
@@ -32,8 +39,17 @@ const Create = () => {
         
         if (passedPrompt) {
           console.log('Using prompt from navigation state:', passedPrompt);
-          setActivePrompt(passedPrompt);
+          
+          // Create dates if they don't exist to ensure type consistency
+          const promptWithDates = {
+            ...passedPrompt,
+            startDate: passedPrompt.startDate || new Date(),
+            endDate: passedPrompt.endDate || new Date(Date.now() + 86400000)
+          };
+          
+          setActivePrompt(promptWithDates);
           setLoading(false);
+          setHasInitialized(true);
           return;
         }
         
@@ -76,11 +92,12 @@ const Create = () => {
         });
       } finally {
         setLoading(false);
+        setHasInitialized(true);
       }
     };
     
     fetchActivePrompt();
-  }, []); // Empty dependency array to run once
+  }, [location.state, hasInitialized]); // Only depend on location.state and hasInitialized
 
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);

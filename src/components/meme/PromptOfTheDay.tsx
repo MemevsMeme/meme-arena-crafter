@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -68,25 +69,25 @@ const PromptOfTheDay = ({
       description: `You've accepted the "${displayPrompt?.text}" challenge. Create something amazing!`,
     });
     
-    // Create a simple object with only the necessary properties to avoid circular references
+    // Create a simple serializable object with only basic properties 
+    // to avoid any circular reference issues
     if (displayPrompt) {
-      const simplifiedPrompt = {
+      const simplePrompt = {
         id: displayPrompt.id,
         text: displayPrompt.text,
-        theme: displayPrompt.theme,
+        theme: displayPrompt.theme || '',
         tags: displayPrompt.tags ? [...displayPrompt.tags] : [],
-        active: displayPrompt.active,
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 86400000)
+        active: true
       };
       
       // Navigate with the simplified prompt data
       navigate('/create', { 
-        state: { challengePrompt: simplifiedPrompt } 
+        state: { challengePrompt: simplePrompt },
+        replace: true // Use replace to avoid back-button issues
       });
     } else {
       // Fallback
-      navigate('/create');
+      navigate('/create', { replace: true });
     }
   };
 
