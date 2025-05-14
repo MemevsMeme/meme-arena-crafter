@@ -41,7 +41,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   // State variables for uploaded/generated images
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [isGif, setIsGif] = useState(false);
+  const [isGif, setIsGif] = useState(isGif);
   
   // State variables for text
   const [caption, setCaption] = useState<string>('');
@@ -338,7 +338,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
                     (position.y / 100) * canvas.height,
                     position.maxWidth
                   );
-                  // Fixed: Remove extra argument from fillText call
+                  
                   ctx.fillText(
                     position.text,
                     x,

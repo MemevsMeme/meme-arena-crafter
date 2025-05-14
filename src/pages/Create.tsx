@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -65,6 +64,9 @@ const Create = () => {
           
           console.log('Setting active prompt from sessionStorage:', sessionPrompt);
           setActivePrompt(sessionPrompt);
+          
+          // Clear session storage after using it to prevent future issues
+          sessionStorage.removeItem('challenge_prompt');
         } else {
           console.log('Prompt data is missing text field:', promptData);
           setFallbackPrompt();

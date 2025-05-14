@@ -75,8 +75,8 @@ const PromptOfTheDay = ({
       sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
       console.log('Challenge prompt stored successfully in sessionStorage');
       
-      // Use window.location.href instead of navigate to force a clean page load
-      window.location.href = '/create';
+      // Use navigate with replace: true to avoid history issues
+      navigate('/create');
       
     } catch (error) {
       console.error("Error accepting challenge:", error);
