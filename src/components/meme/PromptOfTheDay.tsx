@@ -65,22 +65,37 @@ const PromptOfTheDay = ({
   const handleAcceptChallenge = () => {
     toast({
       title: "Challenge Accepted!",
-      description: `You've accepted the "${displayPrompt.text}" challenge. Create something amazing!`,
+      description: `You've accepted the "${displayPrompt?.text}" challenge. Create something amazing!`,
     });
     
-    // Pass the challenge prompt as state when navigating
-    navigate('/create', { 
-      state: { challengePrompt: displayPrompt } 
-    });
+    // Fix: Use a simple object with only the required properties to avoid circular references
+    if (displayPrompt) {
+      const challengePromptData = {
+        id: displayPrompt.id,
+        text: displayPrompt.text,
+        theme: displayPrompt.theme,
+        tags: displayPrompt.tags,
+        active: displayPrompt.active,
+        startDate: displayPrompt.startDate,
+        endDate: displayPrompt.endDate
+      };
+      
+      navigate('/create', { 
+        state: { challengePrompt: challengePromptData } 
+      });
+    } else {
+      // Fallback if somehow displayPrompt is null
+      navigate('/create');
+    }
   };
 
   return (
     <div className="prompt-card animate-float">
       <h3 className="text-lg font-medium mb-1">Today's Meme Challenge</h3>
-      <p className="text-2xl font-bold mb-4">{displayPrompt.text}</p>
+      <p className="text-2xl font-bold mb-4">{displayPrompt?.text}</p>
       <div className="flex justify-between items-center">
         <div className="flex gap-1 flex-wrap">
-          {displayPrompt.tags && displayPrompt.tags.map((tag) => (
+          {displayPrompt?.tags && displayPrompt.tags.map((tag) => (
             <span key={tag} className="px-2 py-0.5 bg-white/20 rounded-full text-xs">
               #{tag}
             </span>

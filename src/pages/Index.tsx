@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -68,6 +67,11 @@ const Index = () => {
       }
     }
   });
+
+  // Handle create button click
+  const handleCreateClick = () => {
+    navigate('/create');
+  };
 
   return (
     <div className="flex flex-col min-h-screen">

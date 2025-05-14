@@ -22,44 +22,30 @@ const Create = () => {
   // Add state for default template
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
 
-  useEffect(() => {
-    console.log('Create page mounted, checking for challenge prompt');
-    const fetchActivePrompt = async () => {
-      setLoading(true);
-      try {
-        // First check if prompt was passed via navigation state
-        const locationState = location.state as { challengePrompt?: Prompt } | null;
-        const passedPrompt = locationState?.challengePrompt;
-        
-        if (passedPrompt) {
-          console.log('Using prompt from navigation state:', passedPrompt);
-          setActivePrompt(passedPrompt);
-          setLoading(false);
-          return;
-        }
-        
-        // Otherwise try to get the prompt from the database
-        const todaysChallenge = await getTodaysChallenge();
-        
-        if (todaysChallenge) {
-          console.log('Today\'s challenge:', todaysChallenge);
-          setActivePrompt(todaysChallenge);
-        } else {
-          console.error('Could not get today\'s challenge');
-          // Fallback to a generic prompt - make sure it includes the theme property
-          setActivePrompt({
-            id: 'fallback',
-            text: 'Create a funny meme!',
-            theme: 'humor',
-            tags: ['funny', 'meme'],
-            active: true,
-            startDate: new Date(),
-            endDate: new Date(new Date().getTime() + 86400000)
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching active prompt:', error);
-        // Use a simple fallback prompt on error - make sure it includes the theme property
+  // Fix: Create a stable function for fetching the prompt to avoid loops
+  const fetchActivePrompt = async () => {
+    setLoading(true);
+    try {
+      // First check if prompt was passed via navigation state
+      const locationState = location.state as { challengePrompt?: Prompt } | null;
+      const passedPrompt = locationState?.challengePrompt;
+      
+      if (passedPrompt) {
+        console.log('Using prompt from navigation state:', passedPrompt);
+        setActivePrompt(passedPrompt);
+        setLoading(false);
+        return;
+      }
+      
+      // Otherwise try to get the prompt from the database
+      const todaysChallenge = await getTodaysChallenge();
+      
+      if (todaysChallenge) {
+        console.log('Today\'s challenge:', todaysChallenge);
+        setActivePrompt(todaysChallenge);
+      } else {
+        console.error('Could not get today\'s challenge');
+        // Fallback to a generic prompt - make sure it includes the theme property
         setActivePrompt({
           id: 'fallback',
           text: 'Create a funny meme!',
@@ -69,19 +55,36 @@ const Create = () => {
           startDate: new Date(),
           endDate: new Date(new Date().getTime() + 86400000)
         });
-        
-        toast({
-          title: "Notice",
-          description: "Using a generic challenge prompt",
-          variant: "default"
-        });
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching active prompt:', error);
+      // Use a simple fallback prompt on error - make sure it includes the theme property
+      setActivePrompt({
+        id: 'fallback',
+        text: 'Create a funny meme!',
+        theme: 'humor',
+        tags: ['funny', 'meme'],
+        active: true,
+        startDate: new Date(),
+        endDate: new Date(new Date().getTime() + 86400000)
+      });
+      
+      toast({
+        title: "Notice",
+        description: "Using a generic challenge prompt",
+        variant: "default"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    console.log('Create page mounted, checking for challenge prompt');
     fetchActivePrompt();
-  }, [location.state]); // Only depend on location.state instead of location
+    // Fix: Empty dependency array to run once on mount
+    // Note: We're not using location.state as a dependency anymore as it caused loops
+  }, []); 
 
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);
