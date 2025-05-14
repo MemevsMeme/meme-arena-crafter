@@ -18,6 +18,11 @@ const SaveActions: React.FC<SaveActionsProps> = ({
   setIsEditMode,
   handleSaveMeme
 }) => {
+  const onSaveMeme = () => {
+    console.log('Save button clicked, starting meme creation process');
+    handleSaveMeme();
+  };
+
   return (
     <div className="flex gap-2 mt-4">
       <Button
@@ -31,7 +36,7 @@ const SaveActions: React.FC<SaveActionsProps> = ({
       </Button>
       
       <Button
-        onClick={handleSaveMeme}
+        onClick={onSaveMeme}
         disabled={isCreatingMeme || isUploadingToIPFS}
         className="flex-1"
         title="Create meme with or without text"

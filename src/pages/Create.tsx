@@ -8,6 +8,8 @@ import { Prompt } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { MEME_TEMPLATES } from '@/lib/constants';
 import { safeJsonParse } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const Create = () => {
   const navigate = useNavigate();
@@ -18,13 +20,16 @@ const Create = () => {
   
   const [defaultEditMode] = useState<boolean>(false);
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  console.log('Create component rendered, Auth status:', { user, loading, hasInitialized });
 
   useEffect(() => {
-    console.log('Create component mounted, Auth status:', { user, loading });
-    
-    // Only proceed with initialization after auth check is complete
-    if (loading) return;
+    // Only proceed with initialization after auth check is complete and not yet initialized
+    if (loading || hasInitialized) return;
 
+    console.log('Create component initializing, Auth status:', { user, loading });
+    
     // If user is not authenticated, redirect to login
     if (!user) {
       console.log('User not authenticated, redirecting to login');
@@ -32,6 +37,9 @@ const Create = () => {
       return;
     }
 
+    // Mark as initialized to prevent multiple runs
+    setHasInitialized(true);
+    
     console.log('User is authenticated, checking for challenge prompt');
     
     // Look for prompt in sessionStorage
@@ -39,7 +47,7 @@ const Create = () => {
     
     if (storedPromptData) {
       try {
-        console.log('Found prompt data in sessionStorage');
+        console.log('Found prompt data in sessionStorage:', storedPromptData);
         const promptData = safeJsonParse(storedPromptData, null);
         
         if (promptData && promptData.text) {
@@ -56,46 +64,73 @@ const Create = () => {
           
           console.log('Setting active prompt from sessionStorage:', sessionPrompt);
           setActivePrompt(sessionPrompt);
+        } else {
+          console.log('Prompt data is missing text field:', promptData);
+          setFallbackPrompt();
         }
       } catch (error) {
         console.error('Error parsing stored prompt data:', error);
-        setActivePrompt({
-          id: 'fallback',
-          text: 'Create a funny meme!',
-          theme: 'humor',
-          tags: ['funny', 'meme'],
-          active: true,
-          startDate: new Date(),
-          endDate: new Date(Date.now() + 86400000)
-        });
+        setFallbackPrompt();
       }
     } else {
       console.log('No prompt data found in sessionStorage, using fallback');
-      // Use a generic prompt when no challenge is found
-      setActivePrompt({
-        id: 'fallback',
-        text: 'Create a funny meme!',
-        theme: 'humor',
-        tags: ['funny', 'meme'],
-        active: true,
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 86400000)
-      });
+      setFallbackPrompt();
     }
     
     setIsLoading(false);
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, hasInitialized]);
 
-  const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
+  const setFallbackPrompt = () => {
+    setActivePrompt({
+      id: 'fallback',
+      text: 'Create a funny meme!',
+      theme: 'humor',
+      tags: ['funny', 'meme'],
+      active: true,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 86400000)
+    });
+  };
+
+  const handleMemeSave = async (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);
-    setCreatedMeme(meme);
     
-    // Navigate to the meme profile page after a short delay
-    setTimeout(() => {
-      if (user) {
-        navigate(`/profile/${user.id}`, { replace: true });
+    try {
+      // Verify the meme was actually saved in the database
+      const { data, error } = await supabase
+        .from('memes')
+        .select('*')
+        .eq('id', meme.id)
+        .single();
+      
+      if (error) {
+        console.error('Error verifying meme in database:', error);
+        toast({
+          title: "Database Error",
+          description: "There was an issue confirming your meme was saved. Please check your profile.",
+          variant: "destructive"
+        });
+      } else if (data) {
+        console.log('Meme confirmed in database:', data);
+        setCreatedMeme(meme);
+        
+        // Navigate to the meme profile page after a short delay
+        setTimeout(() => {
+          if (user) {
+            navigate(`/profile/${user.id}`, { replace: true });
+          }
+        }, 2000);
+      } else {
+        console.error('Meme not found in database after creation');
+        toast({
+          title: "Save Error",
+          description: "Your meme couldn't be found in the database. Please try again.",
+          variant: "destructive"
+        });
       }
-    }, 2000);
+    } catch (verifyError) {
+      console.error('Exception verifying meme save:', verifyError);
+    }
   };
 
   // Show loading state while authentication is being checked
