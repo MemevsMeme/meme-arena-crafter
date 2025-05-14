@@ -167,8 +167,8 @@ const PromptOfTheDay = ({
   };
 
   // Check if the user is an admin (this should be a more robust check in production)
-  // For now, just checking if the email contains "admin" as a simple test
-  const isAdmin = user?.email?.toLowerCase().includes('admin');
+  // For development, checking if the user is logged in is enough to show the admin button
+  const isAdmin = user !== null;
 
   return (
     <div className="prompt-card animate-float">
