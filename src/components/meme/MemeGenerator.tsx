@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,7 +9,7 @@ import AiImageGenerator from '@/components/meme/AiImageGenerator';
 import CaptionGenerator from '@/components/meme/CaptionGenerator';
 import TextEditor, { TextPosition } from '@/components/meme/TextEditor';
 import SaveActions from '@/components/meme/SaveActions';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { createMeme } from '@/lib/database';
 import { uploadFileToIPFS, pinUrlToIPFS } from '@/lib/ipfs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -85,11 +84,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   // Add custom prompt state for AI image generation
   const [customImagePrompt, setCustomImagePrompt] = useState<string>("");
   
-  // Add state for debugging
-  const [saveAttempted, setSaveAttempted] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveDetails, setSaveDetails] = useState<any | null>(null);
-
   // Add text handler
   const handleAddText = () => {
     const newPosition: TextPosition = {
@@ -261,10 +255,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
     }
     
     try {
-      console.log('Starting meme creation process with user:', user);
-      setSaveAttempted(true);
-      setSaveError(null);
-      setSaveDetails(null);
       setIsCreatingMeme(true);
       
       // Get the active image source
@@ -285,7 +275,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
           variant: "destructive"
         });
         setIsCreatingMeme(false);
-        setSaveError("No image selected");
         return;
       }
       
@@ -339,7 +328,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
                     (position.y / 100) * canvas.height,
                     position.maxWidth
                   );
-                  
                   ctx.fillText(
                     position.text,
                     x,
@@ -392,8 +380,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
           resolve();
         };
         
-        img.onerror = (e) => {
-          console.error('Failed to load image:', e);
+        img.onerror = () => {
           reject(new Error('Failed to load image'));
         };
         
@@ -426,7 +413,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       
       if (uploadError) {
         console.error('Error uploading to storage:', uploadError);
-        setSaveError(`Error uploading to storage: ${uploadError.message}`);
         throw new Error(`Error uploading to storage: ${uploadError.message}`);
       }
       
@@ -438,7 +424,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         .getPublicUrl(`public/${user.id}/${fileName}`);
       
       if (!publicUrlData?.publicUrl) {
-        setSaveError('Failed to get public URL');
         throw new Error('Failed to get public URL');
       }
       
@@ -470,15 +455,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         setIsUploadingToIPFS(false);
       }
       
-      console.log('Creating meme record in database with:', {
-        promptText,
-        promptId,
-        imageUrl,
-        ipfsCid,
-        caption: caption || '',
-        creatorId: user.id
-      });
-
       // Create meme record in database
       const newMeme = await createMeme({
         prompt: promptText,
@@ -492,13 +468,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         tags: []
       });
       
-      if (!newMeme) {
-        setSaveError('Failed to create meme record in database');
-        throw new Error('Failed to create meme record in database');
-      }
-      
-      console.log('Meme created successfully:', newMeme);
-      setSaveDetails(newMeme);
+      console.log('Meme created:', newMeme);
       
       toast({
         title: "Success",
@@ -507,7 +477,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       
       // Call onSave callback if provided
       if (onSave && newMeme) {
-        console.log('Calling onSave callback with:', newMeme);
         onSave({
           id: newMeme.id,
           caption: newMeme.caption,
@@ -517,7 +486,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       
     } catch (error) {
       console.error('Error creating meme:', error);
-      setSaveError(error instanceof Error ? error.message : "Failed to create meme");
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to create meme",
@@ -527,7 +495,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       setIsCreatingMeme(false);
     }
   };
-  
   
   return (
     <div className="meme-generator border rounded-xl p-4 bg-background shadow-sm">
@@ -633,13 +600,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         setIsEditMode={setIsEditMode}
         handleSaveMeme={handleSaveMeme}
       />
-      
-      {saveAttempted && saveError && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm">
-          <div className="font-semibold text-red-800">Error creating meme:</div>
-          <div className="text-red-700">{saveError}</div>
-        </div>
-      )}
     </div>
   );
 };

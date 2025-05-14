@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { getFallbackChallenge } from '@/lib/dailyChallenges';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface PromptOfTheDayProps {
   prompt?: Prompt | null; // Accept Prompt object or null
@@ -17,7 +15,6 @@ const PromptOfTheDay = ({
   isLoading = false 
 }: PromptOfTheDayProps) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   // Always get a default prompt from our local challenges in case the database query fails
   const defaultPrompt = getFallbackChallenge();
 
@@ -66,25 +63,20 @@ const PromptOfTheDay = ({
     try {
       console.log('Accepting challenge with prompt:', displayPrompt.text);
       
-      // Check if user is logged in before proceeding
-      if (!user) {
-        console.log('User not logged in, redirecting to login');
-        navigate('/login');
-        return;
-      }
-      
-      // Store prompt in localStorage with a clear naming convention
+      // Simplified prompt data storage
       const simplifiedPrompt = {
         text: displayPrompt.text,
         id: displayPrompt.id,
         tags: displayPrompt.tags || []
       };
       
-      localStorage.setItem('active_challenge_prompt', JSON.stringify(simplifiedPrompt));
-      console.log('Challenge prompt stored in localStorage with key: active_challenge_prompt');
+      // Store prompt data in sessionStorage
+      sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
+      console.log('Challenge prompt stored successfully in sessionStorage');
       
-      // Navigate to create page
+      // Use navigate instead of window.location to maintain state
       navigate('/create');
+      
     } catch (error) {
       console.error("Error accepting challenge:", error);
     }
