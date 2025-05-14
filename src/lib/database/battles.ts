@@ -226,7 +226,7 @@ export async function castVote(battleId: string, memeId: string, userId: string)
     }
     
     // Increment the vote count for the meme using RPC
-    // Cast parameter to any to avoid TypeScript error
+    // Fix the TypeScript error by using type assertion
     const { error: memeError } = await supabase.rpc(
       'increment_meme_votes', 
       { p_meme_id: memeId } as any
@@ -237,7 +237,7 @@ export async function castVote(battleId: string, memeId: string, userId: string)
     }
     
     // Increment the battle vote count using RPC
-    // Cast parameter to any to avoid TypeScript error
+    // Fix the TypeScript error by using type assertion
     const { error: battleError } = await supabase.rpc(
       'increment_battle_votes',
       { p_battle_id: battleId } as any
