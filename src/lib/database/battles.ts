@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Battle, Vote, Meme, RpcParams } from './types';
 import { v4 as uuidv4 } from 'uuid';

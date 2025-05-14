@@ -3,7 +3,7 @@
 export * from '../types';
 
 // Add RPC parameter types to fix type errors with Supabase RPC calls
-export type RpcParams = {
+export interface RpcParams {
   increment_meme_votes: {
     p_meme_id: string;
   };
@@ -11,4 +11,4 @@ export type RpcParams = {
     p_battle_id: string;
   };
   // Add other RPC function parameter types here as needed
-};
+}

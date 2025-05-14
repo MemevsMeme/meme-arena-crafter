@@ -38,5 +38,12 @@ export {
   castVote
 } from './battles';
 
+// Challenge Transfer
+export {
+  transferAllChallenges,
+  transferDailyChallenges,
+  createDailyChallenge
+} from './challengeTransfer';
+
 // Export UUID function for convenience
 export { uuidv4 };
