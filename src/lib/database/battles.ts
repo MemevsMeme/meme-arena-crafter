@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Battle, Vote, Meme, RpcParams } from './types';
 import { v4 as uuidv4 } from 'uuid';
@@ -225,7 +226,7 @@ export async function castVote(battleId: string, memeId: string, userId: string)
     }
     
     // Increment the vote count for the meme using RPC with proper typing
-    const { error: memeError } = await supabase.rpc<never, RpcParams['increment_meme_votes']>(
+    const { error: memeError } = await supabase.rpc(
       'increment_meme_votes', 
       { p_meme_id: memeId }
     );
@@ -235,7 +236,7 @@ export async function castVote(battleId: string, memeId: string, userId: string)
     }
     
     // Increment the battle vote count using RPC with proper typing
-    const { error: battleError } = await supabase.rpc<never, RpcParams['increment_battle_votes']>(
+    const { error: battleError } = await supabase.rpc(
       'increment_battle_votes',
       { p_battle_id: battleId }
     );
