@@ -338,11 +338,11 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
                     (position.y / 100) * canvas.height,
                     position.maxWidth
                   );
+                  // Fixed: Remove extra argument (x) from fillText call
                   ctx.fillText(
                     position.text,
                     x,
                     (position.y / 100) * canvas.height,
-                    x,
                     position.maxWidth
                   );
                 }
@@ -526,6 +526,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       setIsCreatingMeme(false);
     }
   };
+  
   
   return (
     <div className="meme-generator border rounded-xl p-4 bg-background shadow-sm">
