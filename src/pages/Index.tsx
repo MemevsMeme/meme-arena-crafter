@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/layout/Navbar';
@@ -7,10 +8,10 @@ import MemeCard from '@/components/meme/MemeCard';
 import BattleCard from '@/components/battle/BattleCard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getActiveBattles, getTrendingMemes, getNewestMemes, getDailyChallenge } from '@/lib/database';
+import { getActiveBattles, getTrendingMemes, getNewestMemes } from '@/lib/database';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-// Import from components/ui/use-toast directly
+import { getTodaysChallenge } from '@/lib/dailyChallenges';
 import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
@@ -20,7 +21,16 @@ const Index = () => {
   // Setup query for active prompt with better error handling
   const { data: activePrompt, isLoading: promptLoading } = useQuery({
     queryKey: ['activePrompt'],
-    queryFn: getDailyChallenge
+    queryFn: async () => {
+      try {
+        // Try to get today's challenge from our enhanced function
+        const challenge = await getTodaysChallenge();
+        return challenge;
+      } catch (error) {
+        console.error('Failed to fetch today\'s challenge:', error);
+        return null;
+      }
+    },
   });
   
   // Query for recent battles
@@ -47,6 +57,8 @@ const Index = () => {
           return await getNewestMemes(12);
         } else {
           // For 'following' tab, get memes from followed users
+          // This would require additional backend support
+          // For now, just return empty array
           return [];
         }
       } catch (error) {

@@ -28,9 +28,7 @@ const Profile = () => {
         setProfile(user);
       } else if (id) {
         const profileData = await getProfile(id);
-        if (profileData) {
-          setProfile(profileData);
-        }
+        setProfile(profileData);
       }
       
       if (id) {

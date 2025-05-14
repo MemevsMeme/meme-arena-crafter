@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -13,9 +12,9 @@ import { MEME_TEMPLATES } from '@/lib/constants';
 const Create = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, loading } = useAuth(); // Added loading state from Auth context
+  const { user } = useAuth();
   const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
-  const [promptLoading, setPromptLoading] = useState(true); // Renamed to avoid confusion with auth loading
+  const [loading, setLoading] = useState(true);
   const [createdMeme, setCreatedMeme] = useState<{ id: string; caption: string; imageUrl: string } | null>(null);
   
   // Update defaultEditMode to be false
@@ -23,22 +22,9 @@ const Create = () => {
   // Add state for default template
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
 
-  // Check authentication status and redirect if needed
-  useEffect(() => {
-    // Only redirect if auth is not loading and we know user is not logged in
-    if (!loading && !user) {
-      console.log('User not authenticated, redirecting to login');
-      toast({
-        title: "Login Required",
-        description: "Please log in to create memes",
-      });
-      navigate('/login', { state: { returnTo: location.pathname, promptData: location.state } });
-    }
-  }, [user, loading, navigate, location]);
-
   useEffect(() => {
     const fetchActivePrompt = async () => {
-      setPromptLoading(true);
+      setLoading(true);
       try {
         // First check if prompt was passed via navigation state
         const locationState = location.state as { challengePrompt?: Prompt } | null;
@@ -47,7 +33,8 @@ const Create = () => {
         if (passedPrompt) {
           console.log('Using prompt from navigation state:', passedPrompt);
           setActivePrompt(passedPrompt);
-          return; // Exit early
+          setLoading(false);
+          return;
         }
         
         // Otherwise try to get the prompt from the database
@@ -88,15 +75,12 @@ const Create = () => {
           variant: "default"
         });
       } finally {
-        setPromptLoading(false);
+        setLoading(false);
       }
     };
 
-    // Only fetch prompt if user is authenticated
-    if (user) {
-      fetchActivePrompt();
-    }
-  }, [location.state, user]);
+    fetchActivePrompt();
+  }, [location.state]);
 
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);
@@ -115,23 +99,6 @@ const Create = () => {
     }, 2000);
   };
 
-  // Show loading state while checking authentication
-  if (loading) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Navbar />
-        <main className="container mx-auto px-4 py-8 flex-grow flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-purple mx-auto"></div>
-            <p className="mt-4">Verifying authentication...</p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Show login required message if not authenticated
   if (!user) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -144,7 +111,7 @@ const Create = () => {
             </p>
             <button 
               className="bg-brand-purple text-white px-6 py-2 rounded-md"
-              onClick={() => navigate('/login', { state: { returnTo: location.pathname } })}
+              onClick={() => navigate('/login')}
             >
               Login / Register
             </button>
@@ -180,19 +147,13 @@ const Create = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            {promptLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-purple"></div>
-              </div>
-            ) : (
-              <MemeGenerator 
-                promptText={activePrompt?.text || 'Create a funny meme!'} 
-                promptId={activePrompt?.id}
-                onSave={handleMemeSave}
-                defaultEditMode={defaultEditMode}
-                defaultTemplate={defaultTemplate}
-              />
-            )}
+            <MemeGenerator 
+              promptText={activePrompt?.text || 'Create a funny meme!'} 
+              promptId={activePrompt?.id}
+              onSave={handleMemeSave}
+              defaultEditMode={defaultEditMode}
+              defaultTemplate={defaultTemplate}
+            />
           </div>
           
           <div className="lg:col-span-1">

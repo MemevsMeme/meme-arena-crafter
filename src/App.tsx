@@ -56,7 +56,11 @@ const App = () => (
           <Sonner />
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/create" element={<Create />} />
+            <Route path="/create" element={
+              <ProtectedRoute>
+                <Create />
+              </ProtectedRoute>
+            } />
             <Route path="/battle/:id" element={<Battle />} />
             <Route path="/battles" element={<Battles />} />
             <Route path="/create-battle" element={
