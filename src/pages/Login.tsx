@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import Footer from '@/components/layout/Footer';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,12 +22,19 @@ const Login = () => {
     password?: string;
   }>({});
 
+  // Extract return path from location state if it exists
+  const locationState = location.state as { returnTo?: string; promptData?: any } | undefined;
+  const returnPath = locationState?.returnTo || '/';
+  const promptData = locationState?.promptData;
+
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate('/');
+      console.log('User already logged in, redirecting to:', returnPath);
+      // Pass along any prompt data that came with the redirect
+      navigate(returnPath, { state: promptData });
     }
-  }, [user, navigate]);
+  }, [user, navigate, returnPath, promptData]);
 
   const validateForm = (): boolean => {
     const errors: typeof formErrors = {};
@@ -74,11 +82,12 @@ const Login = () => {
           });
         }
       } else {
-        console.log('Login successful');
+        console.log('Login successful, redirecting to:', returnPath);
         toast.success('Welcome back!', {
           description: 'You have successfully logged in.',
         });
-        navigate('/');
+        // Pass along any prompt data that came with the redirect
+        navigate(returnPath, { state: promptData });
       }
     } catch (error: any) {
       console.error('Unexpected login error:', error);
@@ -99,6 +108,11 @@ const Login = () => {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-heading">Login</CardTitle>
             <CardDescription>Enter your email and password to access your account</CardDescription>
+            {locationState?.returnTo && (
+              <p className="text-sm text-brand-purple">
+                You'll be redirected back after login
+              </p>
+            )}
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">

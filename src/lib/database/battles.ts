@@ -224,21 +224,21 @@ export async function castVote(battleId: string, memeId: string, userId: string)
       return null;
     }
     
-    // Increment the vote count for the meme using RPC with proper typing
-    const { error: memeError } = await supabase.rpc(
-      'increment_meme_votes', 
-      { p_meme_id: memeId }
-    );
+    // Increment the vote count for the meme using RPC
+    // Fixed: Use correctly typed parameters for RPC calls
+    const { error: memeError } = await supabase.rpc('increment_meme_votes', { 
+      p_meme_id: memeId 
+    });
     
     if (memeError) {
       console.error('Error incrementing meme votes:', memeError);
     }
     
-    // Increment the battle vote count using RPC with proper typing
-    const { error: battleError } = await supabase.rpc(
-      'increment_battle_votes',
-      { p_battle_id: battleId }
-    );
+    // Increment the battle vote count using RPC
+    // Fixed: Use correctly typed parameters for RPC calls
+    const { error: battleError } = await supabase.rpc('increment_battle_votes', { 
+      p_battle_id: battleId 
+    });
     
     if (battleError) {
       console.error('Error incrementing battle votes:', battleError);
