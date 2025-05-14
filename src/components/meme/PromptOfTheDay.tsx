@@ -62,34 +62,47 @@ const PromptOfTheDay = ({
   }
 
   const handleAcceptChallenge = () => {
-    // Create a simplified version of the prompt data for sessionStorage
-    // This prevents any circular references or complex objects that might cause issues
-    const simplifiedPrompt = {
-      text: displayPrompt.text,
-      id: displayPrompt.id,
-      tags: displayPrompt.tags || []
-    };
+    // Check if we're already on the create page to prevent navigation loop
+    if (window.location.pathname === '/create') {
+      return;
+    }
     
-    // Store prompt data in sessionStorage (with explicit JSON stringify)
-    sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
-    
-    // Show toast notification
-    toast({
-      title: "Challenge Accepted!",
-      description: `You've accepted the "${displayPrompt?.text}" challenge. Create something amazing!`,
-    });
-    
-    // Use a simple navigate without state to prevent loops
-    navigate('/create');
+    try {
+      // Create a simplified version of the prompt data for sessionStorage
+      const simplifiedPrompt = {
+        text: displayPrompt.text,
+        id: displayPrompt.id,
+        tags: displayPrompt.tags || []
+      };
+      
+      // Store prompt data in sessionStorage (with explicit JSON stringify)
+      sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
+      
+      // Show toast notification
+      toast({
+        title: "Challenge Accepted!",
+        description: `You've accepted the "${displayPrompt.text}" challenge. Create something amazing!`,
+      });
+      
+      // Navigate to create page
+      navigate('/create');
+    } catch (error) {
+      console.error("Error accepting challenge:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem accepting this challenge. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
     <div className="prompt-card animate-float">
       <h3 className="text-lg font-medium mb-1">Today's Meme Challenge</h3>
-      <p className="text-2xl font-bold mb-4">{displayPrompt?.text}</p>
+      <p className="text-2xl font-bold mb-4">{displayPrompt.text}</p>
       <div className="flex justify-between items-center">
         <div className="flex gap-1 flex-wrap">
-          {displayPrompt?.tags && displayPrompt.tags.map((tag) => (
+          {displayPrompt.tags && displayPrompt.tags.map((tag) => (
             <span key={tag} className="px-2 py-0.5 bg-white/20 rounded-full text-xs">
               #{tag}
             </span>

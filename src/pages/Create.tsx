@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -9,6 +9,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { getTodaysChallenge } from '@/lib/dailyChallenges';
 import { MEME_TEMPLATES } from '@/lib/constants';
+
+// Helper function to safely parse JSON with fallback
+const safeJsonParse = (json: string | null, fallback: any = null) => {
+  if (!json) return fallback;
+  try {
+    return JSON.parse(json);
+  } catch (e) {
+    console.error('Error parsing JSON:', e);
+    return fallback;
+  }
+};
 
 const Create = () => {
   const navigate = useNavigate();
@@ -20,15 +31,23 @@ const Create = () => {
   const [defaultEditMode] = useState<boolean>(false);
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
 
-  // Flag to prevent multiple fetch attempts and initialization loops
-  const [initialized, setInitialized] = useState(false);
+  // Use ref to prevent multiple initialization attempts
+  const initialized = useRef(false);
+  
+  // Clear session storage on component unmount to prevent loops
+  useEffect(() => {
+    return () => {
+      // Only clear if navigating away from create page
+      if (window.location.pathname !== '/create') {
+        sessionStorage.removeItem('challenge_prompt');
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Prevent running multiple times
-    if (initialized) return;
-    
-    // Mark as initialized immediately to prevent multiple executions
-    setInitialized(true);
+    if (initialized.current) return;
+    initialized.current = true;
     
     console.log('Create page mounted, checking for challenge prompt');
     
@@ -44,25 +63,24 @@ const Create = () => {
           
           try {
             // Parse the stored prompt data
-            const promptData = JSON.parse(storedPromptData);
+            const promptData = safeJsonParse(storedPromptData);
             
-            // Create a complete prompt object
-            const sessionPrompt: Prompt = {
-              id: promptData.id || 'temp-id',
-              text: promptData.text,
-              tags: promptData.tags || [],
-              active: true,
-              startDate: new Date(),
-              endDate: new Date(Date.now() + 86400000),
-              theme: ''
-            };
-            
-            // Clear from sessionStorage to prevent future issues
-            sessionStorage.removeItem('challenge_prompt');
-            
-            setActivePrompt(sessionPrompt);
-            setLoading(false);
-            return;
+            if (promptData && promptData.text) {
+              // Create a complete prompt object
+              const sessionPrompt: Prompt = {
+                id: promptData.id || 'temp-id',
+                text: promptData.text,
+                tags: promptData.tags || [],
+                active: true,
+                startDate: new Date(),
+                endDate: new Date(Date.now() + 86400000),
+                theme: ''
+              };
+              
+              setActivePrompt(sessionPrompt);
+              setLoading(false);
+              return;
+            }
           } catch (parseError) {
             console.error('Error parsing stored prompt data:', parseError);
             // Continue to fallback if parse fails
@@ -112,7 +130,7 @@ const Create = () => {
     };
     
     fetchActivePrompt();
-  }, []); // Empty dependency array with initialized check in the function body
+  }, []);
 
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);
