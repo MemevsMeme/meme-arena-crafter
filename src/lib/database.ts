@@ -826,10 +826,10 @@ export async function castVote(battleId: string, memeId: string, userId: string)
     }
     
     // Increment the vote count for the meme using RPC
-    // Fix: Use proper type annotation that works with TypeScript
+    // Fix: Use a more explicit type assertion
     const { error: memeError } = await supabase.rpc(
       'increment_meme_votes', 
-      { p_meme_id: memeId } as unknown as Record<string, unknown>
+      { p_meme_id: memeId } as any
     );
     
     if (memeError) {
@@ -837,10 +837,10 @@ export async function castVote(battleId: string, memeId: string, userId: string)
     }
     
     // Increment the battle vote count using RPC
-    // Fix: Use proper type annotation that works with TypeScript
+    // Fix: Use a more explicit type assertion
     const { error: battleError } = await supabase.rpc(
       'increment_battle_votes',
-      { p_battle_id: battleId } as unknown as Record<string, unknown>
+      { p_battle_id: battleId } as any
     );
     
     if (battleError) {
