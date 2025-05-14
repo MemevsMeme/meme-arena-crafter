@@ -905,10 +905,10 @@ export async function castVote(battleId: string, memeId: string, userId: string)
     }
     
     // Increment the vote count for the meme
-    // Fix: Use the correct type for function parameters - remove string literals
+    // Fix: Use the supabase.rpc with the correct parameter format
     const { error: memeError } = await supabase.rpc(
-      'increment_meme_votes',
-      { p_meme_id: memeId }
+      'increment_meme_votes', 
+      { p_meme_id: memeId } as any
     );
     
     if (memeError) {
@@ -916,10 +916,10 @@ export async function castVote(battleId: string, memeId: string, userId: string)
     }
     
     // Increment the battle vote count
-    // Fix: Use the correct type for function parameters - remove string literals
+    // Fix: Use the supabase.rpc with the correct parameter format
     const { error: battleError } = await supabase.rpc(
       'increment_battle_votes',
-      { p_battle_id: battleId }
+      { p_battle_id: battleId } as any
     );
     
     if (battleError) {
