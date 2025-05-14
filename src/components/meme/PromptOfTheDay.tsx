@@ -62,12 +62,16 @@ const PromptOfTheDay = ({
   }
 
   const handleAcceptChallenge = () => {
-    // Store prompt data in sessionStorage to prevent navigation loop
-    sessionStorage.setItem('challenge_prompt', JSON.stringify({
+    // Create a simplified version of the prompt data for sessionStorage
+    // This prevents any circular references or complex objects that might cause issues
+    const simplifiedPrompt = {
       text: displayPrompt.text,
       id: displayPrompt.id,
       tags: displayPrompt.tags || []
-    }));
+    };
+    
+    // Store prompt data in sessionStorage (with explicit JSON stringify)
+    sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
     
     // Show toast notification
     toast({
@@ -75,7 +79,7 @@ const PromptOfTheDay = ({
       description: `You've accepted the "${displayPrompt?.text}" challenge. Create something amazing!`,
     });
     
-    // Navigate to create without using state (prevents loop)
+    // Use a simple navigate without state to prevent loops
     navigate('/create');
   };
 

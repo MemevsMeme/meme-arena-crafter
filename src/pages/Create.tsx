@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -19,43 +20,53 @@ const Create = () => {
   const [defaultEditMode] = useState<boolean>(false);
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
 
-  // Flag to prevent multiple fetch attempts
+  // Flag to prevent multiple fetch attempts and initialization loops
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     // Prevent running multiple times
     if (initialized) return;
+    
+    // Mark as initialized immediately to prevent multiple executions
     setInitialized(true);
     
     console.log('Create page mounted, checking for challenge prompt');
     
     const fetchActivePrompt = async () => {
       setLoading(true);
+      
       try {
         // Check sessionStorage first
         const storedPromptData = sessionStorage.getItem('challenge_prompt');
         
         if (storedPromptData) {
-          const promptData = JSON.parse(storedPromptData);
-          console.log('Using prompt data from sessionStorage:', promptData);
+          console.log('Using prompt data from sessionStorage:', storedPromptData);
           
-          // Create a complete prompt object
-          const sessionPrompt: Prompt = {
-            id: promptData.id || 'temp-id',
-            text: promptData.text,
-            tags: promptData.tags || [],
-            active: true,
-            startDate: new Date(),
-            endDate: new Date(Date.now() + 86400000),
-            theme: ''
-          };
-          
-          // Clear from sessionStorage to prevent future issues
-          sessionStorage.removeItem('challenge_prompt');
-          
-          setActivePrompt(sessionPrompt);
-          setLoading(false);
-          return;
+          try {
+            // Parse the stored prompt data
+            const promptData = JSON.parse(storedPromptData);
+            
+            // Create a complete prompt object
+            const sessionPrompt: Prompt = {
+              id: promptData.id || 'temp-id',
+              text: promptData.text,
+              tags: promptData.tags || [],
+              active: true,
+              startDate: new Date(),
+              endDate: new Date(Date.now() + 86400000),
+              theme: ''
+            };
+            
+            // Clear from sessionStorage to prevent future issues
+            sessionStorage.removeItem('challenge_prompt');
+            
+            setActivePrompt(sessionPrompt);
+            setLoading(false);
+            return;
+          } catch (parseError) {
+            console.error('Error parsing stored prompt data:', parseError);
+            // Continue to fallback if parse fails
+          }
         }
         
         // Otherwise try to get the prompt from the database
@@ -101,7 +112,7 @@ const Create = () => {
     };
     
     fetchActivePrompt();
-  }, [initialized]); // Only depend on initialized flag
+  }, []); // Empty dependency array with initialized check in the function body
 
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);
@@ -112,7 +123,7 @@ const Create = () => {
       description: "Meme created successfully!"
     });
     
-    // Navigate to the meme battle page or profile after a short delay
+    // Navigate to the meme profile page after a short delay
     setTimeout(() => {
       if (user) {
         navigate(`/profile/${user.id}`);
