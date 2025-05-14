@@ -338,7 +338,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
                     (position.y / 100) * canvas.height,
                     position.maxWidth
                   );
-                  // Fixed: Remove extra argument (x) from fillText call
+                  // Fixed: Remove extra argument from fillText call
                   ctx.fillText(
                     position.text,
                     x,

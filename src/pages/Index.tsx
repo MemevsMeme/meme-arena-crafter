@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -64,8 +65,8 @@ const Index = () => {
   });
 
   const handleCreateClick = () => {
-    // Direct navigate to create page without relying on sessionStorage
-    navigate('/create');
+    // Direct navigate to create page without setting sessionStorage to prevent looping
+    navigate('/create', { replace: false });
   };
 
   return (

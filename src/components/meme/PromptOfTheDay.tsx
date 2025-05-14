@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -74,8 +75,8 @@ const PromptOfTheDay = ({
       sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
       console.log('Challenge prompt stored successfully in sessionStorage');
       
-      // Use navigate instead of window.location to maintain state
-      navigate('/create');
+      // Use navigate with replace: false to avoid loop issues
+      navigate('/create', { replace: false });
       
     } catch (error) {
       console.error("Error accepting challenge:", error);

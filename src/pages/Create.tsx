@@ -24,6 +24,7 @@ const Create = () => {
 
   console.log('Create component rendered, Auth status:', { user, loading, hasInitialized });
 
+  // Modified to prevent infinite loops
   useEffect(() => {
     // Only proceed with initialization after auth check is complete and not yet initialized
     if (loading || hasInitialized) return;
