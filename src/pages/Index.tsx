@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -18,11 +17,14 @@ const Index = () => {
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
   const { user } = useAuth();
   
+  console.log("Rendering Index page");
+  
   const { data: activePrompt, isLoading: promptLoading } = useQuery({
     queryKey: ['activePrompt'],
     queryFn: async () => {
       try {
         const challenge = await getTodaysChallenge();
+        console.log("Retrieved today's challenge:", challenge);
         return challenge;
       } catch (error) {
         console.error('Failed to fetch today\'s challenge:', error);

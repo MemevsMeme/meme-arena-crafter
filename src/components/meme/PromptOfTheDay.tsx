@@ -61,24 +61,34 @@ const PromptOfTheDay = ({
   }
 
   const handleAcceptChallenge = () => {
-    // Check if we're already on the create page to prevent navigation loop
+    // Fix 1: Check if we're already on the create page to prevent navigation loop
     if (window.location.pathname === '/create') {
+      console.log('Already on create page, skipping navigation');
       return;
     }
     
     try {
-      // Create a simplified version of the prompt data for sessionStorage
+      console.log('Accepting challenge:', displayPrompt.text);
+      
+      // Fix 2: Create a simplified version of the prompt data
       const simplifiedPrompt = {
         text: displayPrompt.text,
         id: displayPrompt.id,
         tags: displayPrompt.tags || []
       };
       
-      // Store prompt data in sessionStorage
-      sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
+      // Fix 3: Clear any existing prompt data before setting new data
+      sessionStorage.removeItem('challenge_prompt');
       
-      // Use direct navigation without any waiting or callbacks
-      window.location.href = '/create';
+      // Fix 4: Store prompt data with explicit safety checks
+      if (simplifiedPrompt && simplifiedPrompt.text) {
+        sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
+        console.log('Challenge prompt stored in sessionStorage');
+      }
+      
+      // Fix 5: Use navigate with replace option to prevent history buildup
+      navigate('/create', { replace: true });
+      
     } catch (error) {
       console.error("Error accepting challenge:", error);
     }

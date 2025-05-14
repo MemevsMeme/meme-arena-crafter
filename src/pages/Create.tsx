@@ -22,21 +22,29 @@ const Create = () => {
   // Use ref to prevent multiple initialization attempts
   const initialized = useRef(false);
   
-  // Clear session storage on component unmount to prevent loops
+  // Clear session storage on component unmount
   useEffect(() => {
+    console.log("Create component mounted");
+    
     return () => {
-      // Only clear if navigating away from create page
-      if (window.location.pathname !== '/create') {
+      // Only clear if navigating away from create page and not back to home
+      if (window.location.pathname !== '/create' && window.location.pathname !== '/') {
+        console.log("Cleaning up session storage");
         sessionStorage.removeItem('challenge_prompt');
+      } else {
+        console.log("Skipping cleanup to preserve prompt data");
       }
     };
   }, []);
 
   useEffect(() => {
     // Prevent running multiple times
-    if (initialized.current) return;
-    initialized.current = true;
+    if (initialized.current) {
+      console.log("Create prompt setup already initialized, skipping");
+      return; 
+    }
     
+    initialized.current = true;
     console.log('Create page mounted, checking for challenge prompt');
     
     const fetchActivePrompt = async () => {
@@ -47,7 +55,7 @@ const Create = () => {
         const storedPromptData = sessionStorage.getItem('challenge_prompt');
         
         if (storedPromptData) {
-          console.log('Using prompt data from sessionStorage:', storedPromptData);
+          console.log('Found prompt data in sessionStorage:', storedPromptData);
           
           try {
             // Parse the stored prompt data
@@ -66,6 +74,7 @@ const Create = () => {
               };
               
               setActivePrompt(sessionPrompt);
+              console.log('Successfully set active prompt from sessionStorage');
               setLoading(false);
               return;
             }
@@ -73,16 +82,19 @@ const Create = () => {
             console.error('Error parsing stored prompt data:', parseError);
             // Continue to fallback if parse fails
           }
+        } else {
+          console.log('No prompt data found in sessionStorage');
         }
         
         // Otherwise try to get the prompt from the database
+        console.log('Fetching prompt from database...');
         const todaysChallenge = await getTodaysChallenge();
         
         if (todaysChallenge) {
-          console.log('Today\'s challenge:', todaysChallenge);
+          console.log('Retrieved today\'s challenge from database:', todaysChallenge);
           setActivePrompt(todaysChallenge);
         } else {
-          console.error('Could not get today\'s challenge');
+          console.log('No challenge found in database, using fallback');
           // Fallback to a generic prompt
           setActivePrompt({
             id: 'fallback',
