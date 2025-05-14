@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -64,7 +65,7 @@ const Index = () => {
   });
 
   const handleCreateClick = () => {
-    // Simple direct navigation without any state
+    // Direct navigation to create page
     navigate('/create');
   };
 

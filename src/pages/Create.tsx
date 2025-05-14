@@ -20,69 +20,69 @@ const Create = () => {
   
   const [defaultEditMode] = useState<boolean>(false);
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
-  const [hasInitialized, setHasInitialized] = useState(false);
 
-  console.log('Create component rendered, Auth status:', { user, loading, hasInitialized });
+  console.log('Create component rendered, Auth status:', { user, loading });
 
-  // Use effect to handle initial setup and authentication
+  // Check authentication and load prompt data
   useEffect(() => {
-    // Only proceed with initialization after auth check is complete and not yet initialized
-    if (loading || hasInitialized) return;
-
-    console.log('Create component initializing, Auth status:', { user, loading });
-    
-    // If user is not authenticated, redirect to login
-    if (!user) {
-      console.log('User not authenticated, redirecting to login');
-      navigate('/login', { replace: true });
-      return;
-    }
-
-    // Mark as initialized to prevent multiple runs
-    setHasInitialized(true);
-    
-    console.log('User is authenticated, checking for challenge prompt');
-    
-    // Look for prompt in localStorage instead of sessionStorage to be persistent
-    const storedPromptData = localStorage.getItem('challenge_prompt');
-    
-    if (storedPromptData) {
+    const checkAuthAndLoadPrompt = async () => {
+      // Wait for auth to complete
+      if (loading) {
+        return;
+      }
+      
+      // If not logged in, redirect to login
+      if (!user) {
+        console.log('User not authenticated, redirecting to login');
+        navigate('/login');
+        return;
+      }
+      
       try {
-        console.log('Found prompt data in localStorage:', storedPromptData);
-        const promptData = safeJsonParse(storedPromptData, null);
+        // Look for challenge prompt in localStorage with consistent key name
+        const storedPromptData = localStorage.getItem('active_challenge_prompt');
         
-        if (promptData && promptData.text) {
-          // Create a complete prompt object
-          const sessionPrompt: Prompt = {
-            id: promptData.id || 'temp-id',
-            text: promptData.text,
-            tags: promptData.tags || [],
-            active: true,
-            startDate: new Date(),
-            endDate: new Date(Date.now() + 86400000),
-            theme: ''
-          };
+        if (storedPromptData) {
+          console.log('Found stored prompt data:', storedPromptData);
+          const promptData = safeJsonParse(storedPromptData, null);
           
-          console.log('Setting active prompt from localStorage:', sessionPrompt);
-          setActivePrompt(sessionPrompt);
-          
-          // Clear localStorage after using it to prevent future issues
-          localStorage.removeItem('challenge_prompt');
+          if (promptData && promptData.text) {
+            console.log('Setting active prompt from localStorage data');
+            setActivePrompt({
+              id: promptData.id || 'temp-id',
+              text: promptData.text,
+              tags: promptData.tags || [],
+              active: true,
+              startDate: new Date(),
+              endDate: new Date(Date.now() + 86400000),
+              theme: ''
+            });
+            
+            // Remove from localStorage to prevent future issues
+            localStorage.removeItem('active_challenge_prompt');
+          } else {
+            console.log('Using fallback prompt (stored prompt invalid)');
+            setFallbackPrompt();
+          }
         } else {
-          console.log('Prompt data is missing text field:', promptData);
+          console.log('No stored prompt found, using fallback');
           setFallbackPrompt();
         }
       } catch (error) {
-        console.error('Error parsing stored prompt data:', error);
+        console.error('Error processing prompt data:', error);
         setFallbackPrompt();
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      console.log('No prompt data found in localStorage, using fallback');
-      setFallbackPrompt();
-    }
+    };
+
+    checkAuthAndLoadPrompt();
     
-    setIsLoading(false);
-  }, [user, loading, navigate, hasInitialized]);
+    // Cleanup function to ensure localStorage is cleared if component unmounts
+    return () => {
+      localStorage.removeItem('active_challenge_prompt');
+    };
+  }, [user, loading, navigate]);
 
   const setFallbackPrompt = () => {
     setActivePrompt({
@@ -121,7 +121,7 @@ const Create = () => {
         // Navigate to the meme profile page after a short delay
         setTimeout(() => {
           if (user) {
-            navigate(`/profile/${user.id}`, { replace: true });
+            navigate(`/profile/${user.id}`);
           }
         }, 2000);
       } else {
@@ -152,7 +152,7 @@ const Create = () => {
     );
   }
 
-  // Redirect handled in useEffect to avoid rendering issues
+  // If not authenticated, redirect is handled in useEffect
   if (!user) {
     return null;
   }
