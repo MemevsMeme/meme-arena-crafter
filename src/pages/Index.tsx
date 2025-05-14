@@ -64,8 +64,8 @@ const Index = () => {
   });
 
   const handleCreateClick = () => {
-    // Navigate to create page with state that indicates a direct navigation
-    navigate('/create', { state: { fromDirectClick: true } });
+    // Simple direct navigation without any state
+    navigate('/create');
   };
 
   return (

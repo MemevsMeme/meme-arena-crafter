@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import MemeGenerator from '@/components/meme/MemeGenerator';
@@ -12,7 +13,6 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Create = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, loading } = useAuth();
   const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,18 +21,15 @@ const Create = () => {
   const [defaultEditMode] = useState<boolean>(false);
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
   const [hasInitialized, setHasInitialized] = useState(false);
-  
-  // Track if this navigation came from accepting a challenge
-  const fromChallenge = location.state?.fromChallenge === true;
 
-  console.log('Create component rendered, Auth status:', { user, loading, hasInitialized, fromChallenge });
+  console.log('Create component rendered, Auth status:', { user, loading, hasInitialized });
 
-  // Modified to prevent infinite loops
+  // Use effect to handle initial setup and authentication
   useEffect(() => {
     // Only proceed with initialization after auth check is complete and not yet initialized
     if (loading || hasInitialized) return;
 
-    console.log('Create component initializing, Auth status:', { user, loading, fromChallenge });
+    console.log('Create component initializing, Auth status:', { user, loading });
     
     // If user is not authenticated, redirect to login
     if (!user) {
@@ -46,12 +43,12 @@ const Create = () => {
     
     console.log('User is authenticated, checking for challenge prompt');
     
-    // Look for prompt in sessionStorage
-    const storedPromptData = sessionStorage.getItem('challenge_prompt');
+    // Look for prompt in localStorage instead of sessionStorage to be persistent
+    const storedPromptData = localStorage.getItem('challenge_prompt');
     
     if (storedPromptData) {
       try {
-        console.log('Found prompt data in sessionStorage:', storedPromptData);
+        console.log('Found prompt data in localStorage:', storedPromptData);
         const promptData = safeJsonParse(storedPromptData, null);
         
         if (promptData && promptData.text) {
@@ -66,11 +63,11 @@ const Create = () => {
             theme: ''
           };
           
-          console.log('Setting active prompt from sessionStorage:', sessionPrompt);
+          console.log('Setting active prompt from localStorage:', sessionPrompt);
           setActivePrompt(sessionPrompt);
           
-          // Clear session storage after using it to prevent future issues
-          sessionStorage.removeItem('challenge_prompt');
+          // Clear localStorage after using it to prevent future issues
+          localStorage.removeItem('challenge_prompt');
         } else {
           console.log('Prompt data is missing text field:', promptData);
           setFallbackPrompt();
@@ -80,22 +77,12 @@ const Create = () => {
         setFallbackPrompt();
       }
     } else {
-      console.log('No prompt data found in sessionStorage, using fallback');
+      console.log('No prompt data found in localStorage, using fallback');
       setFallbackPrompt();
     }
     
     setIsLoading(false);
-  }, [user, loading, navigate, hasInitialized, fromChallenge]);
-
-  // Clear navigation state when component unmounts to prevent future issues
-  useEffect(() => {
-    return () => {
-      if (fromChallenge && location.state?.fromChallenge) {
-        // This helps prevent the location state from persisting
-        window.history.replaceState({}, document.title);
-      }
-    };
-  }, [fromChallenge, location.state]);
+  }, [user, loading, navigate, hasInitialized]);
 
   const setFallbackPrompt = () => {
     setActivePrompt({

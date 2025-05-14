@@ -64,19 +64,18 @@ const PromptOfTheDay = ({
     try {
       console.log('Accepting challenge with prompt:', displayPrompt.text);
       
-      // Simplified prompt data storage
+      // Store prompt directly in localStorage instead of sessionStorage to be more persistent
       const simplifiedPrompt = {
         text: displayPrompt.text,
         id: displayPrompt.id,
         tags: displayPrompt.tags || []
       };
       
-      // Store prompt data in sessionStorage
-      sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
-      console.log('Challenge prompt stored successfully in sessionStorage');
+      localStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
+      console.log('Challenge prompt stored successfully in localStorage');
       
-      // Direct navigation to create page with a special flag to prevent looping
-      navigate('/create', { state: { fromChallenge: true } });
+      // Navigate directly to the create page with replace: true to avoid browser history issues
+      navigate('/create', { replace: true });
     } catch (error) {
       console.error("Error accepting challenge:", error);
     }
