@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/layout/Navbar';
@@ -11,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getActiveBattles, getTrendingMemes, getNewestMemes, getDailyChallenge } from '@/lib/database';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+// Import from components/ui/use-toast directly
 import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
@@ -47,8 +47,6 @@ const Index = () => {
           return await getNewestMemes(12);
         } else {
           // For 'following' tab, get memes from followed users
-          // This would require additional backend support
-          // For now, just return empty array
           return [];
         }
       } catch (error) {
