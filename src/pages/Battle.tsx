@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,9 +9,9 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { ArrowLeft, Share, RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Battle as BattleType, Meme as MemeType } from '@/lib/types';
+import { Battle as BattleType, Meme as MemeType, Vote } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { getBattleById, getPromptById, castVote } from '@/lib/database';
 import MemeCard from '@/components/meme/MemeCard';
@@ -36,26 +37,31 @@ const Battle = () => {
     enabled: !!battle?.promptId,
   });
 
-  const { mutate: handleVote, isLoading: isVoting } = useMutation(
-    async (memeId: string) => {
+  const { mutate: handleVote, isPending: isVoting } = useMutation({
+    mutationFn: async (memeId: string) => {
       if (!user) {
         throw new Error("You must be logged in to vote.");
       }
       if (!battle) {
         throw new Error("Battle not loaded.");
       }
-      return castVote(battle.id, memeId, user.id);
+      return await castVote(battle.id, memeId, user.id);
     },
-    {
-      onSuccess: () => {
-        toast.success("Vote cast successfully!");
-        queryClient.invalidateQueries(['battle', id]);
-      },
-      onError: (error: any) => {
-        toast.error(error.message || "Failed to cast vote.");
-      },
-    }
-  );
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Vote cast successfully!"
+      });
+      queryClient.invalidateQueries({ queryKey: ['battle', id] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cast vote.",
+        variant: "destructive"
+      });
+    },
+  });
 
   const handleShare = () => {
     if (navigator.share) {
@@ -67,7 +73,10 @@ const Battle = () => {
       .then(() => console.log('Successful share'))
       .catch((error) => console.error('Error sharing', error));
     } else {
-      toast.info("Web Share API not supported. Copy the link to share.");
+      toast({
+        title: "Info",
+        description: "Web Share API not supported. Copy the link to share."
+      });
     }
   };
 
