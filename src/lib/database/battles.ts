@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { Battle, Vote, Meme } from './types';
+import { Battle, Vote, Meme, RpcParams } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function getActiveBattles(limit: number = 10, offset: number = 0, filter: 'all' | 'official' | 'community' = 'all'): Promise<Battle[]> {
@@ -225,22 +224,20 @@ export async function castVote(battleId: string, memeId: string, userId: string)
       return null;
     }
     
-    // Increment the vote count for the meme using RPC
-    // Fix the TypeScript error by using type assertion
-    const { error: memeError } = await supabase.rpc(
+    // Increment the vote count for the meme using RPC with proper typing
+    const { error: memeError } = await supabase.rpc<never, RpcParams['increment_meme_votes']>(
       'increment_meme_votes', 
-      { p_meme_id: memeId } as any
+      { p_meme_id: memeId }
     );
     
     if (memeError) {
       console.error('Error incrementing meme votes:', memeError);
     }
     
-    // Increment the battle vote count using RPC
-    // Fix the TypeScript error by using type assertion
-    const { error: battleError } = await supabase.rpc(
+    // Increment the battle vote count using RPC with proper typing
+    const { error: battleError } = await supabase.rpc<never, RpcParams['increment_battle_votes']>(
       'increment_battle_votes',
-      { p_battle_id: battleId } as any
+      { p_battle_id: battleId }
     );
     
     if (battleError) {
