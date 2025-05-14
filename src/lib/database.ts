@@ -1,6 +1,6 @@
 
 import { supabase } from './supabase';
-import { Prompt } from './types';
+import { Prompt, User, Meme, Battle } from './types';
 
 /**
  * Get the current day of the year (1-366)
@@ -120,5 +120,673 @@ export async function getDailyChallenge(): Promise<Prompt | null> {
   } catch (error) {
     console.error('Error in getDailyChallenge:', error);
     return null;
+  }
+}
+
+/**
+ * Create a new meme in the database
+ */
+export async function createMeme(memeData: {
+  prompt: string;
+  prompt_id?: string | null;
+  imageUrl: string;
+  ipfsCid?: string;
+  caption: string;
+  creatorId: string;
+  votes: number;
+  createdAt: Date;
+  tags: string[];
+}): Promise<Meme | null> {
+  try {
+    // Insert into the memes table
+    const { data, error } = await supabase
+      .from('memes')
+      .insert({
+        prompt: memeData.prompt,
+        prompt_id: memeData.prompt_id || null,
+        image_url: memeData.imageUrl,
+        ipfs_cid: memeData.ipfsCid || null,
+        caption: memeData.caption,
+        creator_id: memeData.creatorId,
+        votes: memeData.votes || 0,
+        created_at: memeData.createdAt.toISOString(),
+        tags: memeData.tags || []
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating meme:', error);
+      return null;
+    }
+
+    if (!data) {
+      console.error('No data returned after creating meme');
+      return null;
+    }
+
+    // Convert to Meme type
+    return {
+      id: data.id,
+      prompt: data.prompt || '',
+      promptId: data.prompt_id || '',
+      imageUrl: data.image_url,
+      ipfsCid: data.ipfs_cid || '',
+      caption: data.caption,
+      creatorId: data.creator_id,
+      votes: data.votes || 0,
+      createdAt: new Date(data.created_at),
+      tags: data.tags || []
+    };
+  } catch (error) {
+    console.error('Error in createMeme:', error);
+    return null;
+  }
+}
+
+/**
+ * Get user profile by ID
+ */
+export async function getProfile(userId: string): Promise<User | null> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error getting profile:', error);
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    return {
+      id: data.id,
+      username: data.username,
+      avatarUrl: data.avatar_url || '',
+      memeStreak: data.meme_streak || 0,
+      wins: data.wins || 0,
+      losses: data.losses || 0,
+      level: data.level || 1,
+      xp: data.xp || 0
+    };
+  } catch (error) {
+    console.error('Error in getProfile:', error);
+    return null;
+  }
+}
+
+/**
+ * Update user profile
+ */
+export async function updateProfile(userId: string, updates: Partial<User>): Promise<User | null> {
+  try {
+    // Convert from User type to database schema
+    const dbUpdates: any = {};
+    if (updates.username) dbUpdates.username = updates.username;
+    if (updates.avatarUrl) dbUpdates.avatar_url = updates.avatarUrl;
+    if (updates.memeStreak !== undefined) dbUpdates.meme_streak = updates.memeStreak;
+    if (updates.wins !== undefined) dbUpdates.wins = updates.wins;
+    if (updates.losses !== undefined) dbUpdates.losses = updates.losses;
+    if (updates.level !== undefined) dbUpdates.level = updates.level;
+    if (updates.xp !== undefined) dbUpdates.xp = updates.xp;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(dbUpdates)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating profile:', error);
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    return {
+      id: data.id,
+      username: data.username,
+      avatarUrl: data.avatar_url || '',
+      memeStreak: data.meme_streak || 0,
+      wins: data.wins || 0,
+      losses: data.losses || 0,
+      level: data.level || 1,
+      xp: data.xp || 0
+    };
+  } catch (error) {
+    console.error('Error in updateProfile:', error);
+    return null;
+  }
+}
+
+/**
+ * Create a new user profile
+ */
+export async function createProfile(profileData: {
+  id: string;
+  username: string;
+  avatarUrl?: string;
+}): Promise<User | null> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert({
+        id: profileData.id,
+        username: profileData.username,
+        avatar_url: profileData.avatarUrl || `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${profileData.id}`,
+        meme_streak: 0,
+        wins: 0,
+        losses: 0,
+        level: 1,
+        xp: 0
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating profile:', error);
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    return {
+      id: data.id,
+      username: data.username,
+      avatarUrl: data.avatar_url || '',
+      memeStreak: data.meme_streak || 0,
+      wins: data.wins || 0,
+      losses: data.losses || 0,
+      level: data.level || 1,
+      xp: data.xp || 0
+    };
+  } catch (error) {
+    console.error('Error in createProfile:', error);
+    return null;
+  }
+}
+
+/**
+ * Get battle by ID
+ */
+export async function getBattleById(battleId: string): Promise<Battle | null> {
+  try {
+    const { data, error } = await supabase
+      .from('battles')
+      .select(`
+        *,
+        meme_one:meme_one_id(*),
+        meme_two:meme_two_id(*)
+      `)
+      .eq('id', battleId)
+      .single();
+
+    if (error) {
+      console.error('Error getting battle:', error);
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    return {
+      id: data.id,
+      promptId: data.prompt_id || '',
+      status: data.status,
+      startTime: new Date(data.start_time),
+      endTime: new Date(data.end_time),
+      creatorId: data.creator_id || '',
+      voteCount: data.vote_count || 0,
+      winnerId: data.winner_id || '',
+      memeOne: data.meme_one ? {
+        id: data.meme_one.id,
+        prompt: data.meme_one.prompt || '',
+        promptId: data.meme_one.prompt_id || '',
+        imageUrl: data.meme_one.image_url,
+        caption: data.meme_one.caption,
+        creatorId: data.meme_one.creator_id,
+        votes: data.meme_one.votes || 0,
+        createdAt: new Date(data.meme_one.created_at),
+        ipfsCid: data.meme_one.ipfs_cid || '',
+        tags: data.meme_one.tags || []
+      } : null,
+      memeTwo: data.meme_two ? {
+        id: data.meme_two.id,
+        prompt: data.meme_two.prompt || '',
+        promptId: data.meme_two.prompt_id || '',
+        imageUrl: data.meme_two.image_url,
+        caption: data.meme_two.caption,
+        creatorId: data.meme_two.creator_id,
+        votes: data.meme_two.votes || 0,
+        createdAt: new Date(data.meme_two.created_at),
+        ipfsCid: data.meme_two.ipfs_cid || '',
+        tags: data.meme_two.tags || []
+      } : null,
+      isCommunity: data.is_community || false
+    };
+  } catch (error) {
+    console.error('Error in getBattleById:', error);
+    return null;
+  }
+}
+
+/**
+ * Get prompt by ID
+ */
+export async function getPromptById(promptId: string): Promise<Prompt | null> {
+  try {
+    const { data, error } = await supabase
+      .from('prompts')
+      .select('*')
+      .eq('id', promptId)
+      .single();
+
+    if (error) {
+      console.error('Error getting prompt:', error);
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    return {
+      id: data.id,
+      text: data.text,
+      theme: data.theme || '',
+      tags: data.tags || [],
+      active: data.active,
+      startDate: new Date(data.start_date),
+      endDate: new Date(data.end_date),
+      isCommunity: data.is_community || false,
+      description: data.description || '',
+      creatorId: data.creator_id || ''
+    };
+  } catch (error) {
+    console.error('Error in getPromptById:', error);
+    return null;
+  }
+}
+
+/**
+ * Cast a vote for a meme in a battle
+ */
+export async function castVote(userId: string, battleId: string, memeId: string): Promise<boolean> {
+  try {
+    // Check if the user has already voted on this battle
+    const { data: existingVote, error: checkError } = await supabase
+      .from('votes')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('battle_id', battleId)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking existing vote:', checkError);
+      return false;
+    }
+
+    if (existingVote) {
+      console.log('User has already voted on this battle');
+      return false;
+    }
+
+    // Create the vote
+    const { data: newVote, error: voteError } = await supabase
+      .from('votes')
+      .insert({
+        user_id: userId,
+        battle_id: battleId,
+        meme_id: memeId
+      })
+      .select()
+      .single();
+
+    if (voteError) {
+      console.error('Error casting vote:', voteError);
+      return false;
+    }
+
+    // Increment the vote count for the meme
+    const { error: memeError } = await supabase
+      .from('memes')
+      .update({ votes: supabase.rpc('increment', { inc: 1 }) })
+      .eq('id', memeId);
+
+    if (memeError) {
+      console.error('Error incrementing meme votes:', memeError);
+    }
+
+    // Increment the vote count for the battle
+    const { error: battleError } = await supabase
+      .from('battles')
+      .update({ vote_count: supabase.rpc('increment', { inc: 1 }) })
+      .eq('id', battleId);
+
+    if (battleError) {
+      console.error('Error incrementing battle vote count:', battleError);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in castVote:', error);
+    return false;
+  }
+}
+
+/**
+ * Get active battles
+ */
+export async function getActiveBattles(limit = 10, offset = 0, filter: 'all' | 'community' | 'official' = 'all'): Promise<Battle[]> {
+  try {
+    let query = supabase
+      .from('battles')
+      .select(`
+        *,
+        meme_one:meme_one_id(*),
+        meme_two:meme_two_id(*)
+      `)
+      .eq('status', 'active')
+      .order('start_time', { ascending: false });
+
+    if (filter === 'community') {
+      query = query.eq('is_community', true);
+    } else if (filter === 'official') {
+      query = query.eq('is_community', false);
+    }
+
+    query = query.range(offset, offset + limit - 1);
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error getting active battles:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    return data.map(battle => ({
+      id: battle.id,
+      promptId: battle.prompt_id || '',
+      status: battle.status,
+      startTime: new Date(battle.start_time),
+      endTime: new Date(battle.end_time),
+      creatorId: battle.creator_id || '',
+      voteCount: battle.vote_count || 0,
+      winnerId: battle.winner_id || '',
+      memeOne: battle.meme_one ? {
+        id: battle.meme_one.id,
+        prompt: battle.meme_one.prompt || '',
+        promptId: battle.meme_one.prompt_id || '',
+        imageUrl: battle.meme_one.image_url,
+        caption: battle.meme_one.caption,
+        creatorId: battle.meme_one.creator_id,
+        votes: battle.meme_one.votes || 0,
+        createdAt: new Date(battle.meme_one.created_at),
+        ipfsCid: battle.meme_one.ipfs_cid || '',
+        tags: battle.meme_one.tags || []
+      } : null,
+      memeTwo: battle.meme_two ? {
+        id: battle.meme_two.id,
+        prompt: battle.meme_two.prompt || '',
+        promptId: battle.meme_two.prompt_id || '',
+        imageUrl: battle.meme_two.image_url,
+        caption: battle.meme_two.caption,
+        creatorId: battle.meme_two.creator_id,
+        votes: battle.meme_two.votes || 0,
+        createdAt: new Date(battle.meme_two.created_at),
+        ipfsCid: battle.meme_two.ipfs_cid || '',
+        tags: battle.meme_two.tags || []
+      } : null,
+      isCommunity: battle.is_community || false
+    }));
+  } catch (error) {
+    console.error('Error in getActiveBattles:', error);
+    return [];
+  }
+}
+
+/**
+ * Get prompts for battle creation
+ */
+export async function getPrompts(limit = 10, offset = 0, isCommunity?: boolean): Promise<Prompt[]> {
+  try {
+    let query = supabase
+      .from('prompts')
+      .select('*')
+      .eq('active', true)
+      .order('start_date', { ascending: false });
+
+    if (isCommunity !== undefined) {
+      query = query.eq('is_community', isCommunity);
+    }
+
+    query = query.range(offset, offset + limit - 1);
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error getting prompts:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    return data.map(prompt => ({
+      id: prompt.id,
+      text: prompt.text,
+      theme: prompt.theme || '',
+      tags: prompt.tags || [],
+      active: prompt.active,
+      startDate: new Date(prompt.start_date),
+      endDate: new Date(prompt.end_date),
+      isCommunity: prompt.is_community || false,
+      description: prompt.description || '',
+      creatorId: prompt.creator_id || ''
+    }));
+  } catch (error) {
+    console.error('Error in getPrompts:', error);
+    return [];
+  }
+}
+
+/**
+ * Create a new prompt
+ */
+export async function createPrompt(promptData: {
+  text: string;
+  theme?: string;
+  tags: string[];
+  description?: string;
+  is_community?: boolean;
+  creator_id?: string;
+  startDate: Date;
+  endDate: Date;
+}): Promise<Prompt | null> {
+  try {
+    const { data, error } = await supabase
+      .from('prompts')
+      .insert({
+        text: promptData.text,
+        theme: promptData.theme || '',
+        tags: promptData.tags || [],
+        description: promptData.description || '',
+        is_community: promptData.is_community || false,
+        creator_id: promptData.creator_id || null,
+        start_date: promptData.startDate.toISOString(),
+        end_date: promptData.endDate.toISOString(),
+        active: true
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating prompt:', error);
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    return {
+      id: data.id,
+      text: data.text,
+      theme: data.theme || '',
+      tags: data.tags || [],
+      active: data.active,
+      startDate: new Date(data.start_date),
+      endDate: new Date(data.end_date),
+      isCommunity: data.is_community || false,
+      description: data.description || '',
+      creatorId: data.creator_id || ''
+    };
+  } catch (error) {
+    console.error('Error in createPrompt:', error);
+    return null;
+  }
+}
+
+/**
+ * Get trending memes
+ */
+export async function getTrendingMemes(limit = 10): Promise<Meme[]> {
+  try {
+    const { data, error } = await supabase
+      .from('memes')
+      .select(`
+        *,
+        creator:creator_id(username, avatar_url)
+      `)
+      .order('votes', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching trending memes:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    return data.map(meme => ({
+      id: meme.id,
+      prompt: meme.prompt || '',
+      promptId: meme.prompt_id || '',
+      imageUrl: meme.image_url,
+      ipfsCid: meme.ipfs_cid || '',
+      caption: meme.caption,
+      creatorId: meme.creator_id,
+      votes: meme.votes || 0,
+      createdAt: new Date(meme.created_at),
+      tags: meme.tags || [],
+      creator: meme.creator ? {
+        username: meme.creator.username,
+        avatarUrl: meme.creator.avatar_url || ''
+      } : undefined
+    }));
+  } catch (error) {
+    console.error('Error in getTrendingMemes:', error);
+    return [];
+  }
+}
+
+/**
+ * Get newest memes
+ */
+export async function getNewestMemes(limit = 10): Promise<Meme[]> {
+  try {
+    const { data, error } = await supabase
+      .from('memes')
+      .select(`
+        *,
+        creator:creator_id(username, avatar_url)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching newest memes:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    return data.map(meme => ({
+      id: meme.id,
+      prompt: meme.prompt || '',
+      promptId: meme.prompt_id || '',
+      imageUrl: meme.image_url,
+      ipfsCid: meme.ipfs_cid || '',
+      caption: meme.caption,
+      creatorId: meme.creator_id,
+      votes: meme.votes || 0,
+      createdAt: new Date(meme.created_at),
+      tags: meme.tags || [],
+      creator: meme.creator ? {
+        username: meme.creator.username,
+        avatarUrl: meme.creator.avatar_url || ''
+      } : undefined
+    }));
+  } catch (error) {
+    console.error('Error in getNewestMemes:', error);
+    return [];
+  }
+}
+
+/**
+ * Get memes by user ID
+ */
+export async function getMemesByUserId(userId: string): Promise<Meme[]> {
+  try {
+    const { data, error } = await supabase
+      .from('memes')
+      .select('*')
+      .eq('creator_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user memes:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    return data.map(meme => ({
+      id: meme.id,
+      prompt: meme.prompt || '',
+      promptId: meme.prompt_id || '',
+      imageUrl: meme.image_url,
+      ipfsCid: meme.ipfs_cid || '',
+      caption: meme.caption,
+      creatorId: meme.creator_id,
+      votes: meme.votes || 0,
+      createdAt: new Date(meme.created_at),
+      tags: meme.tags || []
+    }));
+  } catch (error) {
+    console.error('Error in getMemesByUserId:', error);
+    return [];
   }
 }
