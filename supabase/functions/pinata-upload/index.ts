@@ -19,8 +19,8 @@ serve(async (req) => {
     const pinataSecretApiKey = Deno.env.get('PIN_SECRET');
     const pinataJWT = Deno.env.get('PIN_JWT');
 
-    if (!pinataApiKey || !pinataSecretApiKey || !pinataJWT) {
-      throw new Error('Pinata credentials not configured');
+    if (!pinataJWT) {
+      throw new Error('Pinata JWT not configured');
     }
 
     // Check if this is a file upload
@@ -37,6 +37,8 @@ serve(async (req) => {
         throw new Error('No file uploaded');
       }
 
+      console.log(`Uploading file: ${file.name}, size: ${file.size}, type: ${file.type}`);
+      
       // Create a new FormData object for the Pinata API
       const pinataData = new FormData();
       pinataData.append('file', file);
@@ -50,6 +52,7 @@ serve(async (req) => {
       pinataData.append('pinataMetadata', JSON.stringify(pinataMetadata));
       
       // Upload to Pinata
+      console.log("Sending file to Pinata API...");
       const pinataResponse = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
         method: 'POST',
         headers: {
@@ -59,9 +62,9 @@ serve(async (req) => {
       });
 
       if (!pinataResponse.ok) {
-        const errorData = await pinataResponse.text();
-        console.error('Pinata API error:', errorData);
-        throw new Error(`Pinata API error: ${pinataResponse.status}`);
+        const errorText = await pinataResponse.text();
+        console.error('Pinata API error:', errorText);
+        throw new Error(`Pinata API error: ${pinataResponse.status} - ${errorText}`);
       }
 
       const data = await pinataResponse.json();
@@ -83,6 +86,7 @@ serve(async (req) => {
       let pinataResponse;
       
       if (isPinByJson) {
+        console.log("Pinning JSON data to IPFS");
         // Pin JSON data
         pinataResponse = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
           method: 'POST',
@@ -98,6 +102,7 @@ serve(async (req) => {
           }),
         });
       } else if (requestData.sourceUrl) {
+        console.log(`Pinning URL to IPFS: ${requestData.sourceUrl}`);
         // Pin by URL
         pinataResponse = await fetch('https://api.pinata.cloud/pinning/pinByURL', {
           method: 'POST',
@@ -117,9 +122,9 @@ serve(async (req) => {
       }
 
       if (!pinataResponse.ok) {
-        const errorData = await pinataResponse.text();
-        console.error('Pinata API error:', errorData);
-        throw new Error(`Pinata API error: ${pinataResponse.status}`);
+        const errorText = await pinataResponse.text();
+        console.error('Pinata API error:', errorText);
+        throw new Error(`Pinata API error: ${pinataResponse.status} - ${errorText}`);
       }
 
       const data = await pinataResponse.json();
@@ -136,7 +141,10 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error('Error in pinata-upload function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      success: false,
+      error: error.message 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

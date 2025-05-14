@@ -14,24 +14,30 @@ export async function uploadFileToIPFS(file: File, name?: string): Promise<{
   error?: string;
 }> {
   try {
+    console.log(`Uploading file to IPFS: ${file.name}, size: ${file.size}, type: ${file.type}`);
+    
     const formData = new FormData();
     formData.append('file', file);
     if (name) {
       formData.append('name', name);
     }
 
+    // Use the edge function to upload to Pinata
     const { data, error } = await supabase.functions.invoke('pinata-upload', {
       body: formData,
-      headers: {
-        'Accept': 'application/json',
-      }
     });
 
     if (error) {
       console.error('Error uploading to IPFS:', error);
       return { success: false, error: error.message };
     }
+    
+    if (!data || !data.ipfsHash) {
+      console.error('Invalid response from IPFS upload:', data);
+      return { success: false, error: 'Invalid response from IPFS upload' };
+    }
 
+    console.log('Successfully uploaded to IPFS:', data);
     return { success: true, ...data };
   } catch (error: any) {
     console.error('Exception uploading to IPFS:', error);
@@ -52,11 +58,16 @@ export async function uploadJsonToIPFS(content: any, name?: string): Promise<{
   error?: string;
 }> {
   try {
+    console.log('Uploading JSON to IPFS:', name || 'unnamed content');
+    
     const { data, error } = await supabase.functions.invoke('pinata-upload', {
       body: {
         type: 'json',
         content,
         name
+      },
+      headers: {
+        'Content-Type': 'application/json'
       }
     });
 
@@ -64,7 +75,13 @@ export async function uploadJsonToIPFS(content: any, name?: string): Promise<{
       console.error('Error uploading JSON to IPFS:', error);
       return { success: false, error: error.message };
     }
+    
+    if (!data || !data.ipfsHash) {
+      console.error('Invalid response from IPFS JSON upload:', data);
+      return { success: false, error: 'Invalid response from IPFS upload' };
+    }
 
+    console.log('Successfully uploaded JSON to IPFS:', data);
     return { success: true, ...data };
   } catch (error: any) {
     console.error('Exception uploading JSON to IPFS:', error);
@@ -85,10 +102,15 @@ export async function pinUrlToIPFS(sourceUrl: string, name?: string): Promise<{
   error?: string;
 }> {
   try {
+    console.log(`Pinning URL to IPFS: ${sourceUrl}`);
+    
     const { data, error } = await supabase.functions.invoke('pinata-upload', {
       body: {
         sourceUrl,
         name
+      },
+      headers: {
+        'Content-Type': 'application/json'
       }
     });
 
@@ -96,7 +118,13 @@ export async function pinUrlToIPFS(sourceUrl: string, name?: string): Promise<{
       console.error('Error pinning URL to IPFS:', error);
       return { success: false, error: error.message };
     }
+    
+    if (!data || !data.ipfsHash) {
+      console.error('Invalid response from IPFS URL pin:', data);
+      return { success: false, error: 'Invalid response from IPFS upload' };
+    }
 
+    console.log('Successfully pinned URL to IPFS:', data);
     return { success: true, ...data };
   } catch (error: any) {
     console.error('Exception pinning URL to IPFS:', error);
