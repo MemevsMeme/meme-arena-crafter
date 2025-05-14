@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Navbar from '@/components/layout/Navbar';
@@ -9,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { ArrowLeft, Share, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { Battle as BattleType, Meme as MemeType } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { getBattleById, getPromptById, castVote } from '@/lib/database';
@@ -72,7 +73,7 @@ const Battle = () => {
   });
   
   // Set vote state based on query result
-  React.useEffect(() => {
+  useEffect(() => {
     if (userVote) {
       setVoteSubmitted(userVote);
     }
@@ -325,6 +326,6 @@ const Battle = () => {
       <Footer />
     </div>
   );
-};
+}
 
 export default Battle;

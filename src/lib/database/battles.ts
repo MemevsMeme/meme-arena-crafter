@@ -1,5 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { Battle, Vote, Meme, RpcParams } from './types';
+import { Battle, Vote, Meme } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function getActiveBattles(limit: number = 10, offset: number = 0, filter: 'all' | 'official' | 'community' = 'all'): Promise<Battle[]> {
@@ -224,24 +225,42 @@ export async function castVote(battleId: string, memeId: string, userId: string)
       return null;
     }
     
-    // Increment the vote count for the meme using RPC
-    // Fixed: Use correctly typed parameters for RPC calls
-    const { error: memeError } = await supabase.rpc('increment_meme_votes', { 
-      p_meme_id: memeId 
-    });
+    // Instead of using RPC, directly update the meme's vote count
+    const { data: memeData, error: memeGetError } = await supabase
+      .from('memes')
+      .select('votes')
+      .eq('id', memeId)
+      .single();
     
-    if (memeError) {
-      console.error('Error incrementing meme votes:', memeError);
+    if (!memeGetError && memeData) {
+      const newVoteCount = (memeData.votes || 0) + 1;
+      const { error: memeUpdateError } = await supabase
+        .from('memes')
+        .update({ votes: newVoteCount })
+        .eq('id', memeId);
+      
+      if (memeUpdateError) {
+        console.error('Error updating meme votes:', memeUpdateError);
+      }
     }
     
-    // Increment the battle vote count using RPC
-    // Fixed: Use correctly typed parameters for RPC calls
-    const { error: battleError } = await supabase.rpc('increment_battle_votes', { 
-      p_battle_id: battleId 
-    });
+    // Directly update the battle's vote count
+    const { data: battleData, error: battleGetError } = await supabase
+      .from('battles')
+      .select('vote_count')
+      .eq('id', battleId)
+      .single();
     
-    if (battleError) {
-      console.error('Error incrementing battle votes:', battleError);
+    if (!battleGetError && battleData) {
+      const newBattleVoteCount = (battleData.vote_count || 0) + 1;
+      const { error: battleUpdateError } = await supabase
+        .from('battles')
+        .update({ vote_count: newBattleVoteCount })
+        .eq('id', battleId);
+      
+      if (battleUpdateError) {
+        console.error('Error updating battle votes:', battleUpdateError);
+      }
     }
     
     return {
