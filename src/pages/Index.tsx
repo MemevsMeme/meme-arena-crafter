@@ -20,15 +20,7 @@ const Index = () => {
   // Setup query for active prompt with better error handling
   const { data: activePrompt, isLoading: promptLoading } = useQuery({
     queryKey: ['activePrompt'],
-    queryFn: async () => {
-      try {
-        // Get today's challenge from the database
-        return await getDailyChallenge();
-      } catch (error) {
-        console.error('Failed to fetch today\'s challenge:', error);
-        return null;
-      }
-    },
+    queryFn: getDailyChallenge
   });
   
   // Query for recent battles
