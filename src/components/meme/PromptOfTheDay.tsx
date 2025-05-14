@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
-import { getFallbackChallenge } from '@/lib/dailyChallenges';
+import { getFallbackChallenge } from '@/lib/challenges/index';
 import { toast } from '@/components/ui/use-toast';
 
 interface PromptOfTheDayProps {
