@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { getFallbackChallenge } from '@/lib/dailyChallenges';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast'; // Import directly from hooks
 
 interface PromptOfTheDayProps {
   prompt?: Prompt | null; // Accept Prompt object or null
@@ -63,28 +62,30 @@ const PromptOfTheDay = ({
   }
 
   const handleAcceptChallenge = () => {
+    // Show toast notification
     toast({
       title: "Challenge Accepted!",
       description: `You've accepted the "${displayPrompt?.text}" challenge. Create something amazing!`,
     });
     
-    // Fix: Use a simple object with only the required properties to avoid circular references
+    // Create a simple object with only the necessary properties to avoid circular references
     if (displayPrompt) {
-      const challengePromptData = {
+      const simplifiedPrompt = {
         id: displayPrompt.id,
         text: displayPrompt.text,
         theme: displayPrompt.theme,
-        tags: displayPrompt.tags,
+        tags: displayPrompt.tags ? [...displayPrompt.tags] : [],
         active: displayPrompt.active,
-        startDate: displayPrompt.startDate,
-        endDate: displayPrompt.endDate
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 86400000)
       };
       
+      // Navigate with the simplified prompt data
       navigate('/create', { 
-        state: { challengePrompt: challengePromptData } 
+        state: { challengePrompt: simplifiedPrompt } 
       });
     } else {
-      // Fallback if somehow displayPrompt is null
+      // Fallback
       navigate('/create');
     }
   };

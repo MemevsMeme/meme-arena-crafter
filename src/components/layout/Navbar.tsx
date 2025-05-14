@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Bell, Home, Crown, Plus, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
+import { toast } from 'sonner'; // Keep the original import for sonner toast
 import UserAvatar from '@/components/ui/UserAvatar';
 
 const Navbar = () => {
@@ -19,12 +18,16 @@ const Navbar = () => {
     navigate('/');
   };
 
+  const handleNavigate = (path: string) => {
+    navigate(path);
+  };
+
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div 
           className="flex items-center gap-2 cursor-pointer" 
-          onClick={() => navigate('/')}
+          onClick={() => handleNavigate('/')}
         >
           <div className="rounded-lg">
             <img 
@@ -37,7 +40,7 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
-          <Button variant="ghost" size="icon" aria-label="Home" onClick={() => navigate('/')}>
+          <Button variant="ghost" size="icon" aria-label="Home" onClick={() => handleNavigate('/')}>
             <Home className="h-5 w-5" />
           </Button>
           
@@ -45,7 +48,7 @@ const Navbar = () => {
             variant="default" 
             size="sm" 
             className="gap-1 rounded-full bg-gradient-to-r from-brand-purple to-brand-orange"
-            onClick={() => navigate('/create')}
+            onClick={() => handleNavigate('/create')}
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline-block">Create</span>
@@ -55,7 +58,7 @@ const Navbar = () => {
             variant="ghost" 
             size="icon" 
             aria-label="Leaderboard"
-            onClick={() => navigate('/leaderboard')}
+            onClick={() => handleNavigate('/leaderboard')}
           >
             <Crown className="h-5 w-5" />
           </Button>
@@ -86,7 +89,7 @@ const Navbar = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate(`/profile/${user.id}`)}>
+                  <DropdownMenuItem onClick={() => handleNavigate(`/profile/${user.id}`)}>
                     <User className="mr-2 h-4 w-4" /> Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
@@ -97,14 +100,14 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <Button variant="outline" size="sm" onClick={() => navigate('/login')}>
+              <Button variant="outline" size="sm" onClick={() => handleNavigate('/login')}>
                 Login
               </Button>
               <Button 
                 variant="default" 
                 size="sm" 
                 className="hidden sm:inline-flex"
-                onClick={() => navigate('/register')}
+                onClick={() => handleNavigate('/register')}
               >
                 Sign Up
               </Button>

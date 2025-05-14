@@ -11,19 +11,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getActiveBattles, getTrendingMemes, getNewestMemes } from '@/lib/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTodaysChallenge } from '@/lib/dailyChallenges';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast'; // Import directly from hooks
 
 const Index = () => {
   const navigate = useNavigate();
   const [activeFeedTab, setActiveFeedTab] = useState<string>('trending');
   const { user } = useAuth();
   
-  // Setup query for active prompt with better error handling
   const { data: activePrompt, isLoading: promptLoading } = useQuery({
     queryKey: ['activePrompt'],
     queryFn: async () => {
       try {
-        // Try to get today's challenge from our enhanced function
         const challenge = await getTodaysChallenge();
         return challenge;
       } catch (error) {
@@ -33,7 +31,6 @@ const Index = () => {
     },
   });
   
-  // Query for recent battles
   const { data: recentBattles, isLoading: battlesLoading } = useQuery({
     queryKey: ['recentBattles'],
     queryFn: async () => {
@@ -46,7 +43,6 @@ const Index = () => {
     }
   });
   
-  // Query for memes based on active tab with better error handling
   const { data: memes, isLoading: memesLoading } = useQuery({
     queryKey: ['memes', activeFeedTab],
     queryFn: async () => {
@@ -56,9 +52,6 @@ const Index = () => {
         } else if (activeFeedTab === 'newest') {
           return await getNewestMemes(12);
         } else {
-          // For 'following' tab, get memes from followed users
-          // This would require additional backend support
-          // For now, just return empty array
           return [];
         }
       } catch (error) {
@@ -68,7 +61,6 @@ const Index = () => {
     }
   });
 
-  // Handle create button click
   const handleCreateClick = () => {
     navigate('/create');
   };
@@ -79,7 +71,6 @@ const Index = () => {
       
       <main className="container mx-auto px-4 py-6 flex-grow">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left column - Prompts and battles */}
           <div className="lg:col-span-1 flex flex-col gap-6">
             <section>
               <h2 className="text-2xl font-heading mb-3">Today's Challenge</h2>
@@ -132,7 +123,6 @@ const Index = () => {
             </section>
           </div>
           
-          {/* Right column - Meme feed */}
           <div className="lg:col-span-2">
             <section>
               <div className="flex justify-between items-center mb-4">
