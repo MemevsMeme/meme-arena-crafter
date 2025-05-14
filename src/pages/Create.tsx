@@ -10,6 +10,7 @@ import { MEME_TEMPLATES } from '@/lib/constants';
 import { safeJsonParse } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
 
 const Create = () => {
   const navigate = useNavigate();
@@ -48,8 +49,17 @@ const Create = () => {
           
           if (promptData && promptData.text) {
             console.log('Setting active prompt from localStorage data');
+            
+            // Generate a valid UUID if the ID isn't already a valid UUID
+            let promptId = promptData.id;
+            if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(promptId)) {
+              // If the ID isn't a UUID, generate a new one
+              promptId = uuidv4();
+              console.log('Generated new UUID for prompt:', promptId);
+            }
+            
             setActivePrompt({
-              id: promptData.id || 'temp-id',
+              id: promptId,
               text: promptData.text,
               tags: promptData.tags || [],
               active: true,
@@ -86,7 +96,7 @@ const Create = () => {
 
   const setFallbackPrompt = () => {
     setActivePrompt({
-      id: 'fallback',
+      id: uuidv4(), // Always use a valid UUID for fallback
       text: 'Create a funny meme!',
       theme: 'humor',
       tags: ['funny', 'meme'],
