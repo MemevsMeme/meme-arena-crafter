@@ -905,18 +905,22 @@ export async function castVote(battleId: string, memeId: string, userId: string)
     }
     
     // Increment the vote count for the meme
-    const { error: memeError } = await supabase.rpc('increment_meme_votes', {
-      p_meme_id: memeId
-    });
+    // Fix: Use the correct type for function parameters - remove string literals
+    const { error: memeError } = await supabase.rpc(
+      'increment_meme_votes',
+      { p_meme_id: memeId }
+    );
     
     if (memeError) {
       console.error('Error incrementing meme votes:', memeError);
     }
     
     // Increment the battle vote count
-    const { error: battleError } = await supabase.rpc('increment_battle_votes', {
-      p_battle_id: battleId
-    });
+    // Fix: Use the correct type for function parameters - remove string literals
+    const { error: battleError } = await supabase.rpc(
+      'increment_battle_votes',
+      { p_battle_id: battleId }
+    );
     
     if (battleError) {
       console.error('Error incrementing battle votes:', battleError);
