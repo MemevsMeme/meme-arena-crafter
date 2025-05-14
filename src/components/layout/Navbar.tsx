@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Bell, Home, Crown, Plus, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +22,10 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2">
+        <div 
+          className="flex items-center gap-2 cursor-pointer" 
+          onClick={() => navigate('/')}
+        >
           <div className="rounded-lg">
             <img 
               src="/lovable-uploads/4e6ace2e-5f8b-4a08-8561-c01c62c163d4.png" 
@@ -31,7 +34,7 @@ const Navbar = () => {
             />
           </div>
           <span className="text-xl font-heading hidden sm:inline-block">MemeVsMeme</span>
-        </Link>
+        </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
           <Button variant="ghost" size="icon" aria-label="Home" onClick={() => navigate('/')}>

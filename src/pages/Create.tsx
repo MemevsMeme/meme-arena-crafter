@@ -81,7 +81,7 @@ const Create = () => {
     };
 
     fetchActivePrompt();
-  }, [location]);
+  }, [location.state]); // Only depend on location.state instead of location
 
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);
