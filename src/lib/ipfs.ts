@@ -29,19 +29,24 @@ export async function uploadFileToIPFS(file: File, name?: string): Promise<{
 
     if (error) {
       console.error('Error uploading to IPFS:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Error calling IPFS upload function' };
     }
     
     if (!data || !data.ipfsHash) {
       console.error('Invalid response from IPFS upload:', data);
-      return { success: false, error: 'Invalid response from IPFS upload' };
+      return { success: false, error: 'Invalid response from IPFS upload, missing hash' };
     }
 
     console.log('Successfully uploaded to IPFS:', data);
-    return { success: true, ...data };
+    return { 
+      success: true, 
+      ipfsHash: data.ipfsHash,
+      pinataUrl: data.pinataUrl,
+      gatewayUrl: data.gatewayUrl 
+    };
   } catch (error: any) {
     console.error('Exception uploading to IPFS:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || 'Unknown error occurred during IPFS upload' };
   }
 }
 
@@ -73,19 +78,24 @@ export async function uploadJsonToIPFS(content: any, name?: string): Promise<{
 
     if (error) {
       console.error('Error uploading JSON to IPFS:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Error calling IPFS JSON upload function' };
     }
     
     if (!data || !data.ipfsHash) {
       console.error('Invalid response from IPFS JSON upload:', data);
-      return { success: false, error: 'Invalid response from IPFS upload' };
+      return { success: false, error: 'Invalid response from IPFS upload, missing hash' };
     }
 
     console.log('Successfully uploaded JSON to IPFS:', data);
-    return { success: true, ...data };
+    return { 
+      success: true, 
+      ipfsHash: data.ipfsHash,
+      pinataUrl: data.pinataUrl,
+      gatewayUrl: data.gatewayUrl 
+    };
   } catch (error: any) {
     console.error('Exception uploading JSON to IPFS:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || 'Unknown error occurred during IPFS JSON upload' };
   }
 }
 
@@ -116,19 +126,24 @@ export async function pinUrlToIPFS(sourceUrl: string, name?: string): Promise<{
 
     if (error) {
       console.error('Error pinning URL to IPFS:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Error calling IPFS URL pin function' };
     }
     
     if (!data || !data.ipfsHash) {
       console.error('Invalid response from IPFS URL pin:', data);
-      return { success: false, error: 'Invalid response from IPFS upload' };
+      return { success: false, error: 'Invalid response from IPFS upload, missing hash' };
     }
 
     console.log('Successfully pinned URL to IPFS:', data);
-    return { success: true, ...data };
+    return { 
+      success: true, 
+      ipfsHash: data.ipfsHash,
+      pinataUrl: data.pinataUrl,
+      gatewayUrl: data.gatewayUrl 
+    };
   } catch (error: any) {
     console.error('Exception pinning URL to IPFS:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || 'Unknown error occurred during IPFS URL pin' };
   }
 }
 

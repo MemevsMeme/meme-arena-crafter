@@ -34,7 +34,7 @@ serve(async (req) => {
       const file = formData.get('file');
       
       if (!file || !(file instanceof File)) {
-        throw new Error('No file uploaded');
+        throw new Error('No file uploaded or invalid file object');
       }
 
       console.log(`Uploading file: ${file.name}, size: ${file.size}, type: ${file.type}`);
@@ -63,7 +63,7 @@ serve(async (req) => {
 
       if (!pinataResponse.ok) {
         const errorText = await pinataResponse.text();
-        console.error('Pinata API error:', errorText);
+        console.error('Pinata API error:', pinataResponse.status, errorText);
         throw new Error(`Pinata API error: ${pinataResponse.status} - ${errorText}`);
       }
 
@@ -118,12 +118,12 @@ serve(async (req) => {
           }),
         });
       } else {
-        throw new Error('Invalid request format');
+        throw new Error('Invalid request format, missing sourceUrl or content');
       }
 
       if (!pinataResponse.ok) {
         const errorText = await pinataResponse.text();
-        console.error('Pinata API error:', errorText);
+        console.error('Pinata API error:', pinataResponse.status, errorText);
         throw new Error(`Pinata API error: ${pinataResponse.status} - ${errorText}`);
       }
 
@@ -143,7 +143,7 @@ serve(async (req) => {
     console.error('Error in pinata-upload function:', error);
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message 
+      error: error.message || 'Unknown error in pinata-upload function'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
