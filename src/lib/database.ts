@@ -1,4 +1,5 @@
-import { supabase } from './supabase';
+
+import { supabase } from '@/integrations/supabase/client';
 import { User, Meme, Prompt, Battle, Vote } from './types';
 import { getFallbackChallenge } from './challenges/index';
 import { v4 as uuidv4 } from 'uuid';
@@ -825,20 +826,22 @@ export async function castVote(battleId: string, memeId: string, userId: string)
       return null;
     }
     
-    // Increment the vote count for the meme
+    // Increment the vote count for the meme using RPC
+    // Fix: Use proper type annotation with explicit record type
     const { error: memeError } = await supabase.rpc(
       'increment_meme_votes', 
-      { p_meme_id: memeId } as any
+      { p_meme_id: memeId } as Record<string, any>
     );
     
     if (memeError) {
       console.error('Error incrementing meme votes:', memeError);
     }
     
-    // Increment the battle vote count
+    // Increment the battle vote count using RPC
+    // Fix: Use proper type annotation with explicit record type
     const { error: battleError } = await supabase.rpc(
       'increment_battle_votes',
-      { p_battle_id: battleId } as any
+      { p_battle_id: battleId } as Record<string, any>
     );
     
     if (battleError) {
