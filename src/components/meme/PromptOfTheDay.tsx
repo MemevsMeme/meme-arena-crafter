@@ -74,16 +74,13 @@ const PromptOfTheDay = ({
         tags: displayPrompt.tags || []
       };
       
-      // Store prompt data in sessionStorage (with explicit JSON stringify)
+      // Store prompt data in sessionStorage
       sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
       
-      // Removed the toast notification to prevent potential loops
-      
-      // Navigate to create page
-      navigate('/create');
+      // Use direct navigation without any waiting or callbacks
+      window.location.href = '/create';
     } catch (error) {
       console.error("Error accepting challenge:", error);
-      // Removed error toast as well
     }
   };
 

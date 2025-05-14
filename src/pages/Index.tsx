@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getActiveBattles, getTrendingMemes, getNewestMemes } from '@/lib/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTodaysChallenge } from '@/lib/dailyChallenges';
-import { toast } from '@/hooks/use-toast';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -62,6 +62,7 @@ const Index = () => {
   });
 
   const handleCreateClick = () => {
+    // Direct navigate to create page without relying on sessionStorage
     navigate('/create');
   };
 
