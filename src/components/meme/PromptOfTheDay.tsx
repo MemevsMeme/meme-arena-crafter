@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -61,33 +60,22 @@ const PromptOfTheDay = ({
   }
 
   const handleAcceptChallenge = () => {
-    // Fix 1: Check if we're already on the create page to prevent navigation loop
-    if (window.location.pathname === '/create') {
-      console.log('Already on create page, skipping navigation');
-      return;
-    }
-    
     try {
-      console.log('Accepting challenge:', displayPrompt.text);
+      console.log('Accepting challenge with prompt:', displayPrompt.text);
       
-      // Fix 2: Create a simplified version of the prompt data
+      // Simplified prompt data storage
       const simplifiedPrompt = {
         text: displayPrompt.text,
         id: displayPrompt.id,
         tags: displayPrompt.tags || []
       };
       
-      // Fix 3: Clear any existing prompt data before setting new data
-      sessionStorage.removeItem('challenge_prompt');
+      // Store prompt data in sessionStorage
+      sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
+      console.log('Challenge prompt stored successfully in sessionStorage');
       
-      // Fix 4: Store prompt data with explicit safety checks
-      if (simplifiedPrompt && simplifiedPrompt.text) {
-        sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
-        console.log('Challenge prompt stored in sessionStorage');
-      }
-      
-      // Fix 5: Use navigate with replace option to prevent history buildup
-      navigate('/create', { replace: true });
+      // Use navigate instead of window.location to maintain state
+      navigate('/create');
       
     } catch (error) {
       console.error("Error accepting challenge:", error);

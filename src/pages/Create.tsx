@@ -1,114 +1,64 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import MemeGenerator from '@/components/meme/MemeGenerator';
 import { Prompt } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { getTodaysChallenge } from '@/lib/dailyChallenges';
 import { MEME_TEMPLATES } from '@/lib/constants';
 import { safeJsonParse } from '@/lib/utils';
 
 const Create = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [createdMeme, setCreatedMeme] = useState<{ id: string; caption: string; imageUrl: string } | null>(null);
   
   const [defaultEditMode] = useState<boolean>(false);
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
 
-  // Use ref to prevent multiple initialization attempts
-  const initialized = useRef(false);
-  
-  // Clear session storage on component unmount
   useEffect(() => {
-    console.log("Create component mounted");
+    console.log('Create component mounted, Auth status:', { user, loading });
     
-    return () => {
-      // Only clear if navigating away from create page and not back to home
-      if (window.location.pathname !== '/create' && window.location.pathname !== '/') {
-        console.log("Cleaning up session storage");
-        sessionStorage.removeItem('challenge_prompt');
-      } else {
-        console.log("Skipping cleanup to preserve prompt data");
-      }
-    };
-  }, []);
+    // Only proceed with initialization after auth check is complete
+    if (loading) return;
 
-  useEffect(() => {
-    // Prevent running multiple times
-    if (initialized.current) {
-      console.log("Create prompt setup already initialized, skipping");
-      return; 
+    // If user is not authenticated, redirect to login
+    if (!user) {
+      console.log('User not authenticated, redirecting to login');
+      navigate('/login', { replace: true });
+      return;
     }
+
+    console.log('User is authenticated, checking for challenge prompt');
     
-    initialized.current = true;
-    console.log('Create page mounted, checking for challenge prompt');
+    // Look for prompt in sessionStorage
+    const storedPromptData = sessionStorage.getItem('challenge_prompt');
     
-    const fetchActivePrompt = async () => {
-      setLoading(true);
-      
+    if (storedPromptData) {
       try {
-        // Check sessionStorage first
-        const storedPromptData = sessionStorage.getItem('challenge_prompt');
+        console.log('Found prompt data in sessionStorage');
+        const promptData = safeJsonParse(storedPromptData, null);
         
-        if (storedPromptData) {
-          console.log('Found prompt data in sessionStorage:', storedPromptData);
-          
-          try {
-            // Parse the stored prompt data
-            const promptData = safeJsonParse(storedPromptData, null);
-            
-            if (promptData && promptData.text) {
-              // Create a complete prompt object
-              const sessionPrompt: Prompt = {
-                id: promptData.id || 'temp-id',
-                text: promptData.text,
-                tags: promptData.tags || [],
-                active: true,
-                startDate: new Date(),
-                endDate: new Date(Date.now() + 86400000),
-                theme: ''
-              };
-              
-              setActivePrompt(sessionPrompt);
-              console.log('Successfully set active prompt from sessionStorage');
-              setLoading(false);
-              return;
-            }
-          } catch (parseError) {
-            console.error('Error parsing stored prompt data:', parseError);
-            // Continue to fallback if parse fails
-          }
-        } else {
-          console.log('No prompt data found in sessionStorage');
-        }
-        
-        // Otherwise try to get the prompt from the database
-        console.log('Fetching prompt from database...');
-        const todaysChallenge = await getTodaysChallenge();
-        
-        if (todaysChallenge) {
-          console.log('Retrieved today\'s challenge from database:', todaysChallenge);
-          setActivePrompt(todaysChallenge);
-        } else {
-          console.log('No challenge found in database, using fallback');
-          // Fallback to a generic prompt
-          setActivePrompt({
-            id: 'fallback',
-            text: 'Create a funny meme!',
-            theme: 'humor',
-            tags: ['funny', 'meme'],
+        if (promptData && promptData.text) {
+          // Create a complete prompt object
+          const sessionPrompt: Prompt = {
+            id: promptData.id || 'temp-id',
+            text: promptData.text,
+            tags: promptData.tags || [],
             active: true,
             startDate: new Date(),
-            endDate: new Date(new Date().getTime() + 86400000)
-          });
+            endDate: new Date(Date.now() + 86400000),
+            theme: ''
+          };
+          
+          console.log('Setting active prompt from sessionStorage:', sessionPrompt);
+          setActivePrompt(sessionPrompt);
         }
       } catch (error) {
-        console.error('Error fetching active prompt:', error);
-        // Use a simple fallback prompt on error
+        console.error('Error parsing stored prompt data:', error);
         setActivePrompt({
           id: 'fallback',
           text: 'Create a funny meme!',
@@ -116,15 +66,25 @@ const Create = () => {
           tags: ['funny', 'meme'],
           active: true,
           startDate: new Date(),
-          endDate: new Date(new Date().getTime() + 86400000)
+          endDate: new Date(Date.now() + 86400000)
         });
-      } finally {
-        setLoading(false);
       }
-    };
+    } else {
+      console.log('No prompt data found in sessionStorage, using fallback');
+      // Use a generic prompt when no challenge is found
+      setActivePrompt({
+        id: 'fallback',
+        text: 'Create a funny meme!',
+        theme: 'humor',
+        tags: ['funny', 'meme'],
+        active: true,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 86400000)
+      });
+    }
     
-    fetchActivePrompt();
-  }, []);
+    setIsLoading(false);
+  }, [user, loading, navigate]);
 
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);
@@ -133,32 +93,29 @@ const Create = () => {
     // Navigate to the meme profile page after a short delay
     setTimeout(() => {
       if (user) {
-        navigate(`/profile/${user.id}`);
+        navigate(`/profile/${user.id}`, { replace: true });
       }
     }, 2000);
   };
 
-  if (!user) {
+  // Show loading state while authentication is being checked
+  if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <main className="container mx-auto px-4 py-8 flex-grow">
-          <div className="text-center p-10 bg-muted rounded-lg">
-            <h2 className="text-2xl font-heading mb-4">Login Required</h2>
-            <p className="text-muted-foreground mb-4">
-              You need to be logged in to create memes.
-            </p>
-            <button 
-              className="bg-brand-purple text-white px-6 py-2 rounded-md"
-              onClick={() => navigate('/login')}
-            >
-              Login / Register
-            </button>
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-purple"></div>
           </div>
         </main>
         <Footer />
       </div>
     );
+  }
+
+  // Redirect handled in useEffect to avoid rendering issues
+  if (!user) {
+    return null;
   }
 
   return (
