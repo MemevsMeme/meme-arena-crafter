@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -6,20 +5,9 @@ import Footer from '@/components/layout/Footer';
 import MemeGenerator from '@/components/meme/MemeGenerator';
 import { Prompt } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
 import { getTodaysChallenge } from '@/lib/dailyChallenges';
 import { MEME_TEMPLATES } from '@/lib/constants';
-
-// Helper function to safely parse JSON with fallback
-const safeJsonParse = (json: string | null, fallback: any = null) => {
-  if (!json) return fallback;
-  try {
-    return JSON.parse(json);
-  } catch (e) {
-    console.error('Error parsing JSON:', e);
-    return fallback;
-  }
-};
+import { safeJsonParse } from '@/lib/utils';
 
 const Create = () => {
   const navigate = useNavigate();
@@ -63,7 +51,7 @@ const Create = () => {
           
           try {
             // Parse the stored prompt data
-            const promptData = safeJsonParse(storedPromptData);
+            const promptData = safeJsonParse(storedPromptData, null);
             
             if (promptData && promptData.text) {
               // Create a complete prompt object
@@ -118,12 +106,6 @@ const Create = () => {
           startDate: new Date(),
           endDate: new Date(new Date().getTime() + 86400000)
         });
-        
-        toast({
-          title: "Notice",
-          description: "Using a generic challenge prompt",
-          variant: "default"
-        });
       } finally {
         setLoading(false);
       }
@@ -135,11 +117,6 @@ const Create = () => {
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);
     setCreatedMeme(meme);
-    
-    toast({
-      title: "Success",
-      description: "Meme created successfully!"
-    });
     
     // Navigate to the meme profile page after a short delay
     setTimeout(() => {

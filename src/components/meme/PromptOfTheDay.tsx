@@ -5,7 +5,6 @@ import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { getFallbackChallenge } from '@/lib/dailyChallenges';
-import { toast } from '@/hooks/use-toast';
 
 interface PromptOfTheDayProps {
   prompt?: Prompt | null; // Accept Prompt object or null
@@ -78,21 +77,13 @@ const PromptOfTheDay = ({
       // Store prompt data in sessionStorage (with explicit JSON stringify)
       sessionStorage.setItem('challenge_prompt', JSON.stringify(simplifiedPrompt));
       
-      // Show toast notification
-      toast({
-        title: "Challenge Accepted!",
-        description: `You've accepted the "${displayPrompt.text}" challenge. Create something amazing!`,
-      });
+      // Removed the toast notification to prevent potential loops
       
       // Navigate to create page
       navigate('/create');
     } catch (error) {
       console.error("Error accepting challenge:", error);
-      toast({
-        title: "Error",
-        description: "There was a problem accepting this challenge. Please try again.",
-        variant: "destructive"
-      });
+      // Removed error toast as well
     }
   };
 
