@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -41,7 +42,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   // State variables for uploaded/generated images
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [isGif, setIsGif] = useState(isGif);
+  const [isGif, setIsGif] = useState(false);
   
   // State variables for text
   const [caption, setCaption] = useState<string>('');
