@@ -197,7 +197,7 @@ export async function getMemeById(memeId: string): Promise<Meme | null> {
         .from('profiles')
         .select('id, username, avatar_url')
         .eq('id', data.creator_id)
-        .single();
+        .maybeSingle();
         
       if (!creatorError && creatorData) {
         creator = {
@@ -292,7 +292,7 @@ export async function getTrendingMemes(limit: number = 10): Promise<Meme[]> {
           .from('profiles')
           .select('id, username, avatar_url')
           .eq('id', m.creator_id)
-          .single();
+          .maybeSingle();
           
         if (!creatorError && creatorData) {
           creator = {
@@ -356,7 +356,7 @@ export async function getNewestMemes(limit: number = 10): Promise<Meme[]> {
           .from('profiles')
           .select('id, username, avatar_url')
           .eq('id', m.creator_id)
-          .single();
+          .maybeSingle();
           
         if (!creatorError && creatorData) {
           creator = {
@@ -687,7 +687,7 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
     // First get the battles
     let query = supabase
       .from('battles')
-      .select('*, prompt_id')
+      .select('*')
       .eq('status', 'active')
       .order('start_time', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -708,18 +708,18 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
     // Now build the full battle objects with related data
     const battles = await Promise.all(data.map(async (b) => {
       // Get meme one
-      const { data: memeOneData, error: memeOneError } = await supabase
+      const { data: memeOneData, error: memeOneError } = b.meme_one_id ? await supabase
         .from('memes')
         .select('*')
         .eq('id', b.meme_one_id)
-        .single();
+        .maybeSingle() : { data: null, error: null };
       
       // Get meme two
-      const { data: memeTwoData, error: memeTwoError } = await supabase
+      const { data: memeTwoData, error: memeTwoError } = b.meme_two_id ? await supabase
         .from('memes')
         .select('*')
         .eq('id', b.meme_two_id)
-        .single();
+        .maybeSingle() : { data: null, error: null };
       
       // Get prompt if available
       let promptData = null;
@@ -728,9 +728,9 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
           .from('prompts')
           .select('*')
           .eq('id', b.prompt_id)
-          .single();
+          .maybeSingle();
         
-        if (!promptError) {
+        if (!promptError && prompt) {
           promptData = prompt;
         }
       }
@@ -809,18 +809,18 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
     }
     
     // Get meme one
-    const { data: memeOneData, error: memeOneError } = await supabase
+    const { data: memeOneData, error: memeOneError } = battleData.meme_one_id ? await supabase
       .from('memes')
       .select('*')
       .eq('id', battleData.meme_one_id)
-      .single();
+      .maybeSingle() : { data: null, error: null };
     
     // Get meme two
-    const { data: memeTwoData, error: memeTwoError } = await supabase
+    const { data: memeTwoData, error: memeTwoError } = battleData.meme_two_id ? await supabase
       .from('memes')
       .select('*')
       .eq('id', battleData.meme_two_id)
-      .single();
+      .maybeSingle() : { data: null, error: null };
     
     return {
       id: battleData.id,
@@ -873,7 +873,7 @@ export async function castVote(battleId: string, memeId: string, userId: string)
       .select('*')
       .eq('battle_id', battleId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     
     if (existingVote) {
       console.log('User has already voted in this battle');
