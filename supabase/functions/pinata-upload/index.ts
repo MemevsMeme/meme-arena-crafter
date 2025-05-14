@@ -80,7 +80,13 @@ serve(async (req) => {
       });
     } else {
       // Handle JSON payload (could be pinning by URL or JSON)
-      requestData = await req.json();
+      try {
+        requestData = await req.json();
+      } catch (jsonError) {
+        console.error('Error parsing JSON request:', jsonError);
+        throw new Error('Invalid JSON request format');
+      }
+      
       isPinByJson = requestData.type === 'json';
       
       let pinataResponse;

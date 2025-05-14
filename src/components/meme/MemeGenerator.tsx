@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -470,9 +469,18 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         setIsUploadingToIPFS(false);
       }
       
+      // Fix: Handle the promptId validation to ensure it's a valid UUID or null
+      let validPromptId = null;
+      if (promptId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(promptId)) {
+        validPromptId = promptId;
+      } else if (promptId) {
+        // Log that we're ignoring an invalid UUID format
+        console.log(`Ignoring invalid UUID format prompt_id: ${promptId}, using null instead`);
+      }
+      
       console.log('Creating meme record in database with:', {
         promptText,
-        promptId,
+        promptId: validPromptId,
         imageUrl,
         ipfsCid,
         caption: caption || '',
@@ -482,7 +490,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       // Create meme record in database
       const newMeme = await createMeme({
         prompt: promptText,
-        prompt_id: promptId,
+        prompt_id: validPromptId,
         imageUrl,
         ipfsCid,
         caption: caption || '',
