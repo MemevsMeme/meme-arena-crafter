@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import MemeGenerator from '@/components/meme/MemeGenerator';
 import { Prompt } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast'; // Import directly from hooks
+import { toast } from '@/hooks/use-toast';
 import { getTodaysChallenge } from '@/lib/dailyChallenges';
 import { MEME_TEMPLATES } from '@/lib/constants';
 
 const Create = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,42 +19,42 @@ const Create = () => {
   const [defaultEditMode] = useState<boolean>(false);
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
 
-  // Flag to track initialization
-  const [isInitialized, setIsInitialized] = useState(false);
+  // Flag to prevent multiple fetch attempts
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    // Prevent multiple runs of the initialization logic
-    if (isInitialized) return;
-
+    // Prevent running multiple times
+    if (initialized) return;
+    setInitialized(true);
+    
     console.log('Create page mounted, checking for challenge prompt');
     
     const fetchActivePrompt = async () => {
       setLoading(true);
       try {
-        // First check if prompt data was passed via navigation state
-        const locationState = location.state as { 
-          promptText?: string;
-          promptId?: string;
-          promptTags?: string[];
-        } | null;
-
-        if (locationState?.promptText) {
-          console.log('Using prompt data from navigation state:', locationState);
+        // Check sessionStorage first
+        const storedPromptData = sessionStorage.getItem('challenge_prompt');
+        
+        if (storedPromptData) {
+          const promptData = JSON.parse(storedPromptData);
+          console.log('Using prompt data from sessionStorage:', promptData);
           
-          // Create a complete prompt object from the minimal data passed
-          const navigationPrompt: Prompt = {
-            id: locationState.promptId || 'temp-id',
-            text: locationState.promptText,
-            tags: locationState.promptTags || [],
+          // Create a complete prompt object
+          const sessionPrompt: Prompt = {
+            id: promptData.id || 'temp-id',
+            text: promptData.text,
+            tags: promptData.tags || [],
             active: true,
             startDate: new Date(),
             endDate: new Date(Date.now() + 86400000),
             theme: ''
           };
           
-          setActivePrompt(navigationPrompt);
+          // Clear from sessionStorage to prevent future issues
+          sessionStorage.removeItem('challenge_prompt');
+          
+          setActivePrompt(sessionPrompt);
           setLoading(false);
-          setIsInitialized(true);
           return;
         }
         
@@ -98,12 +97,11 @@ const Create = () => {
         });
       } finally {
         setLoading(false);
-        setIsInitialized(true);
       }
     };
     
     fetchActivePrompt();
-  }, [location.state, isInitialized]); // Only depend on these two variables
+  }, [initialized]); // Only depend on initialized flag
 
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);

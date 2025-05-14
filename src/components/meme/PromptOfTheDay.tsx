@@ -5,7 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { getFallbackChallenge } from '@/lib/dailyChallenges';
-import { toast } from '@/hooks/use-toast'; // Import directly from hooks
+import { toast } from '@/hooks/use-toast';
 
 interface PromptOfTheDayProps {
   prompt?: Prompt | null; // Accept Prompt object or null
@@ -18,7 +18,6 @@ const PromptOfTheDay = ({
 }: PromptOfTheDayProps) => {
   const navigate = useNavigate();
   // Always get a default prompt from our local challenges in case the database query fails
-  // This is synchronous and returns a plain Prompt object
   const defaultPrompt = getFallbackChallenge();
 
   // Store the actual prompt to display
@@ -63,22 +62,21 @@ const PromptOfTheDay = ({
   }
 
   const handleAcceptChallenge = () => {
+    // Store prompt data in sessionStorage to prevent navigation loop
+    sessionStorage.setItem('challenge_prompt', JSON.stringify({
+      text: displayPrompt.text,
+      id: displayPrompt.id,
+      tags: displayPrompt.tags || []
+    }));
+    
     // Show toast notification
     toast({
       title: "Challenge Accepted!",
       description: `You've accepted the "${displayPrompt?.text}" challenge. Create something amazing!`,
     });
     
-    // For this challenge, we're simply going to navigate to create with minimal data
-    // to avoid any issues with serialization or circular references
-    navigate('/create', { 
-      state: { 
-        promptText: displayPrompt.text,
-        promptId: displayPrompt.id,
-        promptTags: displayPrompt.tags || []
-      },
-      replace: true 
-    });
+    // Navigate to create without using state (prevents loop)
+    navigate('/create');
   };
 
   return (
