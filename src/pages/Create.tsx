@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -21,35 +20,42 @@ const Create = () => {
   const [defaultEditMode] = useState<boolean>(false);
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
 
-  // Flag to prevent infinite loops
-  const [hasInitialized, setHasInitialized] = useState(false);
+  // Flag to track initialization
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Prevent the effect from running more than once
-    if (hasInitialized) return;
-    
+    // Prevent multiple runs of the initialization logic
+    if (isInitialized) return;
+
     console.log('Create page mounted, checking for challenge prompt');
     
     const fetchActivePrompt = async () => {
       setLoading(true);
       try {
-        // First check if prompt was passed via navigation state
-        const locationState = location.state as { challengePrompt?: Prompt } | null;
-        const passedPrompt = locationState?.challengePrompt;
-        
-        if (passedPrompt) {
-          console.log('Using prompt from navigation state:', passedPrompt);
+        // First check if prompt data was passed via navigation state
+        const locationState = location.state as { 
+          promptText?: string;
+          promptId?: string;
+          promptTags?: string[];
+        } | null;
+
+        if (locationState?.promptText) {
+          console.log('Using prompt data from navigation state:', locationState);
           
-          // Create dates if they don't exist to ensure type consistency
-          const promptWithDates = {
-            ...passedPrompt,
-            startDate: passedPrompt.startDate || new Date(),
-            endDate: passedPrompt.endDate || new Date(Date.now() + 86400000)
+          // Create a complete prompt object from the minimal data passed
+          const navigationPrompt: Prompt = {
+            id: locationState.promptId || 'temp-id',
+            text: locationState.promptText,
+            tags: locationState.promptTags || [],
+            active: true,
+            startDate: new Date(),
+            endDate: new Date(Date.now() + 86400000),
+            theme: ''
           };
           
-          setActivePrompt(promptWithDates);
+          setActivePrompt(navigationPrompt);
           setLoading(false);
-          setHasInitialized(true);
+          setIsInitialized(true);
           return;
         }
         
@@ -92,12 +98,12 @@ const Create = () => {
         });
       } finally {
         setLoading(false);
-        setHasInitialized(true);
+        setIsInitialized(true);
       }
     };
     
     fetchActivePrompt();
-  }, [location.state, hasInitialized]); // Only depend on location.state and hasInitialized
+  }, [location.state, isInitialized]); // Only depend on these two variables
 
   const handleMemeSave = (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);

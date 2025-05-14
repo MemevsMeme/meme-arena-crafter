@@ -69,26 +69,16 @@ const PromptOfTheDay = ({
       description: `You've accepted the "${displayPrompt?.text}" challenge. Create something amazing!`,
     });
     
-    // Create a simple serializable object with only basic properties 
-    // to avoid any circular reference issues
-    if (displayPrompt) {
-      const simplePrompt = {
-        id: displayPrompt.id,
-        text: displayPrompt.text,
-        theme: displayPrompt.theme || '',
-        tags: displayPrompt.tags ? [...displayPrompt.tags] : [],
-        active: true
-      };
-      
-      // Navigate with the simplified prompt data
-      navigate('/create', { 
-        state: { challengePrompt: simplePrompt },
-        replace: true // Use replace to avoid back-button issues
-      });
-    } else {
-      // Fallback
-      navigate('/create', { replace: true });
-    }
+    // For this challenge, we're simply going to navigate to create with minimal data
+    // to avoid any issues with serialization or circular references
+    navigate('/create', { 
+      state: { 
+        promptText: displayPrompt.text,
+        promptId: displayPrompt.id,
+        promptTags: displayPrompt.tags || []
+      },
+      replace: true 
+    });
   };
 
   return (

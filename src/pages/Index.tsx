@@ -63,6 +63,7 @@ const Index = () => {
   });
 
   const handleCreateClick = () => {
+    // Direct navigation to create page without any state
     navigate('/create');
   };
 
@@ -111,7 +112,7 @@ const Index = () => {
                       {user && (
                         <Button 
                           size="sm" 
-                          onClick={() => navigate('/create')}
+                          onClick={handleCreateClick}
                           className="mt-2"
                         >
                           Create Meme
@@ -157,7 +158,7 @@ const Index = () => {
                       <p className="text-muted-foreground">No memes found for this filter.</p>
                       {user && (
                         <Button
-                          onClick={() => navigate('/create', { replace: true })}
+                          onClick={handleCreateClick}
                           className="mt-4"
                         >
                           Create a Meme
