@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -13,30 +13,27 @@ import Footer from '@/components/layout/Footer';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { signIn, session } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [redirectAttempted, setRedirectAttempted] = useState(false);
 
-  // Check for return URL in localStorage (set by challenges or protected routes)
+  // Get return URL from localStorage (set by challenges or protected routes)
   const returnUrl = localStorage.getItem('returnUrl') || '/';
 
-  // Redirect if already logged in - simpler approach
-  useEffect(() => {
-    if (user && !redirectAttempted) {
-      setRedirectAttempted(true);
-      console.log('User already logged in, redirecting to:', returnUrl);
-      
+  // Handle navigation based on auth state from useEffect in AuthContext instead
+  // This prevents race conditions in redirection flow
+  React.useEffect(() => {
+    if (session) {
       // Clean up returnUrl
       localStorage.removeItem('returnUrl');
-      
-      // Use setTimeout to break potential render cycles
+      console.log('User authenticated, redirecting to:', returnUrl);
+      // Delay redirect slightly to avoid race conditions
       setTimeout(() => {
         navigate(returnUrl, { replace: true });
       }, 100);
     }
-  }, [user, navigate, returnUrl, redirectAttempted]);
+  }, [session, navigate, returnUrl]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

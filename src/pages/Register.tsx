@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -14,23 +14,20 @@ import Footer from '@/components/layout/Footer';
 
 const Register = () => {
   const navigate = useNavigate();
-  const { signUp, user } = useAuth();
+  const { signUp, session } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const hasRedirected = useRef(false);
 
-  // Redirect if already logged in - but only once on component mount
-  useEffect(() => {
-    if (user && !hasRedirected.current) {
-      hasRedirected.current = true;
-      console.log('User already logged in, redirecting to home');
+  // Handle redirection when authenticated
+  React.useEffect(() => {
+    if (session) {
       navigate('/', { replace: true });
     }
-  }, [user, navigate]);
+  }, [session, navigate]);
 
   const validateForm = () => {
     if (!username || !email || !password || !confirmPassword) {
@@ -83,7 +80,6 @@ const Register = () => {
         toast.error(errorMessage);
       } else {
         toast.success('Registration successful! Please check your email to confirm your account.');
-        hasRedirected.current = true;
         navigate('/login', { replace: true });
       }
     } catch (error: any) {

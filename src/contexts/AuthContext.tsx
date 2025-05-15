@@ -26,7 +26,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Set up authentication
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // First handle initial session check
+    const checkSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        console.log('Initial session check:', !!data.session);
+        setSession(data.session);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error checking session:', error);
+        setLoading(false);
+      }
+    };
+    
+    checkSession();
+
+    // Then set up auth state listener 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       console.log('Auth state changed:', event);
       setSession(newSession);
@@ -35,13 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (event === 'SIGNED_OUT') {
         setUser(null);
       }
-    });
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      console.log('Initial session check:', !!initialSession);
-      setSession(initialSession);
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -88,9 +96,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Use setTimeout to avoid potential deadlocks with auth state changes
     if (session?.user) {
-      setTimeout(fetchUser, 0);
+      // Use a small timeout to avoid potential race conditions
+      setTimeout(fetchUser, 50);
     } else {
       setUserLoading(false);
     }

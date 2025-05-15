@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const Create = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, session } = useAuth();
   const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [createdMeme, setCreatedMeme] = useState<{ id: string; caption: string; imageUrl: string } | null>(null);
@@ -21,81 +21,77 @@ const Create = () => {
   const [defaultEditMode] = useState<boolean>(false);
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
 
-  console.log('Create component rendered, Auth status:', { user, loading });
-
-  // Check authentication and load prompt data
+  // Simplified auth check
   useEffect(() => {
-    const checkAuthAndLoadPrompt = async () => {
-      // Wait for auth to complete
+    const checkAuth = () => {
+      // If auth is still loading, wait
       if (loading) {
         return;
       }
       
-      // If not logged in, redirect to login
-      if (!user) {
+      // If not authenticated after loading completes, redirect to login
+      if (!session && !loading) {
         console.log('User not authenticated, redirecting to login');
-        
-        // Save current path for redirect after login
         localStorage.setItem('returnUrl', '/create');
-        
         navigate('/login');
         return;
       }
+
+      // Once authenticated, load prompt
+      loadPrompt();
+    };
+    
+    checkAuth();
+  }, [loading, session, navigate]);
+
+  const loadPrompt = () => {
+    try {
+      // Look for challenge prompt in localStorage
+      const storedPromptData = localStorage.getItem('active_challenge_prompt');
       
-      try {
-        // Look for challenge prompt in localStorage with consistent key name
-        const storedPromptData = localStorage.getItem('active_challenge_prompt');
+      if (storedPromptData) {
+        console.log('Found stored prompt data:', storedPromptData);
+        const promptData = safeJsonParse(storedPromptData, null);
         
-        if (storedPromptData) {
-          console.log('Found stored prompt data:', storedPromptData);
-          const promptData = safeJsonParse(storedPromptData, null);
+        if (promptData && promptData.text) {
+          console.log('Setting active prompt from localStorage data');
           
-          if (promptData && promptData.text) {
-            console.log('Setting active prompt from localStorage data');
-            
-            // Generate a valid UUID if the ID isn't already a valid UUID
-            let promptId = promptData.id;
-            if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(promptId)) {
-              // If the ID isn't a UUID, generate a new one
-              promptId = uuidv4();
-              console.log('Generated new UUID for prompt:', promptId);
-            }
-            
-            setActivePrompt({
-              id: promptId,
-              text: promptData.text,
-              tags: promptData.tags || [],
-              active: true,
-              startDate: new Date(),
-              endDate: new Date(Date.now() + 86400000),
-              theme: ''
-            });
-            
-            // Remove from localStorage to prevent future issues
-            localStorage.removeItem('active_challenge_prompt');
-          } else {
-            console.log('Using fallback prompt (stored prompt invalid)');
-            setFallbackPrompt();
+          // Generate a valid UUID if the ID isn't already a valid UUID
+          let promptId = promptData.id;
+          if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(promptId)) {
+            // If the ID isn't a UUID, generate a new one
+            promptId = uuidv4();
+            console.log('Generated new UUID for prompt:', promptId);
           }
+          
+          setActivePrompt({
+            id: promptId,
+            text: promptData.text,
+            tags: promptData.tags || [],
+            active: true,
+            startDate: new Date(),
+            endDate: new Date(Date.now() + 86400000),
+            theme: ''
+          });
+          
+          // Remove from localStorage to prevent future issues
+          localStorage.removeItem('active_challenge_prompt');
         } else {
-          console.log('No stored prompt found, using fallback');
+          console.log('Using fallback prompt (stored prompt invalid)');
           setFallbackPrompt();
         }
-      } catch (error) {
-        console.error('Error processing prompt data:', error);
+      } else {
+        console.log('No stored prompt found, using fallback');
         setFallbackPrompt();
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    checkAuthAndLoadPrompt();
-    
-    // Cleanup function to ensure localStorage is cleared if component unmounts
-    return () => {
-      localStorage.removeItem('active_challenge_prompt');
-    };
-  }, [user, loading, navigate]);
+      
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error processing prompt data:', error);
+      setFallbackPrompt();
+      setIsLoading(false);
+    }
+  };
 
   const setFallbackPrompt = () => {
     setActivePrompt({
@@ -122,7 +118,7 @@ const Create = () => {
   };
 
   // Show loading state while authentication is being checked
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
         <Navbar />
@@ -136,7 +132,7 @@ const Create = () => {
     );
   }
 
-  // If not authenticated, redirect is handled in useEffect
+  // If not authenticated, redirection is handled in useEffect
   if (!user) {
     return null;
   }
