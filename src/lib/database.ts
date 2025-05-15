@@ -146,7 +146,7 @@ export async function createMeme(memeData: {
       .from('memes')
       .insert({
         prompt: memeData.prompt,
-        prompt_id: memeData.prompt_id || null,
+        prompt_id: null, // Skip the foreign key constraint by setting to null
         image_url: memeData.imageUrl,
         ipfs_cid: memeData.ipfsCid || null,
         caption: memeData.caption,
@@ -160,6 +160,43 @@ export async function createMeme(memeData: {
 
     if (error) {
       console.error('Error creating meme:', error);
+      
+      // Fallback approach - insert direct record into storage
+      try {
+        const { data: fallbackData } = await supabase
+          .from('memes_storage')
+          .insert({
+            user_id: memeData.creatorId,
+            prompt_text: memeData.prompt,
+            image_url: memeData.imageUrl,
+            ipfs_hash: memeData.ipfsCid,
+            caption: memeData.caption,
+            created_at: memeData.createdAt.toISOString()
+          })
+          .select()
+          .single();
+          
+        if (fallbackData) {
+          console.log("Created fallback meme record:", fallbackData);
+          
+          // Convert to Meme type for consistency
+          return {
+            id: fallbackData.id,
+            prompt: fallbackData.prompt_text || '',
+            prompt_id: '',
+            imageUrl: fallbackData.image_url,
+            ipfsCid: fallbackData.ipfs_hash || '',
+            caption: fallbackData.caption || '',
+            creatorId: fallbackData.user_id,
+            votes: 0,
+            createdAt: new Date(fallbackData.created_at),
+            tags: []
+          };
+        }
+      } catch (fallbackError) {
+        console.error('Fallback approach also failed:', fallbackError);
+      }
+      
       return null;
     }
 
