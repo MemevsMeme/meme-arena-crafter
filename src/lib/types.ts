@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   username: string;
@@ -24,8 +23,6 @@ export interface Meme {
   createdAt: Date;
   tags: string[];
   isBattleSubmission?: boolean;
-  battleId?: string;
-  challengeDay?: number;
 }
 
 export interface Prompt {
@@ -126,8 +123,7 @@ export type Database = {
           votes: number;
           created_at: string;
           tags: string[];
-          battle_id: string | null;
-          is_battle_submission: boolean;
+          is_battle_submission: boolean | null;
         };
         Insert: {
           id?: string;
@@ -140,7 +136,6 @@ export type Database = {
           votes?: number;
           created_at?: string;
           tags?: string[];
-          battle_id?: string | null;
           is_battle_submission?: boolean;
         };
         Update: {
@@ -154,7 +149,6 @@ export type Database = {
           votes?: number;
           created_at?: string;
           tags?: string[];
-          battle_id?: string | null;
           is_battle_submission?: boolean;
         };
       };
@@ -170,6 +164,8 @@ export type Database = {
           description: string | null;
           creator_id: string | null;
           is_community: boolean;
+          daily_challenge_id: string | null;
+          challengeDay: number | null;
         };
         Insert: {
           id?: string;
@@ -182,6 +178,8 @@ export type Database = {
           description?: string | null;
           creator_id?: string | null;
           is_community?: boolean;
+          daily_challenge_id?: string | null;
+          challengeDay?: number | null;
         };
         Update: {
           id?: string;
@@ -194,6 +192,8 @@ export type Database = {
           description?: string | null;
           creator_id?: string | null;
           is_community?: boolean;
+          daily_challenge_id?: string | null;
+          challengeDay?: number | null;
         };
       };
       battles: {

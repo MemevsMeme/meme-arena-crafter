@@ -14,13 +14,12 @@ export async function createMeme(memeData: {
   votes: number;
   createdAt: Date;
   tags: string[];
-  battle_id?: string | null;
+  is_battle_submission?: boolean;
 }): Promise<Meme | null> {
   try {
     console.log("Creating meme with data:", memeData);
     
     // Insert into the memes table
-    // We're going to make prompt_id and battle_id optional
     const dataToInsert = {
       prompt: memeData.prompt,
       image_url: memeData.imageUrl,
@@ -29,8 +28,8 @@ export async function createMeme(memeData: {
       creator_id: memeData.creatorId,
       votes: memeData.votes || 0,
       created_at: memeData.createdAt.toISOString(),
-      tags: memeData.tags || []
-      // Note: battle_id is intentionally omitted here, it will be conditionally added below
+      tags: memeData.tags || [],
+      is_battle_submission: memeData.is_battle_submission || false
     };
     
     // Only add prompt_id if it exists and is valid
@@ -47,23 +46,6 @@ export async function createMeme(memeData: {
         dataToInsert['prompt_id'] = memeData.prompt_id;
       } else {
         console.log(`Prompt with ID ${memeData.prompt_id} not found, omitting from meme data`);
-      }
-    }
-
-    // Only add battle_id if it exists and is valid
-    if (memeData.battle_id) {
-      // Try to find if the battle exists
-      const { data: battleExists } = await supabase
-        .from('battles')
-        .select('id')
-        .eq('id', memeData.battle_id)
-        .maybeSingle();
-        
-      // Only include battle_id if it exists in the battles table
-      if (battleExists) {
-        dataToInsert['battle_id'] = memeData.battle_id;
-      } else {
-        console.log(`Battle with ID ${memeData.battle_id} not found, omitting from meme data`);
       }
     }
 
@@ -97,7 +79,7 @@ export async function createMeme(memeData: {
       votes: data.votes || 0,
       createdAt: new Date(data.created_at),
       tags: data.tags || [],
-      battleId: data.battle_id || ''
+      is_battle_submission: data.is_battle_submission || false
     };
   } catch (error) {
     console.error('Error in createMeme:', error);
@@ -284,7 +266,7 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
             votes: meme1Data.votes || 0,
             createdAt: new Date(meme1Data.created_at),
             tags: meme1Data.tags || [],
-            battleId: meme1Data.battle_id || ''
+            is_battle_submission: meme1Data.is_battle_submission || false
           };
         }
       }
@@ -310,7 +292,7 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
             votes: meme2Data.votes || 0,
             createdAt: new Date(meme2Data.created_at),
             tags: meme2Data.tags || [],
-            battleId: meme2Data.battle_id || ''
+            is_battle_submission: meme2Data.is_battle_submission || false
           };
         }
       }
@@ -401,7 +383,7 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
           votes: meme1Data.votes || 0,
           createdAt: new Date(meme1Data.created_at),
           tags: meme1Data.tags || [],
-          battleId: meme1Data.battle_id || ''
+          is_battle_submission: meme1Data.is_battle_submission || false
         };
       }
     }
@@ -427,7 +409,7 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
           votes: meme2Data.votes || 0,
           createdAt: new Date(meme2Data.created_at),
           tags: meme2Data.tags || [],
-          battleId: meme2Data.battle_id || ''
+          is_battle_submission: meme2Data.is_battle_submission || false
         };
       }
     }
@@ -650,7 +632,7 @@ export async function getTrendingMemes(limit: number = 10): Promise<Meme[]> {
       votes: meme.votes || 0,
       createdAt: new Date(meme.created_at),
       tags: meme.tags || [],
-      battleId: meme.battle_id || ''
+      is_battle_submission: meme.is_battle_submission || false
     }));
   } catch (error) {
     console.error('Error in getTrendingMemes:', error);
@@ -689,7 +671,7 @@ export async function getNewestMemes(limit: number = 10): Promise<Meme[]> {
       votes: meme.votes || 0,
       createdAt: new Date(meme.created_at),
       tags: meme.tags || [],
-      battleId: meme.battle_id || ''
+      is_battle_submission: meme.is_battle_submission || false
     }));
   } catch (error) {
     console.error('Error in getNewestMemes:', error);
@@ -728,7 +710,7 @@ export async function getMemesByUserId(userId: string): Promise<Meme[]> {
       votes: meme.votes || 0,
       createdAt: new Date(meme.created_at),
       tags: meme.tags || [],
-      battleId: meme.battle_id || ''
+      is_battle_submission: meme.is_battle_submission || false
     }));
   } catch (error) {
     console.error('Error in getMemesByUserId:', error);
@@ -744,7 +726,7 @@ export async function getMemesByBattleId(battleId: string): Promise<Meme[]> {
     const { data, error } = await supabase
       .from('memes')
       .select('*')
-      .eq('battle_id', battleId)
+      .eq('is_battle_submission', true)
       .order('votes', { ascending: false });
     
     if (error) {
@@ -767,7 +749,7 @@ export async function getMemesByBattleId(battleId: string): Promise<Meme[]> {
       votes: meme.votes || 0,
       createdAt: new Date(meme.created_at),
       tags: meme.tags || [],
-      battleId: meme.battle_id || ''
+      is_battle_submission: meme.is_battle_submission || false
     }));
   } catch (error) {
     console.error('Error in getMemesByBattleId:', error);
