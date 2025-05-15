@@ -1,3 +1,4 @@
+
 // Update the import statement to reference the correct path
 import { supabase } from '@/integrations/supabase/client';
 import { Prompt, User, Meme, Battle } from './types';
@@ -467,24 +468,46 @@ export async function castVote(userId: string, battleId: string, memeId: string)
       return false;
     }
 
-    // Increment the vote count for the meme
-    const { error: memeError } = await supabase
+    // First get current vote count for the meme
+    const { data: memeData, error: memeGetError } = await supabase
       .from('memes')
-      .update({ votes: supabase.rpc('increment', { inc: 1 }) })
-      .eq('id', memeId);
+      .select('votes')
+      .eq('id', memeId)
+      .single();
 
-    if (memeError) {
-      console.error('Error incrementing meme votes:', memeError);
+    if (memeGetError) {
+      console.error('Error getting meme votes:', memeGetError);
+    } else if (memeData) {
+      // Then increment it
+      const { error: memeUpdateError } = await supabase
+        .from('memes')
+        .update({ votes: (memeData.votes || 0) + 1 })
+        .eq('id', memeId);
+
+      if (memeUpdateError) {
+        console.error('Error incrementing meme votes:', memeUpdateError);
+      }
     }
 
-    // Increment the vote count for the battle
-    const { error: battleError } = await supabase
+    // First get current vote count for the battle
+    const { data: battleData, error: battleGetError } = await supabase
       .from('battles')
-      .update({ vote_count: supabase.rpc('increment', { inc: 1 }) })
-      .eq('id', battleId);
+      .select('vote_count')
+      .eq('id', battleId)
+      .single();
 
-    if (battleError) {
-      console.error('Error incrementing battle vote count:', battleError);
+    if (battleGetError) {
+      console.error('Error getting battle vote count:', battleGetError);
+    } else if (battleData) {
+      // Then increment it
+      const { error: battleUpdateError } = await supabase
+        .from('battles')
+        .update({ vote_count: (battleData.vote_count || 0) + 1 })
+        .eq('id', battleId);
+
+      if (battleUpdateError) {
+        console.error('Error incrementing battle vote count:', battleUpdateError);
+      }
     }
 
     return true;
