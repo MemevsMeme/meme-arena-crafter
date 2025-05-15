@@ -138,6 +138,8 @@ export async function createMeme(memeData: {
   tags: string[];
 }): Promise<Meme | null> {
   try {
+    console.log("Creating meme with data:", memeData);
+    
     // Insert into the memes table
     const { data, error } = await supabase
       .from('memes')
@@ -164,6 +166,8 @@ export async function createMeme(memeData: {
       console.error('No data returned after creating meme');
       return null;
     }
+
+    console.log("Meme created successfully:", data);
 
     // Convert to Meme type
     return {
@@ -345,7 +349,7 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
 
     return {
       id: data.id,
-      promptId: data.prompt_id || '',
+      prompt_id: data.prompt_id || '',
       memeOneId: data.meme_one_id,
       memeTwoId: data.meme_two_id,
       status: data.status,
@@ -526,7 +530,7 @@ export async function getActiveBattles(limit = 10, offset = 0, filter: 'all' | '
 
     return data.map(battle => ({
       id: battle.id,
-      promptId: battle.prompt_id || '',
+      prompt_id: battle.prompt_id || '',
       memeOneId: battle.meme_one_id,
       memeTwoId: battle.meme_two_id,
       status: battle.status,
@@ -679,7 +683,7 @@ export async function getTrendingMemes(limit = 10): Promise<Meme[]> {
       .from('memes')
       .select(`
         *,
-        creator:creator_id(username, avatar_url)
+        creator:creator_id(username, avatar_url, id)
       `)
       .order('votes', { ascending: false })
       .limit(limit);
@@ -705,7 +709,7 @@ export async function getTrendingMemes(limit = 10): Promise<Meme[]> {
       createdAt: new Date(meme.created_at),
       tags: meme.tags || [],
       creator: meme.creator ? {
-        id: meme.creator_id,
+        id: meme.creator.id,
         username: meme.creator.username,
         avatarUrl: meme.creator.avatar_url || '',
         memeStreak: 0,
@@ -731,7 +735,7 @@ export async function getNewestMemes(limit = 10): Promise<Meme[]> {
       .from('memes')
       .select(`
         *,
-        creator:creator_id(username, avatar_url)
+        creator:creator_id(username, avatar_url, id)
       `)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -757,7 +761,7 @@ export async function getNewestMemes(limit = 10): Promise<Meme[]> {
       createdAt: new Date(meme.created_at),
       tags: meme.tags || [],
       creator: meme.creator ? {
-        id: meme.creator_id,
+        id: meme.creator.id,
         username: meme.creator.username,
         avatarUrl: meme.creator.avatar_url || '',
         memeStreak: 0,

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -414,6 +413,23 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       const fileName = `${uuidv4()}${fileExt}`;
       
       console.log('Uploading meme to storage bucket');
+      
+      // Check if storage bucket exists, if not create it
+      const { data: bucketData } = await supabase.storage.getBucket('memes');
+      
+      if (!bucketData) {
+        console.log('Creating memes storage bucket');
+        const { data: newBucket, error: createBucketError } = await supabase.storage.createBucket('memes', {
+          public: true,
+          fileSizeLimit: 10485760, // 10MB
+        });
+        
+        if (createBucketError) {
+          console.error('Error creating storage bucket:', createBucketError);
+          setSaveError(`Error creating storage bucket: ${createBucketError.message}`);
+          throw new Error(`Error creating storage bucket: ${createBucketError.message}`);
+        }
+      }
       
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
