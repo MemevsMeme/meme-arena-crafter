@@ -1,4 +1,3 @@
-
 // Update the import statement to reference the correct path
 import { supabase } from '@/integrations/supabase/client';
 
@@ -222,7 +221,7 @@ export async function uploadFileToSupabase(
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from(bucketName)
-        .upload(`public/${userId}/${finalFileName}`, file, {
+        .upload(`${userId}/${finalFileName}`, file, {
           cacheControl: '3600',
           upsert: true,
           contentType: file instanceof File ? file.type : 'image/png',
@@ -232,7 +231,7 @@ export async function uploadFileToSupabase(
         // Get public URL for the uploaded file
         const { data: publicUrlData } = supabase.storage
           .from(bucketName)
-          .getPublicUrl(`public/${userId}/${finalFileName}`);
+          .getPublicUrl(`${userId}/${finalFileName}`);
         
         if (!publicUrlData?.publicUrl) {
           console.warn(`Uploaded to ${bucketName} but couldn't get public URL`);

@@ -11,11 +11,12 @@ import TextEditor, { TextPosition } from '@/components/meme/TextEditor';
 import SaveActions from '@/components/meme/SaveActions';
 import { supabase } from '@/integrations/supabase/client';
 import { createMeme } from '@/lib/database';
-import { uploadFileToIPFS, pinUrlToIPFS } from '@/lib/ipfs';
+import { uploadFileToIPFS, uploadFileToSupabase } from '@/lib/ipfs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { generateMemeImage } from '@/lib/ai';
+import { uploadMemeImage } from '@/components/meme/MemeUploadHelper';
 
 interface MemeGeneratorProps {
   promptText: string;
@@ -414,47 +415,15 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       
       console.log('Uploading meme to storage');
       
-      // First check if bucket exists
-      const { data: bucketList } = await supabase.storage.listBuckets();
+      // Use our helper function to upload to Supabase
+      const uploadResult = await uploadMemeImage(blob, fileName, user.id, isGif);
       
-      // Check if memes bucket exists
-      let memesBucketExists = false;
-      if (bucketList) {
-        memesBucketExists = bucketList.some(bucket => bucket.name === 'memes');
+      if (!uploadResult.success || !uploadResult.imageUrl) {
+        setSaveError(`Error uploading to storage: ${uploadResult.error}`);
+        throw new Error(`Error uploading to storage: ${uploadResult.error}`);
       }
       
-      // If memes bucket doesn't exist yet, we'll use the default public bucket instead
-      // The user would need to set up proper permissions for bucket creation
-      const bucketName = memesBucketExists ? 'memes' : 'public';
-      
-      // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from(bucketName)
-        .upload(`public/${user.id}/${fileName}`, blob, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: isGif ? 'image/gif' : 'image/png',
-        });
-      
-      if (uploadError) {
-        console.error('Error uploading to storage:', uploadError);
-        setSaveError(`Error uploading to storage: ${uploadError.message}`);
-        throw new Error(`Error uploading to storage: ${uploadError.message}`);
-      }
-      
-      console.log('Upload successful:', uploadData);
-      
-      // Get public URL for the uploaded file
-      const { data: publicUrlData } = supabase.storage
-        .from(bucketName)
-        .getPublicUrl(`public/${user.id}/${fileName}`);
-      
-      if (!publicUrlData?.publicUrl) {
-        setSaveError('Failed to get public URL');
-        throw new Error('Failed to get public URL');
-      }
-      
-      const imageUrl = publicUrlData.publicUrl;
+      const imageUrl = uploadResult.imageUrl;
       console.log('Public URL:', imageUrl);
       
       // Upload to IPFS in the background (don't wait for it)
