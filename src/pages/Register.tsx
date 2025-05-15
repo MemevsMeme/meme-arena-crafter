@@ -1,58 +1,81 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from '@/hooks/use-toast';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 const Register = () => {
   const navigate = useNavigate();
   const { signUp, user } = useAuth();
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [formErrors, setFormErrors] = useState<{
-    email?: string;
-    password?: string;
-    username?: string;
-  }>({});
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      // Use replace to avoid adding to history stack
       navigate('/', { replace: true });
     }
   }, [user, navigate]);
 
-  const validateForm = (): boolean => {
-    const errors: typeof formErrors = {};
-    
-    if (!email) {
-      errors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      errors.email = 'Email is invalid';
+  const validateForm = () => {
+    if (!username || !email || !password || !confirmPassword) {
+      toast({
+        title: "Required Fields Missing",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return false;
     }
-    
-    if (!password) {
-      errors.password = 'Password is required';
-    } else if (password.length < 8) {
-      errors.password = 'Password must be at least 8 characters';
+
+    if (username.length < 3) {
+      toast({
+        title: "Username Too Short",
+        description: "Username must be at least 3 characters.",
+        variant: "destructive",
+      });
+      return false;
     }
-    
-    if (!username) {
-      errors.username = 'Username is required';
-    } else if (username.length < 3) {
-      errors.username = 'Username must be at least 3 characters';
+
+    if (password.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters.",
+        variant: "destructive",
+      });
+      return false;
     }
-    
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Password Mismatch",
+        description: "Passwords do not match.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!agreeToTerms) {
+      toast({
+        title: "Terms Not Accepted",
+        description: "Please agree to the terms and conditions.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,32 +84,25 @@ const Register = () => {
     if (!validateForm()) {
       return;
     }
-    
-    setIsLoading(true);
-    
+
     try {
-      console.log('Starting signup process');
-      const result = await signUp(email, password, username);
-      
-      if (result.error) {
-        console.error('Signup error:', result.error);
+      setIsSubmitting(true);
+      const { error, data } = await signUp(email, password, username);
+
+      if (error) {
+        console.error('Registration error:', error);
+        let errorMessage = error.message;
         
-        // Improved error messages
-        if (result.error.includes('User already registered')) {
-          toast.error('User already exists', {
-            description: 'This email is already registered. Please log in instead.',
-          });
-        } else if (result.error.includes('username')) {
-          toast.error('Username not available', {
-            description: 'Please choose a different username.',
-          });
-        } else {
-          toast.error('Registration failed', {
-            description: result.error,
-          });
+        if (error.message.includes('already registered')) {
+          errorMessage = 'This email is already registered.';
         }
+        
+        toast({
+          title: "Registration Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
       } else {
-        console.log('Signup successful');
         toast.success('Registration successful!', {
           description: 'Please check your email to confirm your account.',
         });
@@ -94,85 +110,129 @@ const Register = () => {
       }
     } catch (error: any) {
       console.error('Unexpected signup error:', error);
-      toast.error('An unexpected error occurred', {
-        description: 'Please try again later.',
+      toast({
+        title: "Registration Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-8 flex-grow flex items-center justify-center">
+      <div className="flex-grow flex items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
         <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
+          <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl font-heading">Create an account</CardTitle>
-            <CardDescription>Enter your details to create your account</CardDescription>
+            <CardDescription>Enter your details to get started</CardDescription>
           </CardHeader>
-          <CardContent>
+          
+          <CardContent className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <Input
                   id="username"
-                  placeholder="memequeen"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  placeholder="cooluser123"
+                  autoComplete="username"
+                  disabled={isSubmitting}
                   required
                 />
-                {formErrors.username && (
-                  <p className="text-xs text-red-500">{formErrors.username}</p>
-                )}
               </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  disabled={isSubmitting}
                   required
                 />
-                {formErrors.email && (
-                  <p className="text-xs text-red-500">{formErrors.email}</p>
-                )}
               </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  disabled={isSubmitting}
                   required
                 />
-                {formErrors.password && (
-                  <p className="text-xs text-red-500">{formErrors.password}</p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Password must be at least 8 characters.
-                </p>
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Creating account...' : 'Create account'}
+              
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm Password</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  disabled={isSubmitting}
+                  required
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="terms" 
+                  checked={agreeToTerms} 
+                  onCheckedChange={(checked) => {
+                    setAgreeToTerms(checked === true);
+                  }}
+                />
+                <label htmlFor="terms" className="text-sm">
+                  I agree to the{" "}
+                  <Link to="/terms" className="text-primary hover:underline">
+                    Terms of Service
+                  </Link>
+                  {" "}and{" "}
+                  <Link to="/privacy" className="text-primary hover:underline">
+                    Privacy Policy
+                  </Link>
+                </label>
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Creating Account...' : 'Create Account'}
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="flex justify-center">
-            <div className="text-sm text-muted-foreground">
+          
+          <CardFooter className="flex flex-col space-y-4">
+            <Separator />
+            
+            <div className="text-center text-sm">
               Already have an account?{' '}
-              <Link to="/login" className="text-brand-purple hover:underline">
-                Login
+              <Link 
+                to="/login" 
+                className="text-primary font-semibold hover:underline"
+              >
+                Sign in
               </Link>
             </div>
           </CardFooter>
         </Card>
-      </main>
+      </div>
       
       <Footer />
     </div>

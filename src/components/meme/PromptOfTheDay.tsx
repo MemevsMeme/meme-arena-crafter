@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { getFallbackChallenge } from '@/lib/dailyChallenges';
@@ -77,19 +77,19 @@ const PromptOfTheDay = ({
       localStorage.setItem('active_challenge_prompt', JSON.stringify(simplifiedPrompt));
       console.log('Challenge prompt stored in localStorage with key: active_challenge_prompt');
       
-      // Check if user is logged in before proceeding
-      if (!user) {
-        console.log('User not logged in, redirecting to login');
-        // Use replace instead of push to prevent navigation loop
-        navigate('/login', { replace: true });
-        return;
-      }
-      
-      // Navigate to create page
+      // Navigate to create page if authenticated, otherwise this should not be called
       navigate('/create');
     } catch (error) {
       console.error("Error accepting challenge:", error);
     }
+  };
+  
+  const handleLoginRedirect = () => {
+    toast({
+      title: "Login Required",
+      description: "Please sign in to accept this challenge",
+    });
+    navigate('/login');
   };
 
   return (
@@ -104,13 +104,24 @@ const PromptOfTheDay = ({
             </span>
           ))}
         </div>
-        <Button 
-          className="gap-1 bg-white text-brand-purple hover:bg-white/90"
-          onClick={handleAcceptChallenge}
-        >
-          Accept Challenge
-          <ArrowRight className="h-4 w-4" />
-        </Button>
+        
+        {user ? (
+          <Button 
+            className="gap-1 bg-white text-brand-purple hover:bg-white/90"
+            onClick={handleAcceptChallenge}
+          >
+            Accept Challenge
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button 
+            className="gap-1 border border-white/50 bg-white/10 hover:bg-white/20"
+            onClick={handleLoginRedirect}
+          >
+            Sign in to Accept
+            <LogIn className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
