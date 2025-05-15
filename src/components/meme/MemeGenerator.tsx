@@ -414,22 +414,9 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       
       console.log('Uploading meme to storage');
       
-      // First check if bucket exists
-      const { data: bucketList } = await supabase.storage.listBuckets();
-      
-      // Check if memes bucket exists
-      let memesBucketExists = false;
-      if (bucketList) {
-        memesBucketExists = bucketList.some(bucket => bucket.name === 'memes');
-      }
-      
-      // If memes bucket doesn't exist yet, we'll use the default public bucket instead
-      // The user would need to set up proper permissions for bucket creation
-      const bucketName = memesBucketExists ? 'memes' : 'public';
-      
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from(bucketName)
+        .from('memes')
         .upload(`public/${user.id}/${fileName}`, blob, {
           cacheControl: '3600',
           upsert: false,
@@ -446,7 +433,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       
       // Get public URL for the uploaded file
       const { data: publicUrlData } = supabase.storage
-        .from(bucketName)
+        .from('memes')
         .getPublicUrl(`public/${user.id}/${fileName}`);
       
       if (!publicUrlData?.publicUrl) {
@@ -474,6 +461,8 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         if (ipfsResult.success && ipfsResult.ipfsHash) {
           ipfsCid = ipfsResult.ipfsHash;
           console.log('Successfully pinned to IPFS with CID:', ipfsCid);
+        } else {
+          console.log('IPFS upload response:', ipfsResult);
         }
       } catch (ipfsError) {
         console.error('IPFS upload failed but continuing:', ipfsError);

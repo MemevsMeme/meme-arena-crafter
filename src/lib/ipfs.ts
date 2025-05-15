@@ -36,9 +36,11 @@ export async function uploadFileToIPFS(file: File, name?: string): Promise<{
     });
 
     if (error) {
-      console.error('Error uploading to IPFS:', error);
+      console.error('Error from edge function:', error);
       return { success: false, error: error.message || 'Error calling IPFS upload function' };
     }
+    
+    console.log("Edge function response:", data);
     
     if (!data || !data.ipfsHash) {
       console.error('Invalid response from IPFS upload:', data);
