@@ -1,4 +1,3 @@
-
 // Update the import statement to reference the correct path
 import { supabase } from '@/integrations/supabase/client';
 import { Prompt, User, Meme, Battle } from './types';
@@ -161,21 +160,27 @@ export async function createMeme(memeData: {
     if (error) {
       console.error('Error creating meme:', error);
       
-      // Fallback approach - insert direct record into storage
+      // Fallback approach - try the memes_storage table
       try {
-        const { data: fallbackData } = await supabase
+        // Use upsert instead of insert to handle potential duplication
+        const { data: fallbackData, error: fallbackError } = await supabase
           .from('memes_storage')
-          .insert({
+          .upsert({
             user_id: memeData.creatorId,
             prompt_text: memeData.prompt,
             image_url: memeData.imageUrl,
-            ipfs_hash: memeData.ipfsCid,
+            ipfs_hash: memeData.ipfsCid || null,
             caption: memeData.caption,
             created_at: memeData.createdAt.toISOString()
           })
           .select()
           .single();
           
+        if (fallbackError) {
+          console.error('Fallback approach also failed:', fallbackError);
+          return null;
+        }
+        
         if (fallbackData) {
           console.log("Created fallback meme record:", fallbackData);
           
@@ -469,7 +474,7 @@ export async function getPromptById(promptId: string): Promise<Prompt | null> {
 /**
  * Cast a vote for a meme in a battle
  */
-export async function castVote(userId: string, battleId: string, memeId: string): Promise<boolean> {
+export async function castVote(battleId: string, memeId: string, userId: string): Promise<boolean> {
   try {
     // Check if the user has already voted on this battle
     const { data: existingVote, error: checkError } = await supabase
@@ -896,6 +901,85 @@ export async function getMemesByUserId(userId: string): Promise<Meme[]> {
     }));
   } catch (error) {
     console.error('Error in getMemesByUserId:', error);
+    return [];
+  }
+}
+
+/**
+ * Get memes for a specific battle or prompt
+ */
+export async function getMemesByPromptId(promptId: string, limit = 10): Promise<Meme[]> {
+  try {
+    const { data, error } = await supabase
+      .from('memes')
+      .select('*')
+      .eq('prompt_id', promptId)
+      .order('votes', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching memes for prompt:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    return data.map(meme => ({
+      id: meme.id,
+      prompt: meme.prompt || '',
+      prompt_id: meme.prompt_id || '',
+      imageUrl: meme.image_url,
+      ipfsCid: meme.ipfs_cid || '',
+      caption: meme.caption,
+      creatorId: meme.creator_id,
+      votes: meme.votes || 0,
+      createdAt: new Date(meme.created_at),
+      tags: meme.tags || []
+    }));
+  } catch (error) {
+    console.error('Error in getMemesByPromptId:', error);
+    return [];
+  }
+}
+
+/**
+ * Get memes for a specific battle
+ */
+export async function getMemesByBattleId(battleId: string, limit = 20): Promise<Meme[]> {
+  try {
+    const { data, error } = await supabase
+      .from('memes')
+      .select('*')
+      .eq('battle_id', battleId)
+      .order('votes', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching memes for battle:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    return data.map(meme => ({
+      id: meme.id,
+      prompt: meme.prompt || '',
+      prompt_id: meme.prompt_id || '',
+      imageUrl: meme.image_url,
+      ipfsCid: meme.ipfs_cid || '',
+      caption: meme.caption,
+      creatorId: meme.creator_id,
+      votes: meme.votes || 0,
+      createdAt: new Date(meme.created_at),
+      tags: meme.tags || [],
+      battleId: meme.battle_id
+    }));
+  } catch (error) {
+    console.error('Error in getMemesByBattleId:', error);
     return [];
   }
 }

@@ -65,7 +65,7 @@ export async function uploadMemeImage(
         .getPublicUrl(filePath);
       
       console.log('Retry upload successful:', publicUrlData.publicUrl);
-      return { success: true, url: publicUrlData.publicUrl };
+      return { success: true, imageUrl: publicUrlData.publicUrl };
     }
     
     // Get public URL for the uploaded file
@@ -125,18 +125,16 @@ export async function createMemeRecord(
     if (error) {
       console.error('Error creating meme record:', error);
       
-      // Alternative approach: Try directly inserting into storage
+      // Alternative approach: Try a simpler direct approach with memes_storage table
       const { data: storageData, error: storageError } = await supabase
-        .from('storage')
+        .from('memes_storage')
         .insert({
-          name: 'meme_' + Date.now(),
-          bucket_id: 'memes',
-          owner: userId,
-          metadata: {
-            caption,
-            prompt: promptText,
-            ipfsHash
-          }
+          user_id: userId,
+          prompt_text: promptText,
+          image_url: imageUrl,
+          ipfs_hash: ipfsHash || null,
+          caption: caption,
+          challenge_id: challengeId || null
         })
         .select('id')
         .single();
@@ -174,18 +172,22 @@ async function ensureMemesBucket(): Promise<boolean> {
     if (!memesBucket) {
       // Try to create the bucket with the storage admin user
       // Note: This requires appropriate permissions
-      const { error: createError } = await supabase.rpc('create_storage_bucket', {
-        bucket_name: 'memes',
-        public_bucket: true
-      });
-      
-      if (createError) {
-        console.error('Error creating memes bucket via RPC:', createError);
+      try {
+        const { error: createError } = await supabase.storage.createBucket('memes', {
+          public: true
+        });
+        
+        if (createError) {
+          console.error('Error creating memes bucket:', createError);
+          return false;
+        }
+        
+        console.log('Memes bucket created successfully');
+        return true;
+      } catch (createBucketError) {
+        console.error('Failed to create bucket:', createBucketError);
         return false;
       }
-      
-      console.log('Memes bucket created successfully via RPC');
-      return true;
     }
     
     return true;
