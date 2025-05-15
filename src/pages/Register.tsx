@@ -22,9 +22,10 @@ const Register = () => {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if already logged in
+  // Redirect if already logged in - but only once on component mount
   useEffect(() => {
     if (user) {
+      console.log('User already logged in, redirecting to home');
       navigate('/', { replace: true });
     }
   }, [user, navigate]);
@@ -103,8 +104,10 @@ const Register = () => {
           variant: "destructive",
         });
       } else {
-        toast.success('Registration successful!', {
-          description: 'Please check your email to confirm your account.',
+        toast({
+          title: "Success",
+          description: 'Registration successful! Please check your email to confirm your account.',
+          variant: "default",
         });
         navigate('/login', { replace: true });
       }

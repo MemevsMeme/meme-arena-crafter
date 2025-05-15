@@ -29,10 +29,11 @@ const Login = () => {
     }
   }, []);
 
-  // Redirect if already logged in
+  // Redirect if already logged in - but only once on component mount
   useEffect(() => {
     if (user) {
       // Navigate to stored return URL or home
+      console.log('User already logged in, redirecting to:', returnUrl);
       navigate(returnUrl, { replace: true });
     }
   }, [user, navigate, returnUrl]);
@@ -68,8 +69,10 @@ const Login = () => {
           variant: "destructive",
         });
       } else {
-        toast.success('Welcome back!', {
+        toast({
+          title: "Success",
           description: 'You have successfully logged in.',
+          variant: "default",
         });
         // Navigation handled by the useEffect that watches the user state
       }
