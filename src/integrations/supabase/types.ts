@@ -114,6 +114,7 @@ export type Database = {
           challenge_day: number | null
           created_at: string
           creator_id: string
+          daily_challenge_id: string | null
           id: string
           image_url: string
           ipfs_cid: string | null
@@ -129,6 +130,7 @@ export type Database = {
           challenge_day?: number | null
           created_at?: string
           creator_id: string
+          daily_challenge_id?: string | null
           id?: string
           image_url: string
           ipfs_cid?: string | null
@@ -144,6 +146,7 @@ export type Database = {
           challenge_day?: number | null
           created_at?: string
           creator_id?: string
+          daily_challenge_id?: string | null
           id?: string
           image_url?: string
           ipfs_cid?: string | null
@@ -159,6 +162,13 @@ export type Database = {
             columns: ["battle_id"]
             isOneToOne: false
             referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memes_daily_challenge_id_fkey"
+            columns: ["daily_challenge_id"]
+            isOneToOne: false
+            referencedRelation: "daily_challenges"
             referencedColumns: ["id"]
           },
           {
