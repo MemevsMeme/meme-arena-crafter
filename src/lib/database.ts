@@ -564,27 +564,27 @@ export async function getActiveBattles(limit = 10, offset = 0, filter: 'all' | '
       winnerId: battle.winner_id || '',
       memeOne: battle.meme_one ? {
         id: battle.meme_one.id,
-        prompt: data.meme_one.prompt || '',
-        prompt_id: data.meme_one.prompt_id || '',
-        imageUrl: data.meme_one.image_url,
-        caption: data.meme_one.caption,
-        creatorId: data.meme_one.creator_id,
-        votes: data.meme_one.votes || 0,
-        createdAt: new Date(data.meme_one.created_at),
-        ipfsCid: data.meme_one.ipfs_cid || '',
-        tags: data.meme_one.tags || []
+        prompt: battle.meme_one.prompt || '',
+        prompt_id: battle.meme_one.prompt_id || '',
+        imageUrl: battle.meme_one.image_url,
+        caption: battle.meme_one.caption,
+        creatorId: battle.meme_one.creator_id,
+        votes: battle.meme_one.votes || 0,
+        createdAt: new Date(battle.meme_one.created_at),
+        ipfsCid: battle.meme_one.ipfs_cid || '',
+        tags: battle.meme_one.tags || []
       } : undefined,
       memeTwo: battle.meme_two ? {
-        id: data.meme_two.id,
-        prompt: data.meme_two.prompt || '',
-        prompt_id: data.meme_two.prompt_id || '',
-        imageUrl: data.meme_two.image_url,
-        caption: data.meme_two.caption,
-        creatorId: data.meme_two.creator_id,
-        votes: data.meme_two.votes || 0,
-        createdAt: new Date(data.meme_two.created_at),
-        ipfsCid: data.meme_two.ipfs_cid || '',
-        tags: data.meme_two.tags || []
+        id: battle.meme_two.id,
+        prompt: battle.meme_two.prompt || '',
+        prompt_id: battle.meme_two.prompt_id || '',
+        imageUrl: battle.meme_two.image_url,
+        caption: battle.meme_two.caption,
+        creatorId: battle.meme_two.creator_id,
+        votes: battle.meme_two.votes || 0,
+        createdAt: new Date(battle.meme_two.created_at),
+        ipfsCid: battle.meme_two.ipfs_cid || '',
+        tags: battle.meme_two.tags || []
       } : undefined,
       is_community: battle.is_community || false
     }));
