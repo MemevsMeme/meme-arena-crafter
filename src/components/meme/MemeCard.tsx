@@ -30,6 +30,20 @@ const MemeCard = ({
   const [imageError, setImageError] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(true);
 
+  // Check if meme has valid imageUrl
+  if (!meme.imageUrl) {
+    console.error('MemeCard received meme without imageUrl:', meme.id);
+    return (
+      <div className="meme-card shadow-md border border-border p-3">
+        <div className="bg-muted aspect-square flex flex-col items-center justify-center text-muted-foreground p-4">
+          <AlertCircle className="h-8 w-8 mb-2 text-amber-500" />
+          <p className="text-center">Image unavailable</p>
+          <p className="text-xs text-center mt-1">"{meme.caption || 'No caption'}"</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleVote = () => {
     if (onVote) {
       onVote();
