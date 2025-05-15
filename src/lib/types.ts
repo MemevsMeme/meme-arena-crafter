@@ -13,7 +13,7 @@ export interface User {
 export interface Meme {
   id: string;
   prompt: string;
-  prompt_id?: string; 
+  prompt_id: string; 
   imageUrl: string;
   ipfsCid: string;
   caption: string;
