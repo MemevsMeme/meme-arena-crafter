@@ -2,14 +2,13 @@
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { useAuth } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Create from "./pages/Create";
 import Battle from "./pages/Battle";
-import Battles from "./pages/Battles"; // New battles listing page
-import CreateBattle from "./pages/CreateBattle"; // New battle creation page
+import Battles from "./pages/Battles";
+import CreateBattle from "./pages/CreateBattle";
 import Profile from "./pages/Profile";
 import Leaderboard from "./pages/Leaderboard";
 import About from "./pages/About";
@@ -22,34 +21,6 @@ import Register from "./pages/Register";
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
 
-// Protected route component that requires authentication
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // We'll use the useAuth hook inside the component
-  // to ensure it's only used within the AuthProvider context
-  const { user, loading } = useAuth();
-  const location = useLocation();
-  
-  if (loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-purple mx-auto"></div>
-          <p className="mt-4 text-lg">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  if (!user) {
-    // Store the current path for redirect after login
-    localStorage.setItem('returnUrl', location.pathname);
-    console.log('Redirecting to login from:', location.pathname);
-    return <Navigate to="/login" replace />;
-  }
-  
-  return <>{children}</>;
-};
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
@@ -59,18 +30,10 @@ const App = () => (
           <Toaster position="top-right" closeButton />
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/create" element={
-              <ProtectedRoute>
-                <Create />
-              </ProtectedRoute>
-            } />
+            <Route path="/create" element={<Create />} />
             <Route path="/battle/:id" element={<Battle />} />
             <Route path="/battles" element={<Battles />} />
-            <Route path="/create-battle" element={
-              <ProtectedRoute>
-                <CreateBattle />
-              </ProtectedRoute>
-            } />
+            <Route path="/create-battle" element={<CreateBattle />} />
             <Route path="/profile/:id" element={<Profile />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/about" element={<About />} />

@@ -8,8 +8,7 @@ import { Prompt } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { MEME_TEMPLATES } from '@/lib/constants';
 import { safeJsonParse } from '@/lib/utils';
-import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
 const Create = () => {
@@ -35,6 +34,10 @@ const Create = () => {
       // If not logged in, redirect to login
       if (!user) {
         console.log('User not authenticated, redirecting to login');
+        
+        // Save current path for redirect after login
+        localStorage.setItem('returnUrl', '/create');
+        
         navigate('/login');
         return;
       }
@@ -108,43 +111,14 @@ const Create = () => {
 
   const handleMemeSave = async (meme: { id: string; caption: string; imageUrl: string }) => {
     console.log('Meme created successfully:', meme);
+    setCreatedMeme(meme);
     
-    try {
-      // Verify the meme was actually saved in the database
-      const { data, error } = await supabase
-        .from('memes')
-        .select('*')
-        .eq('id', meme.id)
-        .single();
-      
-      if (error) {
-        console.error('Error verifying meme in database:', error);
-        toast({
-          title: "Database Error",
-          description: "There was an issue confirming your meme was saved. Please check your profile.",
-          variant: "destructive"
-        });
-      } else if (data) {
-        console.log('Meme confirmed in database:', data);
-        setCreatedMeme(meme);
-        
-        // Navigate to the meme profile page after a short delay
-        setTimeout(() => {
-          if (user) {
-            navigate(`/profile/${user.id}`);
-          }
-        }, 2000);
-      } else {
-        console.error('Meme not found in database after creation');
-        toast({
-          title: "Save Error",
-          description: "Your meme couldn't be found in the database. Please try again.",
-          variant: "destructive"
-        });
+    // Navigate to the meme profile page after a short delay
+    setTimeout(() => {
+      if (user) {
+        navigate(`/profile/${user.id}`);
       }
-    } catch (verifyError) {
-      console.error('Exception verifying meme save:', verifyError);
-    }
+    }, 2000);
   };
 
   // Show loading state while authentication is being checked
