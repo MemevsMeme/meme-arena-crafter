@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ const Login = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [returnUrl, setReturnUrl] = useState('/');
+  const hasRedirected = useRef(false);
 
   // Check for return URL in localStorage (set by challenges or protected routes)
   useEffect(() => {
@@ -29,10 +30,10 @@ const Login = () => {
     }
   }, []);
 
-  // Redirect if already logged in - but only once on component mount
+  // Redirect if already logged in - but only once and only on initial mount
   useEffect(() => {
-    if (user) {
-      // Navigate to stored return URL or home
+    if (user && !hasRedirected.current) {
+      hasRedirected.current = true;
       console.log('User already logged in, redirecting to:', returnUrl);
       navigate(returnUrl, { replace: true });
     }
@@ -75,6 +76,8 @@ const Login = () => {
           variant: "default",
         });
         // Navigation handled by the useEffect that watches the user state
+        hasRedirected.current = true;
+        navigate(returnUrl, { replace: true });
       }
     } catch (error: any) {
       console.error('Unexpected login error:', error);

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -21,10 +21,12 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasRedirected = useRef(false);
 
   // Redirect if already logged in - but only once on component mount
   useEffect(() => {
-    if (user) {
+    if (user && !hasRedirected.current) {
+      hasRedirected.current = true;
       console.log('User already logged in, redirecting to home');
       navigate('/', { replace: true });
     }
@@ -109,6 +111,7 @@ const Register = () => {
           description: 'Registration successful! Please check your email to confirm your account.',
           variant: "default",
         });
+        hasRedirected.current = true;
         navigate('/login', { replace: true });
       }
     } catch (error: any) {

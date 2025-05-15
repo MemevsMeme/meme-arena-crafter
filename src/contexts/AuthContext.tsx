@@ -25,9 +25,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userLoading, setUserLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
+        console.log('Auth state changed:', event, !!newSession);
         setSession(newSession);
         
         // Clear user when signing out
@@ -37,8 +38,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Get initial session
+    // Then get initial session
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      console.log('Initial session:', !!initialSession);
       setSession(initialSession);
       setLoading(false);
     });
@@ -51,23 +53,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const fetchUser = async () => {
       if (session?.user) {
         setUserLoading(true);
-        const profileData = await getProfile(session.user.id);
-        
-        if (profileData) {
-          setUser(profileData as User);
-        } else {
-          // If no profile exists yet, create one with default values
-          const newUser = await createProfile({
-            id: session.user.id,
-            username: session.user.email?.split('@')[0] || `user_${session.user.id.substring(0, 8)}`,
-            avatarUrl: `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${session.user.id}`
-          });
+        try {
+          const profileData = await getProfile(session.user.id);
           
-          if (newUser) {
-            setUser(newUser as User);
+          if (profileData) {
+            console.log('Profile data found:', profileData);
+            setUser(profileData as User);
+          } else {
+            console.log('No profile found, creating one');
+            // If no profile exists yet, create one with default values
+            const newUser = await createProfile({
+              id: session.user.id,
+              username: session.user.email?.split('@')[0] || `user_${session.user.id.substring(0, 8)}`,
+              avatarUrl: `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${session.user.id}`
+            });
+            
+            if (newUser) {
+              setUser(newUser as User);
+            } else {
+              console.error('Failed to create new user profile');
+            }
           }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        } finally {
+          setUserLoading(false);
         }
-        setUserLoading(false);
       } else {
         setUser(null);
         setUserLoading(false);
@@ -79,15 +90,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log('Attempting sign in for:', email);
       const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        console.error('Sign in error:', error);
+      } else {
+        console.log('Sign in successful');
+      }
       return { error };
     } catch (error) {
+      console.error('Unexpected sign in error:', error);
       return { error };
     }
   };
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
+      console.log('Attempting sign up for:', email);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -97,24 +116,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           },
         },
       });
+      if (error) {
+        console.error('Sign up error:', error);
+      } else {
+        console.log('Sign up successful');
+      }
       return { data, error };
     } catch (error) {
+      console.error('Unexpected sign up error:', error);
       return { data: null, error };
     }
   };
 
   const signOut = async () => {
+    console.log('Signing out...');
     await supabase.auth.signOut();
+    console.log('Sign out completed');
   };
 
   const updateUserProfile = async (updates: any) => {
     if (!user?.id) return null;
     
-    const updatedProfile = await updateProfile(user.id, updates);
-    if (updatedProfile) {
-      setUser(updatedProfile as User);
+    try {
+      console.log('Updating profile for user:', user.id);
+      const updatedProfile = await updateProfile(user.id, updates);
+      if (updatedProfile) {
+        setUser(updatedProfile as User);
+        return updatedProfile as User;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      return null;
     }
-    return updatedProfile as User | null;
   };
 
   const value = {
