@@ -1,6 +1,6 @@
 
 // This file just re-exports the hooks/use-toast functions
-import { useToast as useToastOriginal, toast as toastOriginal } from "@/hooks/use-toast";
+import { useToast as useToastOriginal, toast as toastOriginal, type Toast } from "@/hooks/use-toast";
 
 // Re-export the enhanced toast function with its methods
 export const useToast = useToastOriginal;
@@ -14,7 +14,7 @@ declare module "@/hooks/use-toast" {
   }
 
   interface ToastFunction {
-    (props: import("@/hooks/use-toast").Toast): {
+    (props: Toast): {
       id: string;
       dismiss: () => void;
       update: (props: import("@/components/ui/toast").ToastProps & {
