@@ -58,7 +58,7 @@ const Create = () => {
           
           // Generate a valid UUID if the ID isn't already a valid UUID
           let promptId = promptData.id;
-          if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(promptId)) {
+          if (!promptId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(promptId)) {
             // If the ID isn't a UUID, generate a new one
             promptId = uuidv4();
             console.log('Generated new UUID for prompt:', promptId);
@@ -71,7 +71,7 @@ const Create = () => {
             active: true,
             startDate: new Date(),
             endDate: new Date(Date.now() + 86400000),
-            theme: ''
+            theme: promptData.theme || ''
           });
           
           // Remove from localStorage to prevent future issues

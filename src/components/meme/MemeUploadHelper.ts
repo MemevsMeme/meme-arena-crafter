@@ -132,50 +132,6 @@ export async function uploadMemeImage(
 }
 
 /**
- * Create a record of the meme in Supabase directly
- */
-export async function createMemeRecord(
-  imageUrl: string,
-  userId: string,
-  promptText: string,
-  caption: string,
-  promptId?: string,
-  ipfsHash?: string
-): Promise<{
-  success: boolean;
-  memeId?: string;
-  error?: string;
-}> {
-  try {
-    // Insert directly into the memes table
-    const { data, error } = await supabase
-      .from('memes')
-      .insert({
-        image_url: imageUrl,
-        creator_id: userId,
-        prompt: promptText,
-        caption: caption,
-        prompt_id: promptId || null,
-        ipfs_cid: ipfsHash || null,
-        battle_id: promptId || null, // Use prompt_id as battle_id if available
-        tags: []
-      })
-      .select('id')
-      .single();
-
-    if (error) {
-      console.error('Error creating meme record:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, memeId: data.id };
-  } catch (error: any) {
-    console.error('Exception in createMemeRecord:', error);
-    return { success: false, error: error.message || 'Unknown error creating meme record' };
-  }
-}
-
-/**
  * Helper function to ensure the memes storage bucket exists
  */
 async function ensureMemesBucket(): Promise<boolean> {

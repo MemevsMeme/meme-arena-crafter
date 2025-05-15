@@ -90,28 +90,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveDetails, setSaveDetails] = useState<any | null>(null);
 
-  // Add text handler
-  const handleAddText = () => {
-    const newPosition: TextPosition = {
-      text: 'New text',
-      x: 50,
-      y: 50,
-      fontSize: 30,
-      maxWidth: 300,
-      alignment: 'center',
-      color: '#ffffff',
-      isBold: true,
-      fontFamily: 'Impact'
-    };
-    
-    setTextPositions([...textPositions, newPosition]);
-    
-    // Enter edit mode when adding text
-    if (!isEditMode) {
-      setIsEditMode(true);
-    }
-  };
-  
   // Image upload handler
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -136,6 +114,28 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
     }
   };
   
+  // Handler for adding text
+  const handleAddText = () => {
+    const newPosition: TextPosition = {
+      text: 'New text',
+      x: 50,
+      y: 50,
+      fontSize: 30,
+      maxWidth: 300,
+      alignment: 'center',
+      color: '#ffffff',
+      isBold: true,
+      fontFamily: 'Impact'
+    };
+    
+    setTextPositions([...textPositions, newPosition]);
+    
+    // Enter edit mode when adding text
+    if (!isEditMode) {
+      setIsEditMode(true);
+    }
+  };
+  
   // Handler for setting captions
   const handleSetCaption = (newCaption: string) => {
     setCaption(newCaption);
@@ -149,6 +149,18 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       };
       setTextPositions(updatedPositions);
     }
+  };
+
+  // Handler for updating text positions
+  const handleTextPositionsChange = (positions: TextPosition[]) => {
+    setTextPositions(positions);
+  };
+  
+  // Handler for removing text
+  const handleRemoveText = (index: number) => {
+    const updatedPositions = [...textPositions];
+    updatedPositions.splice(index, 1);
+    setTextPositions(updatedPositions);
   };
 
   // Handler for generating AI image with custom prompt
@@ -233,18 +245,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
     handleSetCaption(caption);
   };
 
-  // Handler for updating text positions
-  const handleTextPositionsChange = (positions: TextPosition[]) => {
-    setTextPositions(positions);
-  };
-  
-  // Handler for removing text
-  const handleRemoveText = (index: number) => {
-    const updatedPositions = [...textPositions];
-    updatedPositions.splice(index, 1);
-    setTextPositions(updatedPositions);
-  };
-  
   // Handler for saving the meme
   const handleSaveMeme = async () => {
     if (!user) {
@@ -429,19 +429,23 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       console.log('Upload complete - Public URL:', imageUrl);
       if (ipfsCid) console.log('IPFS CID:', ipfsCid);
       
+      // Generate a unique battle_id (can match prompt_id if available)
+      const battleId = promptId || null;
+      
       console.log('Creating meme record in database with:', {
         promptText,
         promptId,
         imageUrl,
         ipfsCid,
         caption: caption || '',
-        creatorId: user.id
+        creatorId: user.id,
+        battleId
       });
 
       // Create meme record in database with correct fields
       const newMeme = await createMeme({
         prompt: promptText,
-        prompt_id: promptId,
+        prompt_id: promptId, // This is now handled correctly in the createMeme function
         imageUrl,
         ipfsCid,
         caption: caption || '',
@@ -449,7 +453,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         votes: 0,
         createdAt: new Date(),
         tags: [],
-        battle_id: promptId // Use promptId as battle_id
+        battle_id: battleId
       });
       
       if (!newMeme) {

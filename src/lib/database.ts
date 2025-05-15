@@ -142,20 +142,39 @@ export async function createMeme(memeData: {
     console.log("Creating meme with data:", memeData);
     
     // Insert into the memes table
+    // We're going to make prompt_id optional in case it doesn't exist in the prompts table
+    const dataToInsert = {
+      prompt: memeData.prompt,
+      image_url: memeData.imageUrl,
+      ipfs_cid: memeData.ipfsCid || null,
+      caption: memeData.caption,
+      creator_id: memeData.creatorId,
+      votes: memeData.votes || 0,
+      created_at: memeData.createdAt.toISOString(),
+      tags: memeData.tags || [],
+      battle_id: memeData.battle_id || null // Use for battle association if needed
+    };
+    
+    // Only add prompt_id if it exists and is valid
+    if (memeData.prompt_id) {
+      // Try to find if the prompt exists
+      const { data: promptExists } = await supabase
+        .from('prompts')
+        .select('id')
+        .eq('id', memeData.prompt_id)
+        .maybeSingle();
+        
+      // Only include prompt_id if it exists in the prompt table
+      if (promptExists) {
+        dataToInsert['prompt_id'] = memeData.prompt_id;
+      } else {
+        console.log(`Prompt with ID ${memeData.prompt_id} not found, omitting from meme data`);
+      }
+    }
+
     const { data, error } = await supabase
       .from('memes')
-      .insert({
-        prompt: memeData.prompt,
-        prompt_id: memeData.prompt_id || null,
-        image_url: memeData.imageUrl,
-        ipfs_cid: memeData.ipfsCid || null,
-        caption: memeData.caption,
-        creator_id: memeData.creatorId,
-        votes: memeData.votes || 0,
-        created_at: memeData.createdAt.toISOString(),
-        tags: memeData.tags || [],
-        battle_id: memeData.battle_id || memeData.prompt_id || null // Use prompt_id as battle_id if not provided
-      })
+      .insert(dataToInsert)
       .select()
       .single();
 
@@ -569,7 +588,7 @@ export async function getActiveBattles(limit = 10, offset = 0, filter: 'all' | '
         imageUrl: battle.meme_one.image_url,
         caption: battle.meme_one.caption,
         creatorId: battle.meme_one.creator_id,
-        votes: battle.meme_one.votes || 0,
+        votes: data.meme_one.votes || 0,
         createdAt: new Date(battle.meme_one.created_at),
         ipfsCid: battle.meme_one.ipfs_cid || '',
         tags: battle.meme_one.tags || []
