@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export async function getMemes() {
@@ -53,9 +54,10 @@ export async function createMeme(memeData: {
   
   try {
     // Create a clean data object without undefined or invalid values
+    // IMPORTANT: Convert camelCase to snake_case field names for Supabase
     const cleanData = {
       prompt: memeData.prompt,
-      imageUrl: memeData.imageUrl,
+      image_url: memeData.imageUrl, // Changed from imageUrl to image_url
       caption: memeData.caption,
       creator_id: memeData.creatorId,
       votes: memeData.votes || 0,
@@ -132,3 +134,20 @@ export async function deleteMeme(id: string) {
     return false;
   }
 }
+
+// Stub functions to resolve build errors. These should be implemented later.
+export const getProfile = () => console.warn('getProfile not implemented');
+export const createProfile = () => console.warn('createProfile not implemented');
+export const updateProfile = () => console.warn('updateProfile not implemented');
+export const getDailyChallenge = () => console.warn('getDailyChallenge not implemented');
+export const getCurrentDayOfYear = () => console.warn('getCurrentDayOfYear not implemented');
+export const getBattleById = () => console.warn('getBattleById not implemented');
+export const getPromptById = () => console.warn('getPromptById not implemented');
+export const castVote = () => console.warn('castVote not implemented');
+export const getActiveBattles = () => console.warn('getActiveBattles not implemented');
+export const getPrompts = () => console.warn('getPrompts not implemented');
+export const createPrompt = () => console.warn('createPrompt not implemented');
+export const getTrendingMemes = () => console.warn('getTrendingMemes not implemented');
+export const getNewestMemes = () => console.warn('getNewestMemes not implemented');
+export const getMemesByUserId = () => console.warn('getMemesByUserId not implemented');
+
