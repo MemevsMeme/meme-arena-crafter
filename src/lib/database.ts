@@ -61,7 +61,7 @@ export async function createMeme(memeData: {
       caption: memeData.caption,
       creator_id: memeData.creatorId,
       votes: memeData.votes || 0,
-      created_at: memeData.createdAt,
+      created_at: memeData.createdAt.toISOString(), // Convert Date to ISO string for Postgres
       tags: memeData.tags || []
     };
     
@@ -135,19 +135,271 @@ export async function deleteMeme(id: string) {
   }
 }
 
-// Stub functions to resolve build errors. These should be implemented later.
-export const getProfile = () => console.warn('getProfile not implemented');
-export const createProfile = () => console.warn('createProfile not implemented');
-export const updateProfile = () => console.warn('updateProfile not implemented');
-export const getDailyChallenge = () => console.warn('getDailyChallenge not implemented');
-export const getCurrentDayOfYear = () => console.warn('getCurrentDayOfYear not implemented');
-export const getBattleById = () => console.warn('getBattleById not implemented');
-export const getPromptById = () => console.warn('getPromptById not implemented');
-export const castVote = () => console.warn('castVote not implemented');
-export const getActiveBattles = () => console.warn('getActiveBattles not implemented');
-export const getPrompts = () => console.warn('getPrompts not implemented');
-export const createPrompt = () => console.warn('createPrompt not implemented');
-export const getTrendingMemes = () => console.warn('getTrendingMemes not implemented');
-export const getNewestMemes = () => console.warn('getNewestMemes not implemented');
-export const getMemesByUserId = () => console.warn('getMemesByUserId not implemented');
+// Implementation for stub functions to resolve build errors
+export async function getProfile(userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching profile:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error getting profile:', error);
+    return null;
+  }
+}
 
+export async function createProfile(profileData: any) {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert(profileData)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating profile:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error creating profile:', error);
+    return null;
+  }
+}
+
+export async function updateProfile(userId: string, updates: any) {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating profile:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    return null;
+  }
+}
+
+// Remaining stub functions with basic implementations
+export async function getDailyChallenge() {
+  console.warn('getDailyChallenge called but not fully implemented');
+  return null;
+}
+
+export async function getCurrentDayOfYear() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = (now.getTime() - start.getTime()) + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);
+  const oneDay = 1000 * 60 * 60 * 24;
+  const day = Math.floor(diff / oneDay);
+  return day;
+}
+
+export async function getBattleById(id: string) {
+  try {
+    const { data, error } = await supabase
+      .from('battles')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching battle by ID:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error getting battle by ID:', error);
+    return null;
+  }
+}
+
+export async function getPromptById(id: string) {
+  try {
+    const { data, error } = await supabase
+      .from('prompts')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching prompt by ID:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error getting prompt by ID:', error);
+    return null;
+  }
+}
+
+export async function castVote(battleId: string, memeId: string, userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('votes')
+      .insert({
+        battle_id: battleId,
+        meme_id: memeId,
+        user_id: userId
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error casting vote:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error casting vote:', error);
+    return null;
+  }
+}
+
+export async function getActiveBattles(limit = 10, offset = 0, filter = 'all') {
+  try {
+    let query = supabase.from('battles').select('*');
+    
+    if (filter === 'active') {
+      query = query.eq('status', 'active');
+    } else if (filter === 'completed') {
+      query = query.eq('status', 'completed');
+    }
+    
+    query = query.order('created_at', { ascending: false })
+      .limit(limit)
+      .range(offset, offset + limit - 1);
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching active battles:', error);
+      return [];
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error getting active battles:', error);
+    return [];
+  }
+}
+
+export async function getPrompts(limit = 10) {
+  try {
+    const { data, error } = await supabase
+      .from('prompts')
+      .select('*')
+      .limit(limit);
+    
+    if (error) {
+      console.error('Error fetching prompts:', error);
+      return [];
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error getting prompts:', error);
+    return [];
+  }
+}
+
+export async function createPrompt(promptData: any) {
+  try {
+    const { data, error } = await supabase
+      .from('prompts')
+      .insert(promptData)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating prompt:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error creating prompt:', error);
+    return null;
+  }
+}
+
+export async function getTrendingMemes(limit = 12) {
+  try {
+    const { data, error } = await supabase
+      .from('memes')
+      .select('*')
+      .order('votes', { ascending: false })
+      .limit(limit);
+    
+    if (error) {
+      console.error('Error fetching trending memes:', error);
+      return [];
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error getting trending memes:', error);
+    return [];
+  }
+}
+
+export async function getNewestMemes(limit = 12) {
+  try {
+    const { data, error } = await supabase
+      .from('memes')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    if (error) {
+      console.error('Error fetching newest memes:', error);
+      return [];
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error getting newest memes:', error);
+    return [];
+  }
+}
+
+export async function getMemesByUserId(userId: string, limit = 12) {
+  try {
+    const { data, error } = await supabase
+      .from('memes')
+      .select('*')
+      .eq('creator_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    if (error) {
+      console.error('Error fetching user memes:', error);
+      return [];
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error getting user memes:', error);
+    return [];
+  }
+}

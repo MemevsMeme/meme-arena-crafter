@@ -41,7 +41,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   // State variables for uploaded/generated images
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [isGif, setIsGif] = useState(isGif);
+  const [isGif, setIsGif] = useState(false);
   
   // State variables for text
   const [caption, setCaption] = useState<string>('');
