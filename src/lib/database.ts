@@ -316,20 +316,40 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
         }
       }
       
+      // Convert database prompt to our Prompt type
+      const promptData = battle.prompts;
+      let prompt: Prompt | undefined = undefined;
+      
+      if (promptData) {
+        prompt = {
+          id: promptData.id,
+          text: promptData.text,
+          theme: promptData.theme || '',
+          description: promptData.description || '',
+          isCommunity: promptData.is_community || false,
+          creatorId: promptData.creator_id || '',
+          startDate: new Date(promptData.start_date),
+          endDate: new Date(promptData.end_date),
+          active: promptData.active,
+          tags: promptData.tags || [],
+          dailyChallengeId: promptData.daily_challenge_id
+        };
+      }
+      
       // Create the battle object
       return {
         id: battle.id,
-        status: battle.status,
+        status: battle.status as 'active' | 'completed' | 'cancelled',
         startTime: new Date(battle.start_time),
         endTime: new Date(battle.end_time),
-        prompt: battle.prompts,
-        promptId: battle.prompt_id,
+        prompt: prompt,
+        promptId: battle.prompt_id || '',
         memeOneId: battle.meme_one_id,
         memeTwoId: battle.meme_two_id,
-        creatorId: battle.creator_id,
-        winnerId: battle.winner_id,
+        creatorId: battle.creator_id || '',
+        winnerId: battle.winner_id || '',
         voteCount: battle.vote_count,
-        isCommunity: battle.is_community,
+        isCommunity: battle.is_community || false,
         memeOne,
         memeTwo
       };
@@ -413,19 +433,39 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
       }
     }
     
+    // Convert database prompt to our Prompt type
+    const promptData = battle.prompts;
+    let prompt: Prompt | undefined = undefined;
+    
+    if (promptData) {
+      prompt = {
+        id: promptData.id,
+        text: promptData.text,
+        theme: promptData.theme || '',
+        description: promptData.description || '',
+        isCommunity: promptData.is_community || false,
+        creatorId: promptData.creator_id || '',
+        startDate: new Date(promptData.start_date),
+        endDate: new Date(promptData.end_date),
+        active: promptData.active,
+        tags: promptData.tags || [],
+        dailyChallengeId: promptData.daily_challenge_id
+      };
+    }
+    
     return {
       id: battle.id,
-      status: battle.status,
+      status: battle.status as 'active' | 'completed' | 'cancelled',
       startTime: new Date(battle.start_time),
       endTime: new Date(battle.end_time),
-      prompt: battle.prompts,
-      promptId: battle.prompt_id,
+      prompt,
+      promptId: battle.prompt_id || '',
       memeOneId: battle.meme_one_id,
       memeTwoId: battle.meme_two_id,
-      creatorId: battle.creator_id,
-      winnerId: battle.winner_id,
+      creatorId: battle.creator_id || '',
+      winnerId: battle.winner_id || '',
       voteCount: battle.vote_count,
-      isCommunity: battle.is_community,
+      isCommunity: battle.is_community || false,
       memeOne,
       memeTwo
     };
@@ -457,7 +497,7 @@ export async function getPromptById(promptId: string): Promise<Prompt | null> {
       theme: data.theme || '',
       description: data.description || '',
       isCommunity: data.is_community || false,
-      creatorId: data.creator_id,
+      creatorId: data.creator_id || '',
       startDate: new Date(data.start_date),
       endDate: new Date(data.end_date),
       active: data.active,
@@ -503,7 +543,7 @@ export async function getPrompts(limit: number = 10, offset: number = 0, isCommu
       theme: prompt.theme || '',
       description: prompt.description || '',
       isCommunity: prompt.is_community || false,
-      creatorId: prompt.creator_id,
+      creatorId: prompt.creator_id || '',
       startDate: new Date(prompt.start_date),
       endDate: new Date(prompt.end_date),
       active: prompt.active,
@@ -777,7 +817,7 @@ export async function createPrompt(promptData: {
       theme: data.theme || '',
       description: data.description || '',
       isCommunity: data.is_community || false,
-      creatorId: data.creator_id,
+      creatorId: data.creator_id || '',
       startDate: new Date(data.start_date),
       endDate: new Date(data.end_date),
       active: data.active,
@@ -828,7 +868,7 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
         theme: fallback.theme || '',
         description: fallback.description || '',
         isCommunity: fallback.is_community || false,
-        creatorId: fallback.creator_id,
+        creatorId: fallback.creator_id || '',
         startDate: new Date(fallback.start_date),
         endDate: new Date(fallback.end_date),
         active: fallback.active,
@@ -853,7 +893,7 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
           theme: linkedPrompt.theme || '',
           description: linkedPrompt.description || '',
           isCommunity: linkedPrompt.is_community || false,
-          creatorId: linkedPrompt.creator_id,
+          creatorId: linkedPrompt.creator_id || '',
           startDate: new Date(linkedPrompt.start_date),
           endDate: new Date(linkedPrompt.end_date),
           active: linkedPrompt.active,
@@ -894,7 +934,7 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
         theme: newPrompt.theme || '',
         description: newPrompt.description || '',
         isCommunity: newPrompt.is_community || false,
-        creatorId: newPrompt.creator_id,
+        creatorId: newPrompt.creator_id || '',
         startDate: new Date(newPrompt.start_date),
         endDate: new Date(newPrompt.end_date),
         active: newPrompt.active,
