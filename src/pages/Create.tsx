@@ -123,9 +123,8 @@ const Create = () => {
     console.log('Meme created successfully:', meme);
     setCreatedMeme(meme);
     
-    toast({
-      title: "Meme Created!",
-      description: "Your meme has been successfully saved.",
+    toast("Meme Created!", {
+      description: "Your meme has been successfully saved."
     });
     
     // Navigate to the meme profile page after a short delay
