@@ -42,7 +42,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   // State variables for uploaded/generated images
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [isGif, setIsGif] = useState(false);
+  const [isGif, setIsGif] = useState(isGif);
   
   // State variables for text
   const [caption, setCaption] = useState<string>('');
@@ -413,43 +413,21 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       const fileExt = isGif ? '.gif' : '.png';
       const fileName = `${uuidv4()}${fileExt}`;
       
-      console.log('Uploading meme to storage');
+      console.log('Uploading meme to IPFS and storage');
       
-      // Use our helper function to upload to Supabase
+      // Use our helper function to upload to IPFS and fallback to Supabase
       const uploadResult = await uploadMemeImage(blob, fileName, user.id, isGif);
       
       if (!uploadResult.success || !uploadResult.imageUrl) {
-        setSaveError(`Error uploading to storage: ${uploadResult.error}`);
-        throw new Error(`Error uploading to storage: ${uploadResult.error}`);
+        setSaveError(`Error uploading image: ${uploadResult.error}`);
+        throw new Error(`Error uploading image: ${uploadResult.error}`);
       }
       
       const imageUrl = uploadResult.imageUrl;
-      console.log('Public URL:', imageUrl);
+      const ipfsCid = uploadResult.ipfsCid;
       
-      // Upload to IPFS in the background (don't wait for it)
-      let ipfsCid: string | undefined = undefined;
-      try {
-        setIsUploadingToIPFS(true);
-        console.log('Starting IPFS upload');
-        
-        // Create a File from the blob
-        const file = new File([blob], fileName, {
-          type: isGif ? 'image/gif' : 'image/png',
-        });
-        
-        // Upload to IPFS
-        const ipfsResult = await uploadFileToIPFS(file, `Meme: ${caption.substring(0, 30)}...`);
-        
-        if (ipfsResult.success && ipfsResult.ipfsHash) {
-          ipfsCid = ipfsResult.ipfsHash;
-          console.log('Successfully pinned to IPFS with CID:', ipfsCid);
-        }
-      } catch (ipfsError) {
-        console.error('IPFS upload failed but continuing:', ipfsError);
-        // Non-fatal error, continue without IPFS
-      } finally {
-        setIsUploadingToIPFS(false);
-      }
+      console.log('Upload complete - Public URL:', imageUrl);
+      if (ipfsCid) console.log('IPFS CID:', ipfsCid);
       
       console.log('Creating meme record in database with:', {
         promptText,
@@ -460,7 +438,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         creatorId: user.id
       });
 
-      // Create meme record in database
+      // Create meme record in database with correct fields
       const newMeme = await createMeme({
         prompt: promptText,
         prompt_id: promptId,
@@ -470,7 +448,8 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         creatorId: user.id,
         votes: 0,
         createdAt: new Date(),
-        tags: []
+        tags: [],
+        battle_id: promptId // Use promptId as battle_id
       });
       
       if (!newMeme) {
@@ -506,6 +485,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       });
     } finally {
       setIsCreatingMeme(false);
+      setIsUploadingToIPFS(false);
     }
   };
   

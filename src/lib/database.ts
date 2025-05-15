@@ -136,6 +136,7 @@ export async function createMeme(memeData: {
   votes: number;
   createdAt: Date;
   tags: string[];
+  battle_id?: string | null;
 }): Promise<Meme | null> {
   try {
     console.log("Creating meme with data:", memeData);
@@ -152,16 +153,14 @@ export async function createMeme(memeData: {
         creator_id: memeData.creatorId,
         votes: memeData.votes || 0,
         created_at: memeData.createdAt.toISOString(),
-        tags: memeData.tags || []
+        tags: memeData.tags || [],
+        battle_id: memeData.battle_id || memeData.prompt_id || null // Use prompt_id as battle_id if not provided
       })
       .select()
       .single();
 
     if (error) {
       console.error('Error creating meme:', error);
-      
-      // We'll use a different approach without referencing a non-existent table
-      console.error('Failed to create meme record:', error.message);
       return null;
     }
 
@@ -183,7 +182,8 @@ export async function createMeme(memeData: {
       creatorId: data.creator_id,
       votes: data.votes || 0,
       createdAt: new Date(data.created_at),
-      tags: data.tags || []
+      tags: data.tags || [],
+      battleId: data.battle_id || ''
     };
   } catch (error) {
     console.error('Error in createMeme:', error);
