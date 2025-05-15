@@ -24,7 +24,7 @@ export async function uploadMemeImage(
   try {
     console.log(`Uploading ${isGif ? 'GIF' : 'image'} to storage:`, fileName);
     
-    // Use enhanced uploadFileToSupabase function that tries multiple buckets
+    // Use simplified uploadFileToSupabase function
     const result = await uploadFileToSupabase(
       blob, 
       userId, 

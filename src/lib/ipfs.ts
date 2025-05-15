@@ -1,5 +1,6 @@
 // Update the import statement to reference the correct path
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 /**
  * Upload a file to IPFS via Pinata
@@ -179,8 +180,8 @@ export function getIpfsUrl(ipfsHash: string): string {
 }
 
 /**
- * Enhanced function to upload a file to Supabase Storage with fallback buckets
- * @param file The file to upload
+ * Simplified function to upload a file to Supabase Storage
+ * @param file The file to upload 
  * @param userId User ID for the path
  * @param fileName Optional custom file name
  * @returns Result object with the upload status and URL
@@ -194,62 +195,74 @@ export async function uploadFileToSupabase(
     // Generate a unique filename if not provided
     const finalFileName = fileName || `${crypto.randomUUID()}${file instanceof File ? getFileExtension(file.name) : '.png'}`;
     
-    // Try uploading to these buckets in order
-    const bucketsToTry = ['memes', 'public', 'avatars', 'images'];
+    // Create simple path: userId/finalFileName
+    const filePath = `${userId}/${finalFileName}`;
     
-    // First check if buckets exist
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    console.log(`Attempting upload to memes bucket: ${filePath}`);
     
-    if (bucketsError) {
-      console.error('Error listing buckets:', bucketsError);
-      return { success: false, error: `Error listing buckets: ${bucketsError.message}` };
-    }
-    
-    // Get available bucket names
-    const availableBuckets = buckets ? buckets.map(b => b.name) : [];
-    console.log('Available buckets:', availableBuckets);
-    
-    // Try each bucket in order until one works
-    for (const bucketName of bucketsToTry) {
-      // Skip if bucket doesn't exist
-      if (!availableBuckets.includes(bucketName)) {
-        console.log(`Bucket "${bucketName}" doesn't exist, trying next one`);
-        continue;
-      }
+    // Upload directly to the memes bucket
+    const { data, error } = await supabase.storage
+      .from('memes')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: file instanceof File ? file.type : 'image/png',
+      });
       
-      console.log(`Attempting upload to ${bucketName} bucket`);
+    if (error) {
+      console.error('Error uploading to storage:', error);
       
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from(bucketName)
-        .upload(`${userId}/${finalFileName}`, file, {
-          cacheControl: '3600',
-          upsert: true,
-          contentType: file instanceof File ? file.type : 'image/png',
-        });
+      if (error.message?.includes('bucket') || error.message?.includes('does not exist')) {
+        // Try to create the bucket if it doesn't exist
+        const { ensureStorageBuckets } = await import('@/integrations/supabase/client');
+        await ensureStorageBuckets();
         
-      if (!uploadError) {
-        // Get public URL for the uploaded file
-        const { data: publicUrlData } = supabase.storage
-          .from(bucketName)
-          .getPublicUrl(`${userId}/${finalFileName}`);
-        
-        if (!publicUrlData?.publicUrl) {
-          console.warn(`Uploaded to ${bucketName} but couldn't get public URL`);
-          continue;
+        // Try the upload again
+        const retryResult = await supabase.storage
+          .from('memes')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: file instanceof File ? file.type : 'image/png',
+          });
+          
+        if (retryResult.error) {
+          console.error('Retry upload failed:', retryResult.error);
+          return { 
+            success: false, 
+            error: `Upload failed: ${retryResult.error.message}` 
+          };
         }
         
-        console.log(`Successfully uploaded to ${bucketName} bucket:`, publicUrlData.publicUrl);
+        // Get public URL for the uploaded file
+        const { data: publicUrlData } = supabase.storage
+          .from('memes')
+          .getPublicUrl(filePath);
+        
+        console.log('Retry upload successful:', publicUrlData.publicUrl);
         return { success: true, url: publicUrlData.publicUrl };
-      } else {
-        console.warn(`Failed to upload to ${bucketName} bucket:`, uploadError);
       }
+      
+      return { 
+        success: false, 
+        error: `Upload error: ${error.message}` 
+      };
     }
     
-    // If we got here, all buckets failed
-    return { 
-      success: false, 
-      error: 'Failed to upload file to any available storage bucket' 
-    };
+    // Get public URL for the uploaded file
+    const { data: publicUrlData } = supabase.storage
+      .from('memes')
+      .getPublicUrl(filePath);
+    
+    if (!publicUrlData?.publicUrl) {
+      return { 
+        success: false, 
+        error: 'Failed to get public URL for uploaded file' 
+      };
+    }
+    
+    console.log('Upload successful, public URL:', publicUrlData.publicUrl);
+    return { success: true, url: publicUrlData.publicUrl };
   } catch (error: any) {
     console.error('Exception in uploadFileToSupabase:', error);
     return { 

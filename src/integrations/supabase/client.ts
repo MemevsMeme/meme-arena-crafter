@@ -21,3 +21,51 @@ export const supabase = createClient<Database>(
 
 // Log some debug information
 console.info("✅ Supabase client connected successfully");
+
+// Helper to create the required storage buckets if they don't exist
+export async function ensureStorageBuckets() {
+  try {
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+    
+    if (error) {
+      console.error('Error listing buckets:', error);
+      return false;
+    }
+    
+    // Check if the memes bucket exists
+    const memesExists = buckets?.some(b => b.name === 'memes');
+    
+    if (!memesExists) {
+      console.log('Creating memes bucket...');
+      const { error: createError } = await supabase.storage.createBucket('memes', { 
+        public: true,
+        fileSizeLimit: 5242880 // 5MB
+      });
+      
+      if (createError) {
+        console.error('Error creating memes bucket:', createError);
+        return false;
+      }
+      
+      console.log('Memes bucket created successfully');
+    } else {
+      console.log('Memes bucket already exists');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error ensuring storage buckets:', error);
+    return false;
+  }
+}
+
+// Call this function when the app starts
+if (typeof window !== 'undefined') {
+  ensureStorageBuckets().then(success => {
+    if (success) {
+      console.log('Storage buckets are ready');
+    } else {
+      console.warn('Failed to ensure storage buckets are set up');
+    }
+  });
+}
