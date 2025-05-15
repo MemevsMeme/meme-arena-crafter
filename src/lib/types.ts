@@ -15,7 +15,6 @@ export interface Meme {
   prompt: string;
   prompt_id: string; 
   imageUrl: string;
-  ipfsCid: string;
   caption: string;
   creatorId: string;
   creator?: User;
@@ -23,6 +22,7 @@ export interface Meme {
   createdAt: Date;
   tags: string[];
   isBattleSubmission?: boolean;
+  ipfsCid?: string;
 }
 
 export interface Prompt {

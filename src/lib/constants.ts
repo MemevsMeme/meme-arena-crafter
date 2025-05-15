@@ -1,5 +1,7 @@
 import { Meme } from './types';
 
+export const APP_NAME = "MemeVsMeme";
+
 export const SAMPLE_TAGS = [
   'funny',
   'programming',
@@ -168,5 +170,57 @@ export const SAMPLE_MEMES: Meme[] = [
     createdAt: new Date('2023-10-12'),
     tags: ['development', 'technology', 'distracted'],
     isBattleSubmission: true,
+  }
+];
+
+export const MEME_TEMPLATES = [
+  { id: 'drake', name: 'Drake Hotline Bling', url: '/Drake-Hotline-Bling.jpg' },
+  { id: 'buttons', name: 'Two Buttons', url: '/Two-Buttons.jpg' },
+  { id: 'distracted', name: 'Distracted Boyfriend', url: '/Distracted-Boyfriend.jpg' },
+  { id: 'brain', name: 'Expanding Brain', url: '/expanding brain.png' },
+  { id: 'changemymind', name: 'Change My Mind', url: '/Change-My-Mind-tilt-corrected-meme-2.jpg' }
+];
+
+export const CAPTION_STYLES = [
+  { id: 'funny', name: 'Funny' },
+  { id: 'sarcastic', name: 'Sarcastic' },
+  { id: 'dark', name: 'Dark Humor' },
+  { id: 'wholesome', name: 'Wholesome' },
+  { id: 'technical', name: 'Technical' }
+];
+
+export const MOCK_USERS = [
+  {
+    id: '1',
+    username: 'memeMaster',
+    avatarUrl: 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=1',
+    memeStreak: 15,
+    wins: 42,
+    losses: 12,
+    level: 8,
+    xp: 2450,
+    createdAt: new Date('2023-08-01')
+  },
+  {
+    id: '2',
+    username: 'laughFactory',
+    avatarUrl: 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=2',
+    memeStreak: 8,
+    wins: 27,
+    losses: 19,
+    level: 5,
+    xp: 1280,
+    createdAt: new Date('2023-09-15')
+  },
+  {
+    id: '3',
+    username: 'humorHero',
+    avatarUrl: 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=3',
+    memeStreak: 23,
+    wins: 65,
+    losses: 8,
+    level: 12,
+    xp: 4120,
+    createdAt: new Date('2023-07-10')
   }
 ];

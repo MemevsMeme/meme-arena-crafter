@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -23,12 +24,24 @@ import {
 
 interface MemeGeneratorProps {
   isDailyChallenge?: boolean;
+  promptText?: string;
+  promptId?: string;
+  onSave?: (meme: { id: string; caption: string; imageUrl: string }) => void;
+  defaultEditMode?: boolean;
+  defaultTemplate?: any;
 }
 
-const MemeGenerator: React.FC<MemeGeneratorProps> = ({ isDailyChallenge = false }) => {
+const MemeGenerator: React.FC<MemeGeneratorProps> = ({
+  isDailyChallenge = false,
+  promptText: initialPromptText,
+  promptId: initialPromptId,
+  onSave,
+  defaultEditMode,
+  defaultTemplate
+}) => {
   const [searchParams] = useSearchParams();
-  const promptId = searchParams.get('promptId') || '';
-  const [promptText, setPromptText] = useState<string>('');
+  const promptId = initialPromptId || searchParams.get('promptId') || '';
+  const [promptText, setPromptText] = useState<string>(initialPromptText || '');
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
   const [caption, setCaption] = useState<string>('');
@@ -54,13 +67,14 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({ isDailyChallenge = false 
       const promptData = await getPromptById(promptId);
       return promptData;
     },
-    enabled: !!promptId,
-    onSuccess: (data) => {
-      if (data) {
-        setPromptText(data.text);
-      }
-    }
+    enabled: !!promptId
   });
+
+  useEffect(() => {
+    if (prompt && prompt.text) {
+      setPromptText(prompt.text);
+    }
+  }, [prompt]);
 
   useEffect(() => {
     const newCanvas = new fabric.Canvas(canvasRef.current, {
@@ -210,16 +224,19 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({ isDailyChallenge = false 
       };
 
       // Upload to IPFS if enabled
+      let ipfsCid = '';
       if (saveToIpfs) {
         try {
-          const ipfsCid = await pinToIpfs(dataUrl, caption);
-          if (ipfsCid) {
-            memeData.ipfsCid = ipfsCid;
-          }
+          ipfsCid = await pinToIpfs(dataUrl, caption);
         } catch (error) {
           console.error("IPFS upload failed:", error);
           // Continue even if IPFS fails
         }
+      }
+
+      if (ipfsCid) {
+        // Only add ipfsCid if it's not empty
+        memeData['ipfsCid'] = ipfsCid;
       }
 
       // Save to database
@@ -238,6 +255,15 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({ isDailyChallenge = false 
         await updateMemeStreak(user.id);
         toast.success("Daily challenge completed!", {
           description: "Your meme streak has been updated"
+        });
+      }
+
+      // Call onSave callback if provided
+      if (onSave) {
+        onSave({
+          id: savedMeme.id,
+          caption: savedMeme.caption,
+          imageUrl: savedMeme.imageUrl
         });
       }
 
@@ -312,7 +338,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({ isDailyChallenge = false 
 
           <div className="mb-4">
             <Label>Font Family</Label>
-            <Select onValueChange={setFontFamily}>
+            <Select value={fontFamily} onValueChange={(value) => setFontFamily(value)}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select a font" />
               </SelectTrigger>
@@ -328,7 +354,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({ isDailyChallenge = false 
 
           <div className="mb-4">
             <Label>Text Align</Label>
-            <Select onValueChange={setTextAlign}>
+            <Select value={textAlign} onValueChange={(value: 'left' | 'center' | 'right') => setTextAlign(value)}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select alignment" />
               </SelectTrigger>

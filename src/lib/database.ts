@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User, Battle, Prompt, Meme } from './types';
 
@@ -20,10 +21,9 @@ export async function createMeme(memeData: {
     console.log("Creating meme with data:", memeData);
     
     // Insert into the memes table
-    const dataToInsert = {
+    const dataToInsert: any = {
       prompt: memeData.prompt,
       image_url: memeData.imageUrl,
-      ipfs_cid: memeData.ipfsCid || null,
       caption: memeData.caption,
       creator_id: memeData.creatorId,
       votes: memeData.votes || 0,
@@ -31,6 +31,11 @@ export async function createMeme(memeData: {
       tags: memeData.tags || [],
       is_battle_submission: memeData.isBattleSubmission || false
     };
+    
+    // Only add ipfs_cid if it's provided
+    if (memeData.ipfsCid) {
+      dataToInsert.ipfs_cid = memeData.ipfsCid;
+    }
     
     // Only add prompt_id if it exists and is valid
     if (memeData.prompt_id) {
@@ -43,7 +48,7 @@ export async function createMeme(memeData: {
         
       // Only include prompt_id if it exists in the prompt table
       if (promptExists) {
-        dataToInsert['prompt_id'] = memeData.prompt_id;
+        dataToInsert.prompt_id = memeData.prompt_id;
       } else {
         console.log(`Prompt with ID ${memeData.prompt_id} not found, omitting from meme data`);
       }
@@ -68,12 +73,11 @@ export async function createMeme(memeData: {
     console.log("Meme created successfully:", data);
 
     // Convert to Meme type
-    return {
+    const meme: Meme = {
       id: data.id,
       prompt: data.prompt || '',
       prompt_id: data.prompt_id || '',
       imageUrl: data.image_url,
-      ipfsCid: data.ipfs_cid || '',
       caption: data.caption,
       creatorId: data.creator_id,
       votes: data.votes || 0,
@@ -81,6 +85,13 @@ export async function createMeme(memeData: {
       tags: data.tags || [],
       isBattleSubmission: data.is_battle_submission || false
     };
+
+    // Add ipfsCid only if it exists in the data
+    if (data.ipfs_cid) {
+      meme['ipfsCid'] = data.ipfs_cid;
+    }
+
+    return meme;
   } catch (error) {
     console.error('Error in createMeme:', error);
     return null;
@@ -621,19 +632,27 @@ export async function getTrendingMemes(limit: number = 10): Promise<Meme[]> {
       return [];
     }
     
-    return data.map(meme => ({
-      id: meme.id,
-      prompt: meme.prompt || '',
-      prompt_id: meme.prompt_id || '',
-      imageUrl: meme.image_url,
-      ipfsCid: meme.ipfs_cid || '',
-      caption: meme.caption,
-      creatorId: meme.creator_id,
-      votes: meme.votes || 0,
-      createdAt: new Date(meme.created_at),
-      tags: meme.tags || [],
-      isBattleSubmission: meme.is_battle_submission || false
-    }));
+    return data.map(meme => {
+      const memeObj: Meme = {
+        id: meme.id,
+        prompt: meme.prompt || '',
+        prompt_id: meme.prompt_id || '',
+        imageUrl: meme.image_url,
+        caption: meme.caption,
+        creatorId: meme.creator_id,
+        votes: meme.votes || 0,
+        createdAt: new Date(meme.created_at),
+        tags: meme.tags || [],
+        isBattleSubmission: meme.is_battle_submission || false
+      };
+      
+      // Add ipfsCid if it exists
+      if (meme.ipfs_cid) {
+        memeObj['ipfsCid'] = meme.ipfs_cid;
+      }
+      
+      return memeObj;
+    });
   } catch (error) {
     console.error('Error in getTrendingMemes:', error);
     return [];
@@ -660,19 +679,27 @@ export async function getNewestMemes(limit: number = 10): Promise<Meme[]> {
       return [];
     }
     
-    return data.map(meme => ({
-      id: meme.id,
-      prompt: meme.prompt || '',
-      prompt_id: meme.prompt_id || '',
-      imageUrl: meme.image_url,
-      ipfsCid: meme.ipfs_cid || '',
-      caption: meme.caption,
-      creatorId: meme.creator_id,
-      votes: meme.votes || 0,
-      createdAt: new Date(meme.created_at),
-      tags: meme.tags || [],
-      isBattleSubmission: meme.is_battle_submission || false
-    }));
+    return data.map(meme => {
+      const memeObj: Meme = {
+        id: meme.id,
+        prompt: meme.prompt || '',
+        prompt_id: meme.prompt_id || '',
+        imageUrl: meme.image_url,
+        caption: meme.caption,
+        creatorId: meme.creator_id,
+        votes: meme.votes || 0,
+        createdAt: new Date(meme.created_at),
+        tags: meme.tags || [],
+        isBattleSubmission: meme.is_battle_submission || false
+      };
+      
+      // Add ipfsCid if it exists
+      if (meme.ipfs_cid) {
+        memeObj['ipfsCid'] = meme.ipfs_cid;
+      }
+      
+      return memeObj;
+    });
   } catch (error) {
     console.error('Error in getNewestMemes:', error);
     return [];
@@ -699,19 +726,27 @@ export async function getMemesByUserId(userId: string): Promise<Meme[]> {
       return [];
     }
     
-    return data.map(meme => ({
-      id: meme.id,
-      prompt: meme.prompt || '',
-      prompt_id: meme.prompt_id || '',
-      imageUrl: meme.image_url,
-      ipfsCid: meme.ipfs_cid || '',
-      caption: meme.caption,
-      creatorId: meme.creator_id,
-      votes: meme.votes || 0,
-      createdAt: new Date(meme.created_at),
-      tags: meme.tags || [],
-      isBattleSubmission: meme.is_battle_submission || false
-    }));
+    return data.map(meme => {
+      const memeObj: Meme = {
+        id: meme.id,
+        prompt: meme.prompt || '',
+        prompt_id: meme.prompt_id || '',
+        imageUrl: meme.image_url,
+        caption: meme.caption,
+        creatorId: meme.creator_id,
+        votes: meme.votes || 0,
+        createdAt: new Date(meme.created_at),
+        tags: meme.tags || [],
+        isBattleSubmission: meme.is_battle_submission || false
+      };
+      
+      // Add ipfsCid if it exists
+      if (meme.ipfs_cid) {
+        memeObj['ipfsCid'] = meme.ipfs_cid;
+      }
+      
+      return memeObj;
+    });
   } catch (error) {
     console.error('Error in getMemesByUserId:', error);
     return [];
@@ -752,19 +787,27 @@ export async function getMemesByBattleId(battleId: string): Promise<Meme[]> {
       return [];
     }
     
-    return data.map(meme => ({
-      id: meme.id,
-      prompt: meme.prompt || '',
-      prompt_id: meme.prompt_id || '',
-      imageUrl: meme.image_url,
-      ipfsCid: meme.ipfs_cid || '',
-      caption: meme.caption,
-      creatorId: meme.creator_id,
-      votes: meme.votes || 0,
-      createdAt: new Date(meme.created_at),
-      tags: meme.tags || [],
-      isBattleSubmission: meme.is_battle_submission || false
-    }));
+    return data.map(meme => {
+      const memeObj: Meme = {
+        id: meme.id,
+        prompt: meme.prompt || '',
+        prompt_id: meme.prompt_id || '',
+        imageUrl: meme.image_url,
+        caption: meme.caption,
+        creatorId: meme.creator_id,
+        votes: meme.votes || 0,
+        createdAt: new Date(meme.created_at),
+        tags: meme.tags || [],
+        isBattleSubmission: meme.is_battle_submission || false
+      };
+      
+      // Add ipfsCid if it exists
+      if (meme.ipfs_cid) {
+        memeObj['ipfsCid'] = meme.ipfs_cid;
+      }
+      
+      return memeObj;
+    });
   } catch (error) {
     console.error('Error in getMemesByBattleId:', error);
     return [];
