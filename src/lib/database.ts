@@ -145,7 +145,7 @@ export async function createMeme(memeData: {
       .from('memes')
       .insert({
         prompt: memeData.prompt,
-        prompt_id: null, // Skip the foreign key constraint by setting to null
+        prompt_id: memeData.prompt_id || null,
         image_url: memeData.imageUrl,
         ipfs_cid: memeData.ipfsCid || null,
         caption: memeData.caption,

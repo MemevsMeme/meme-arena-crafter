@@ -107,44 +107,24 @@ export async function createMemeRecord(
   error?: string;
 }> {
   try {
-    // Since we're having issues with the memes table, insert directly into a simple table
-    // This bypasses the foreign key constraint issues
+    // Insert directly into the memes table
     const { data, error } = await supabase
       .from('memes')
       .insert({
         image_url: imageUrl,
         creator_id: userId,
-        prompt: promptText,  // Store as text, not as foreign key
-        prompt_id: null,     // Skip the problematic foreign key
+        prompt: promptText,
         caption: caption,
-        ipfs_cid: ipfsHash || null
+        ipfs_cid: ipfsHash || null,
+        challenge_day: challengeId ? parseInt(challengeId, 10) : null,
+        tags: []
       })
       .select('id')
       .single();
 
     if (error) {
       console.error('Error creating meme record:', error);
-      
-      // Alternative approach: Try a simpler direct approach with memes_storage table
-      const { data: storageData, error: storageError } = await supabase
-        .from('memes_storage')
-        .insert({
-          user_id: userId,
-          prompt_text: promptText,
-          image_url: imageUrl,
-          ipfs_hash: ipfsHash || null,
-          caption: caption,
-          challenge_id: challengeId || null
-        })
-        .select('id')
-        .single();
-        
-      if (storageError) {
-        console.error('Alternative storage approach failed:', storageError);
-        return { success: false, error: error.message };
-      }
-      
-      return { success: true, memeId: storageData.id };
+      return { success: false, error: error.message };
     }
 
     return { success: true, memeId: data.id };
@@ -171,7 +151,6 @@ async function ensureMemesBucket(): Promise<boolean> {
     
     if (!memesBucket) {
       // Try to create the bucket with the storage admin user
-      // Note: This requires appropriate permissions
       try {
         const { error: createError } = await supabase.storage.createBucket('memes', {
           public: true
