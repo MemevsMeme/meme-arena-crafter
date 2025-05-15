@@ -169,7 +169,7 @@ export async function createMeme(memeData: {
     return {
       id: data.id,
       prompt: data.prompt || '',
-      promptId: data.prompt_id || '',
+      prompt_id: data.prompt_id || '',
       imageUrl: data.image_url,
       ipfsCid: data.ipfs_cid || '',
       caption: data.caption,
@@ -212,7 +212,8 @@ export async function getProfile(userId: string): Promise<User | null> {
       wins: data.wins || 0,
       losses: data.losses || 0,
       level: data.level || 1,
-      xp: data.xp || 0
+      xp: data.xp || 0,
+      createdAt: new Date(data.created_at)
     };
   } catch (error) {
     console.error('Error in getProfile:', error);
@@ -259,7 +260,8 @@ export async function updateProfile(userId: string, updates: Partial<User>): Pro
       wins: data.wins || 0,
       losses: data.losses || 0,
       level: data.level || 1,
-      xp: data.xp || 0
+      xp: data.xp || 0,
+      createdAt: new Date(data.created_at)
     };
   } catch (error) {
     console.error('Error in updateProfile:', error);
@@ -308,7 +310,8 @@ export async function createProfile(profileData: {
       wins: data.wins || 0,
       losses: data.losses || 0,
       level: data.level || 1,
-      xp: data.xp || 0
+      xp: data.xp || 0,
+      createdAt: new Date(data.created_at)
     };
   } catch (error) {
     console.error('Error in createProfile:', error);
@@ -343,16 +346,18 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
     return {
       id: data.id,
       promptId: data.prompt_id || '',
+      memeOneId: data.meme_one_id,
+      memeTwoId: data.meme_two_id,
       status: data.status,
       startTime: new Date(data.start_time),
       endTime: new Date(data.end_time),
-      creatorId: data.creator_id || '',
+      creator_id: data.creator_id || '',
       voteCount: data.vote_count || 0,
       winnerId: data.winner_id || '',
       memeOne: data.meme_one ? {
         id: data.meme_one.id,
         prompt: data.meme_one.prompt || '',
-        promptId: data.meme_one.prompt_id || '',
+        prompt_id: data.meme_one.prompt_id || '',
         imageUrl: data.meme_one.image_url,
         caption: data.meme_one.caption,
         creatorId: data.meme_one.creator_id,
@@ -360,11 +365,11 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
         createdAt: new Date(data.meme_one.created_at),
         ipfsCid: data.meme_one.ipfs_cid || '',
         tags: data.meme_one.tags || []
-      } : null,
+      } : undefined,
       memeTwo: data.meme_two ? {
         id: data.meme_two.id,
         prompt: data.meme_two.prompt || '',
-        promptId: data.meme_two.prompt_id || '',
+        prompt_id: data.meme_two.prompt_id || '',
         imageUrl: data.meme_two.image_url,
         caption: data.meme_two.caption,
         creatorId: data.meme_two.creator_id,
@@ -372,8 +377,8 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
         createdAt: new Date(data.meme_two.created_at),
         ipfsCid: data.meme_two.ipfs_cid || '',
         tags: data.meme_two.tags || []
-      } : null,
-      isCommunity: data.is_community || false
+      } : undefined,
+      is_community: data.is_community || false
     };
   } catch (error) {
     console.error('Error in getBattleById:', error);
@@ -409,9 +414,9 @@ export async function getPromptById(promptId: string): Promise<Prompt | null> {
       active: data.active,
       startDate: new Date(data.start_date),
       endDate: new Date(data.end_date),
-      isCommunity: data.is_community || false,
+      is_community: data.is_community || false,
       description: data.description || '',
-      creatorId: data.creator_id || ''
+      creator_id: data.creator_id || ''
     };
   } catch (error) {
     console.error('Error in getPromptById:', error);
@@ -522,16 +527,18 @@ export async function getActiveBattles(limit = 10, offset = 0, filter: 'all' | '
     return data.map(battle => ({
       id: battle.id,
       promptId: battle.prompt_id || '',
+      memeOneId: battle.meme_one_id,
+      memeTwoId: battle.meme_two_id,
       status: battle.status,
       startTime: new Date(battle.start_time),
       endTime: new Date(battle.end_time),
-      creatorId: battle.creator_id || '',
+      creator_id: battle.creator_id || '',
       voteCount: battle.vote_count || 0,
       winnerId: battle.winner_id || '',
       memeOne: battle.meme_one ? {
         id: battle.meme_one.id,
         prompt: battle.meme_one.prompt || '',
-        promptId: battle.meme_one.prompt_id || '',
+        prompt_id: battle.meme_one.prompt_id || '',
         imageUrl: battle.meme_one.image_url,
         caption: battle.meme_one.caption,
         creatorId: battle.meme_one.creator_id,
@@ -539,11 +546,11 @@ export async function getActiveBattles(limit = 10, offset = 0, filter: 'all' | '
         createdAt: new Date(battle.meme_one.created_at),
         ipfsCid: battle.meme_one.ipfs_cid || '',
         tags: battle.meme_one.tags || []
-      } : null,
+      } : undefined,
       memeTwo: battle.meme_two ? {
         id: battle.meme_two.id,
         prompt: battle.meme_two.prompt || '',
-        promptId: battle.meme_two.prompt_id || '',
+        prompt_id: battle.meme_two.prompt_id || '',
         imageUrl: battle.meme_two.image_url,
         caption: battle.meme_two.caption,
         creatorId: battle.meme_two.creator_id,
@@ -551,8 +558,8 @@ export async function getActiveBattles(limit = 10, offset = 0, filter: 'all' | '
         createdAt: new Date(battle.meme_two.created_at),
         ipfsCid: battle.meme_two.ipfs_cid || '',
         tags: battle.meme_two.tags || []
-      } : null,
-      isCommunity: battle.is_community || false
+      } : undefined,
+      is_community: battle.is_community || false
     }));
   } catch (error) {
     console.error('Error in getActiveBattles:', error);
@@ -596,9 +603,9 @@ export async function getPrompts(limit = 10, offset = 0, isCommunity?: boolean):
       active: prompt.active,
       startDate: new Date(prompt.start_date),
       endDate: new Date(prompt.end_date),
-      isCommunity: prompt.is_community || false,
+      is_community: prompt.is_community || false,
       description: prompt.description || '',
-      creatorId: prompt.creator_id || ''
+      creator_id: prompt.creator_id || ''
     }));
   } catch (error) {
     console.error('Error in getPrompts:', error);
@@ -653,9 +660,9 @@ export async function createPrompt(promptData: {
       active: data.active,
       startDate: new Date(data.start_date),
       endDate: new Date(data.end_date),
-      isCommunity: data.is_community || false,
+      is_community: data.is_community || false,
       description: data.description || '',
-      creatorId: data.creator_id || ''
+      creator_id: data.creator_id || ''
     };
   } catch (error) {
     console.error('Error in createPrompt:', error);
@@ -689,7 +696,7 @@ export async function getTrendingMemes(limit = 10): Promise<Meme[]> {
     return data.map(meme => ({
       id: meme.id,
       prompt: meme.prompt || '',
-      promptId: meme.prompt_id || '',
+      prompt_id: meme.prompt_id || '',
       imageUrl: meme.image_url,
       ipfsCid: meme.ipfs_cid || '',
       caption: meme.caption,
@@ -698,8 +705,15 @@ export async function getTrendingMemes(limit = 10): Promise<Meme[]> {
       createdAt: new Date(meme.created_at),
       tags: meme.tags || [],
       creator: meme.creator ? {
+        id: meme.creator_id,
         username: meme.creator.username,
-        avatarUrl: meme.creator.avatar_url || ''
+        avatarUrl: meme.creator.avatar_url || '',
+        memeStreak: 0,
+        wins: 0,
+        losses: 0,
+        level: 1,
+        xp: 0,
+        createdAt: new Date()
       } : undefined
     }));
   } catch (error) {
@@ -734,7 +748,7 @@ export async function getNewestMemes(limit = 10): Promise<Meme[]> {
     return data.map(meme => ({
       id: meme.id,
       prompt: meme.prompt || '',
-      promptId: meme.prompt_id || '',
+      prompt_id: meme.prompt_id || '',
       imageUrl: meme.image_url,
       ipfsCid: meme.ipfs_cid || '',
       caption: meme.caption,
@@ -743,8 +757,15 @@ export async function getNewestMemes(limit = 10): Promise<Meme[]> {
       createdAt: new Date(meme.created_at),
       tags: meme.tags || [],
       creator: meme.creator ? {
+        id: meme.creator_id,
         username: meme.creator.username,
-        avatarUrl: meme.creator.avatar_url || ''
+        avatarUrl: meme.creator.avatar_url || '',
+        memeStreak: 0,
+        wins: 0,
+        losses: 0,
+        level: 1,
+        xp: 0,
+        createdAt: new Date()
       } : undefined
     }));
   } catch (error) {
@@ -776,7 +797,7 @@ export async function getMemesByUserId(userId: string): Promise<Meme[]> {
     return data.map(meme => ({
       id: meme.id,
       prompt: meme.prompt || '',
-      promptId: meme.prompt_id || '',
+      prompt_id: meme.prompt_id || '',
       imageUrl: meme.image_url,
       ipfsCid: meme.ipfs_cid || '',
       caption: meme.caption,
