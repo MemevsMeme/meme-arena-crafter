@@ -178,3 +178,90 @@ export function getIpfsUrl(ipfsHash: string): string {
   
   return `https://purple-accessible-wolverine-380.mypinata.cloud/ipfs/${cleanedCid}`;
 }
+
+/**
+ * Enhanced function to upload a file to Supabase Storage with fallback buckets
+ * @param file The file to upload
+ * @param userId User ID for the path
+ * @param fileName Optional custom file name
+ * @returns Result object with the upload status and URL
+ */
+export async function uploadFileToSupabase(
+  file: File | Blob,
+  userId: string,
+  fileName?: string
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    // Generate a unique filename if not provided
+    const finalFileName = fileName || `${crypto.randomUUID()}${file instanceof File ? getFileExtension(file.name) : '.png'}`;
+    
+    // Try uploading to these buckets in order
+    const bucketsToTry = ['memes', 'public', 'avatars', 'images'];
+    
+    // First check if buckets exist
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    
+    if (bucketsError) {
+      console.error('Error listing buckets:', bucketsError);
+      return { success: false, error: `Error listing buckets: ${bucketsError.message}` };
+    }
+    
+    // Get available bucket names
+    const availableBuckets = buckets ? buckets.map(b => b.name) : [];
+    console.log('Available buckets:', availableBuckets);
+    
+    // Try each bucket in order until one works
+    for (const bucketName of bucketsToTry) {
+      // Skip if bucket doesn't exist
+      if (!availableBuckets.includes(bucketName)) {
+        console.log(`Bucket "${bucketName}" doesn't exist, trying next one`);
+        continue;
+      }
+      
+      console.log(`Attempting upload to ${bucketName} bucket`);
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from(bucketName)
+        .upload(`public/${userId}/${finalFileName}`, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: file instanceof File ? file.type : 'image/png',
+        });
+        
+      if (!uploadError) {
+        // Get public URL for the uploaded file
+        const { data: publicUrlData } = supabase.storage
+          .from(bucketName)
+          .getPublicUrl(`public/${userId}/${finalFileName}`);
+        
+        if (!publicUrlData?.publicUrl) {
+          console.warn(`Uploaded to ${bucketName} but couldn't get public URL`);
+          continue;
+        }
+        
+        console.log(`Successfully uploaded to ${bucketName} bucket:`, publicUrlData.publicUrl);
+        return { success: true, url: publicUrlData.publicUrl };
+      } else {
+        console.warn(`Failed to upload to ${bucketName} bucket:`, uploadError);
+      }
+    }
+    
+    // If we got here, all buckets failed
+    return { 
+      success: false, 
+      error: 'Failed to upload file to any available storage bucket' 
+    };
+  } catch (error: any) {
+    console.error('Exception in uploadFileToSupabase:', error);
+    return { 
+      success: false, 
+      error: `Upload error: ${error.message || 'Unknown error'}` 
+    };
+  }
+}
+
+// Helper function to get file extension
+function getFileExtension(filename: string): string {
+  const lastDotIndex = filename.lastIndexOf('.');
+  return lastDotIndex !== -1 ? filename.substring(lastDotIndex) : '';
+}
