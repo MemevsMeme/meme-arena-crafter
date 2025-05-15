@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +11,7 @@ import Footer from '@/components/layout/Footer';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,7 +24,8 @@ const Login = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate('/');
+      // Use replace to avoid adding to history stack
+      navigate('/', { replace: true });
     }
   }, [user, navigate]);
 
@@ -78,7 +79,8 @@ const Login = () => {
         toast.success('Welcome back!', {
           description: 'You have successfully logged in.',
         });
-        navigate('/');
+        // Use replace to avoid adding to history stack
+        navigate('/', { replace: true });
       }
     } catch (error: any) {
       console.error('Unexpected login error:', error);

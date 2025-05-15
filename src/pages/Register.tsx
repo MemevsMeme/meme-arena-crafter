@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,7 +25,8 @@ const Register = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate('/');
+      // Use replace to avoid adding to history stack
+      navigate('/', { replace: true });
     }
   }, [user, navigate]);
 
@@ -90,7 +90,7 @@ const Register = () => {
         toast.success('Registration successful!', {
           description: 'Please check your email to confirm your account.',
         });
-        navigate('/login');
+        navigate('/login', { replace: true });
       }
     } catch (error: any) {
       console.error('Unexpected signup error:', error);

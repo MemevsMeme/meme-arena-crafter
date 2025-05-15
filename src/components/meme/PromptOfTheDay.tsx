@@ -67,13 +67,6 @@ const PromptOfTheDay = ({
     try {
       console.log('Accepting challenge with prompt:', displayPrompt.text);
       
-      // Check if user is logged in before proceeding
-      if (!user) {
-        console.log('User not logged in, redirecting to login');
-        navigate('/login');
-        return;
-      }
-      
       // Store prompt in localStorage with a clear naming convention
       const simplifiedPrompt = {
         text: displayPrompt.text,
@@ -83,6 +76,14 @@ const PromptOfTheDay = ({
       
       localStorage.setItem('active_challenge_prompt', JSON.stringify(simplifiedPrompt));
       console.log('Challenge prompt stored in localStorage with key: active_challenge_prompt');
+      
+      // Check if user is logged in before proceeding
+      if (!user) {
+        console.log('User not logged in, redirecting to login');
+        // Use replace instead of push to prevent navigation loop
+        navigate('/login', { replace: true });
+        return;
+      }
       
       // Navigate to create page
       navigate('/create');
