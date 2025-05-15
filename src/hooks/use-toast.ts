@@ -170,6 +170,46 @@ function toast({ ...props }: Toast) {
   }
 }
 
+// Add helper methods to the toast function
+toast.success = (title: string, { description, ...props }: Omit<Toast, "title"> = {}) => {
+  return toast({
+    title,
+    description,
+    variant: "default",
+    className: "bg-green-500",
+    ...props,
+  });
+};
+
+toast.error = (title: string, { description, ...props }: Omit<Toast, "title"> = {}) => {
+  return toast({
+    title,
+    description,
+    variant: "destructive",
+    ...props,
+  });
+};
+
+toast.warning = (title: string, { description, ...props }: Omit<Toast, "title"> = {}) => {
+  return toast({
+    title,
+    description,
+    variant: "default",
+    className: "bg-yellow-500",
+    ...props,
+  });
+};
+
+toast.info = (title: string, { description, ...props }: Omit<Toast, "title"> = {}) => {
+  return toast({
+    title,
+    description,
+    variant: "default",
+    className: "bg-blue-500",
+    ...props,
+  });
+};
+
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 
