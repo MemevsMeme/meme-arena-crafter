@@ -325,13 +325,13 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
           text: promptData.text,
           theme: promptData.theme || '',
           description: promptData.description || '',
-          is_community: promptData.is_community || false, // Changed from isCommunity to is_community
-          creator_id: promptData.creator_id || '', // Changed from creatorId to creator_id
+          is_community: promptData.is_community || false,
+          creator_id: promptData.creator_id || '',
           startDate: new Date(promptData.start_date),
           endDate: new Date(promptData.end_date),
           active: promptData.active,
           tags: promptData.tags || [],
-          dailyChallengeId: promptData.daily_challenge_id
+          daily_challenge_id: promptData.daily_challenge_id
         };
       }
       
@@ -341,14 +341,14 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
         status: battle.status as 'active' | 'completed' | 'cancelled',
         startTime: new Date(battle.start_time),
         endTime: new Date(battle.end_time),
-        prompt: prompt,
+        prompt,
         promptId: battle.prompt_id || '',
         memeOneId: battle.meme_one_id,
         memeTwoId: battle.meme_two_id,
-        creator_id: battle.creator_id || '', // Changed from creatorId to creator_id
+        creator_id: battle.creator_id || '',
         winnerId: battle.winner_id || '',
         voteCount: battle.vote_count,
-        is_community: battle.is_community || false, // Changed from isCommunity to is_community
+        is_community: battle.is_community || false,
         memeOne,
         memeTwo
       };
@@ -442,13 +442,13 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
         text: promptData.text,
         theme: promptData.theme || '',
         description: promptData.description || '',
-        is_community: promptData.is_community || false, // Changed from isCommunity to is_community
-        creator_id: promptData.creator_id || '', // Changed from creatorId to creator_id
+        is_community: promptData.is_community || false,
+        creator_id: promptData.creator_id || '',
         startDate: new Date(promptData.start_date),
         endDate: new Date(promptData.end_date),
         active: promptData.active,
         tags: promptData.tags || [],
-        dailyChallengeId: promptData.daily_challenge_id
+        daily_challenge_id: promptData.daily_challenge_id
       };
     }
     
@@ -461,10 +461,10 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
       promptId: battle.prompt_id || '',
       memeOneId: battle.meme_one_id,
       memeTwoId: battle.meme_two_id,
-      creator_id: battle.creator_id || '', // Changed from creatorId to creator_id
+      creator_id: battle.creator_id || '',
       winnerId: battle.winner_id || '',
       voteCount: battle.vote_count,
-      is_community: battle.is_community || false, // Changed from isCommunity to is_community
+      is_community: battle.is_community || false,
       memeOne,
       memeTwo
     };
@@ -495,13 +495,13 @@ export async function getPromptById(promptId: string): Promise<Prompt | null> {
       text: data.text,
       theme: data.theme || '',
       description: data.description || '',
-      is_community: data.is_community || false, // Changed from isCommunity to is_community
-      creator_id: data.creator_id || '', // Changed from creatorId to creator_id
+      is_community: data.is_community || false,
+      creator_id: data.creator_id || '',
       startDate: new Date(data.start_date),
       endDate: new Date(data.end_date),
       active: data.active,
       tags: data.tags || [],
-      dailyChallengeId: data.daily_challenge_id
+      daily_challenge_id: data.daily_challenge_id
     };
   } catch (error) {
     console.error('Error in getPromptById:', error);
@@ -541,13 +541,13 @@ export async function getPrompts(limit: number = 10, offset: number = 0, isCommu
       text: prompt.text,
       theme: prompt.theme || '',
       description: prompt.description || '',
-      is_community: prompt.is_community || false, // Changed from isCommunity to is_community
-      creator_id: prompt.creator_id || '', // Changed from creatorId to creator_id
+      is_community: prompt.is_community || false,
+      creator_id: prompt.creator_id || '',
       startDate: new Date(prompt.start_date),
       endDate: new Date(prompt.end_date),
       active: prompt.active,
       tags: prompt.tags || [],
-      dailyChallengeId: prompt.daily_challenge_id
+      daily_challenge_id: prompt.daily_challenge_id
     }));
   } catch (error) {
     console.error('Error in getPrompts:', error);
@@ -783,8 +783,8 @@ export async function createPrompt(promptData: {
   theme?: string;
   description?: string;
   tags: string[];
-  is_community: boolean; // Changed from isCommunity to is_community
-  creator_id: string; // Changed from creatorId to creator_id
+  is_community: boolean;
+  creator_id: string;
   startDate: Date;
   endDate: Date;
 }): Promise<Prompt | null> {
@@ -796,8 +796,8 @@ export async function createPrompt(promptData: {
         theme: promptData.theme || null,
         description: promptData.description || null,
         tags: promptData.tags,
-        is_community: promptData.is_community, // Changed from isCommunity to is_community
-        creator_id: promptData.creator_id, // Changed from creatorId to creator_id
+        is_community: promptData.is_community,
+        creator_id: promptData.creator_id,
         start_date: promptData.startDate.toISOString(),
         end_date: promptData.endDate.toISOString(),
         active: true
@@ -815,13 +815,13 @@ export async function createPrompt(promptData: {
       text: data.text,
       theme: data.theme || '',
       description: data.description || '',
-      is_community: data.is_community || false, // Changed from isCommunity to is_community
-      creator_id: data.creator_id || '', // Changed from creatorId to creator_id
+      is_community: data.is_community || false,
+      creator_id: data.creator_id || '',
       startDate: new Date(data.start_date),
       endDate: new Date(data.end_date),
       active: data.active,
       tags: data.tags || [],
-      dailyChallengeId: data.daily_challenge_id
+      daily_challenge_id: data.daily_challenge_id
     };
   } catch (error) {
     console.error('Error in createPrompt:', error);
@@ -866,13 +866,13 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
         text: fallback.text,
         theme: fallback.theme || '',
         description: fallback.description || '',
-        is_community: fallback.is_community || false, // Changed from isCommunity to is_community
-        creator_id: fallback.creator_id || '', // Changed from creatorId to creator_id
+        is_community: fallback.is_community || false,
+        creator_id: fallback.creator_id || '',
         startDate: new Date(fallback.start_date),
         endDate: new Date(fallback.end_date),
         active: fallback.active,
         tags: fallback.tags || [],
-        dailyChallengeId: fallback.daily_challenge_id
+        daily_challenge_id: fallback.daily_challenge_id
       };
     }
     
@@ -891,13 +891,13 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
           text: linkedPrompt.text,
           theme: linkedPrompt.theme || '',
           description: linkedPrompt.description || '',
-          is_community: linkedPrompt.is_community || false, // Changed from isCommunity to is_community
-          creator_id: linkedPrompt.creator_id || '', // Changed from creatorId to creator_id
+          is_community: linkedPrompt.is_community || false,
+          creator_id: linkedPrompt.creator_id || '',
           startDate: new Date(linkedPrompt.start_date),
           endDate: new Date(linkedPrompt.end_date),
           active: linkedPrompt.active,
           tags: linkedPrompt.tags || [],
-          dailyChallengeId: linkedPrompt.daily_challenge_id
+          daily_challenge_id: linkedPrompt.daily_challenge_id
         };
       }
       
@@ -912,8 +912,8 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
           text: challenge.text,
           theme: challenge.theme,
           tags: challenge.tags || [],
-          is_community: false, // Changed from isCommunity to is_community
-          creator_id: null, // Changed from creatorId to creator_id - System-created
+          is_community: false,
+          creator_id: null,
           start_date: now.toISOString(),
           end_date: tomorrow.toISOString(),
           active: true,
@@ -932,13 +932,13 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
         text: newPrompt.text,
         theme: newPrompt.theme || '',
         description: newPrompt.description || '',
-        is_community: newPrompt.is_community || false, // Changed from isCommunity to is_community
-        creator_id: newPrompt.creator_id || '', // Changed from creatorId to creator_id
+        is_community: newPrompt.is_community || false,
+        creator_id: newPrompt.creator_id || '',
         startDate: new Date(newPrompt.start_date),
         endDate: new Date(newPrompt.end_date),
         active: newPrompt.active,
         tags: newPrompt.tags || [],
-        dailyChallengeId: newPrompt.daily_challenge_id
+        daily_challenge_id: newPrompt.daily_challenge_id
       };
     }
     

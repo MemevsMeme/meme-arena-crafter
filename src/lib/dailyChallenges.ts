@@ -30,8 +30,8 @@ export function getFallbackChallenge(): Prompt {
     startDate: new Date(),
     endDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
     description: 'When the code just won\'t work',
-    creator_id: 'system', // Changed from creatorId to creator_id
-    is_community: false,  // Changed from isCommunity to is_community
-    dailyChallengeId: 'fallback'
+    creator_id: 'system', 
+    is_community: false,
+    daily_challenge_id: 'fallback'
   };
 }
