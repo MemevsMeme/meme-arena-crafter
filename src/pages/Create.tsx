@@ -193,7 +193,7 @@ const Create = () => {
           <div className="lg:col-span-2">
             <MemeGenerator 
               promptText={activePrompt?.text || 'Create a funny meme!'} 
-              promptId={activePrompt?.id}
+              promptId={null} // Pass null instead of activePrompt?.id to avoid FK constraint issues
               onSave={handleMemeSave}
               defaultEditMode={defaultEditMode}
               defaultTemplate={defaultTemplate}

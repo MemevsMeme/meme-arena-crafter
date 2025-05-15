@@ -19,7 +19,7 @@ import { generateMemeImage } from '@/lib/ai';
 
 interface MemeGeneratorProps {
   promptText: string;
-  promptId?: string;
+  promptId?: string | null;
   onSave?: (meme: { id: string; caption: string; imageUrl: string }) => void;
   defaultEditMode?: boolean;
   defaultTemplate?: any;
@@ -483,7 +483,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       // Create meme record in database
       const newMeme = await createMeme({
         prompt: promptText,
-        prompt_id: promptId,
+        prompt_id: promptId, // This can now be null or undefined
         imageUrl,
         ipfsCid,
         caption: caption || '',
