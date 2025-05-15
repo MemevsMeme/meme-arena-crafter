@@ -1,4 +1,5 @@
 
+
 // Update the import statement to reference the correct path
 import { supabase } from '@/integrations/supabase/client';
 import { Prompt, User, Meme, Battle } from './types';
@@ -333,8 +334,8 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
       .from('battles')
       .select(`
         *,
-        meme_one:meme_one_id(*),
-        meme_two:meme_two_id(*)
+        meme_one:memes!battles_meme_one_id_fkey(*),
+        meme_two:memes!battles_meme_two_id_fkey(*)
       `)
       .eq('id', battleId)
       .single();
@@ -353,7 +354,7 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
       promptId: data.prompt_id || '',
       memeOneId: data.meme_one_id,
       memeTwoId: data.meme_two_id,
-      status: data.status,
+      status: data.status as "active" | "completed" | "cancelled",
       startTime: new Date(data.start_time),
       endTime: new Date(data.end_time),
       creator_id: data.creator_id || '',
@@ -504,8 +505,8 @@ export async function getActiveBattles(limit = 10, offset = 0, filter: 'all' | '
       .from('battles')
       .select(`
         *,
-        meme_one:meme_one_id(*),
-        meme_two:meme_two_id(*)
+        meme_one:memes!battles_meme_one_id_fkey(*),
+        meme_two:memes!battles_meme_two_id_fkey(*)
       `)
       .eq('status', 'active')
       .order('start_time', { ascending: false });
@@ -516,9 +517,7 @@ export async function getActiveBattles(limit = 10, offset = 0, filter: 'all' | '
       query = query.eq('is_community', false);
     }
 
-    query = query.range(offset, offset + limit - 1);
-
-    const { data, error } = await query;
+    const { data, error } = await query.range(offset, offset + limit - 1);
 
     if (error) {
       console.error('Error getting active battles:', error);
@@ -534,7 +533,7 @@ export async function getActiveBattles(limit = 10, offset = 0, filter: 'all' | '
       promptId: battle.prompt_id || '',
       memeOneId: battle.meme_one_id,
       memeTwoId: battle.meme_two_id,
-      status: battle.status,
+      status: battle.status as "active" | "completed" | "cancelled",
       startTime: new Date(battle.start_time),
       endTime: new Date(battle.end_time),
       creator_id: battle.creator_id || '',
@@ -587,9 +586,7 @@ export async function getPrompts(limit = 10, offset = 0, isCommunity?: boolean):
       query = query.eq('is_community', isCommunity);
     }
 
-    query = query.range(offset, offset + limit - 1);
-
-    const { data, error } = await query;
+    const { data, error } = await query.range(offset, offset + limit - 1);
 
     if (error) {
       console.error('Error getting prompts:', error);
@@ -844,3 +841,4 @@ export async function getMemesByUserId(userId: string): Promise<Meme[]> {
     return [];
   }
 }
+
