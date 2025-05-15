@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { getFallbackChallenge } from '@/lib/dailyChallenges';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner'; // Switch to sonner toast
 
 interface PromptOfTheDayProps {
   prompt?: Prompt | null; // Accept Prompt object or null
@@ -77,18 +77,21 @@ const PromptOfTheDay = ({
       localStorage.setItem('active_challenge_prompt', JSON.stringify(simplifiedPrompt));
       console.log('Challenge prompt stored in localStorage with key: active_challenge_prompt');
       
-      // Navigate to create page if authenticated, otherwise this should not be called
+      // Navigate to create page for authenticated users
       navigate('/create');
     } catch (error) {
       console.error("Error accepting challenge:", error);
+      toast.error("Failed to accept challenge. Please try again.");
     }
   };
   
   const handleLoginRedirect = () => {
-    toast({
-      title: "Login Required",
-      description: "Please sign in to accept this challenge",
-    });
+    toast.info("Please sign in to accept this challenge");
+    
+    // Save where the user was trying to go
+    localStorage.setItem('returnUrl', '/create');
+    
+    // Navigate to login
     navigate('/login');
   };
 

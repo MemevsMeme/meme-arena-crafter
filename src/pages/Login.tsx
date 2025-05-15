@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
@@ -17,37 +17,32 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [returnUrl, setReturnUrl] = useState('/');
-  const hasRedirected = useRef(false);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
 
   // Check for return URL in localStorage (set by challenges or protected routes)
-  useEffect(() => {
-    const storedReturnUrl = localStorage.getItem('returnUrl');
-    if (storedReturnUrl) {
-      setReturnUrl(storedReturnUrl);
-      localStorage.removeItem('returnUrl');
-    }
-  }, []);
+  const returnUrl = localStorage.getItem('returnUrl') || '/';
 
-  // Redirect if already logged in - but only once and only on initial mount
+  // Redirect if already logged in - simpler approach
   useEffect(() => {
-    if (user && !hasRedirected.current) {
-      hasRedirected.current = true;
+    if (user && !redirectAttempted) {
+      setRedirectAttempted(true);
       console.log('User already logged in, redirecting to:', returnUrl);
-      navigate(returnUrl, { replace: true });
+      
+      // Clean up returnUrl
+      localStorage.removeItem('returnUrl');
+      
+      // Use setTimeout to break potential render cycles
+      setTimeout(() => {
+        navigate(returnUrl, { replace: true });
+      }, 100);
     }
-  }, [user, navigate, returnUrl]);
+  }, [user, navigate, returnUrl, redirectAttempted]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
-      toast({
-        title: "Required Fields Missing",
-        description: "Please enter both email and password.",
-        variant: "destructive",
-      });
+      toast.error("Please enter both email and password.");
       return;
     }
 
@@ -64,28 +59,14 @@ const Login = () => {
           errorMessage = 'Please confirm your email before logging in';
         }
         
-        toast({
-          title: "Login Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        toast.error(errorMessage);
       } else {
-        toast({
-          title: "Success",
-          description: 'You have successfully logged in.',
-          variant: "default",
-        });
-        // Navigation handled by the useEffect that watches the user state
-        hasRedirected.current = true;
-        navigate(returnUrl, { replace: true });
+        toast.success('You have successfully logged in.');
+        // Let the useEffect handle navigation
       }
     } catch (error: any) {
       console.error('Unexpected login error:', error);
-      toast({
-        title: "Login Failed",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
