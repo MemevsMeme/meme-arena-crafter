@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Configure CORS headers
 const corsHeaders = {
@@ -9,7 +10,15 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400',
 };
 
+// Create Supabase client for database operations
+const supabaseAdmin = createClient(
+  Deno.env.get('SUPABASE_URL') || '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+);
+
 serve(async (req) => {
+  console.log("Pinata upload function called");
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
@@ -19,8 +28,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Pinata upload function called");
-    
     // Get the API key and JWT from environment variables
     const pinataApiKey = Deno.env.get('PIN_API');
     const pinataSecretApiKey = Deno.env.get('PIN_SECRET');
@@ -75,29 +82,34 @@ serve(async (req) => {
         const pinataUrl = 'https://api.pinata.cloud/pinning/pinFileToIPFS';
         console.log("Using Pinata URL:", pinataUrl);
         
-        const pinataResponse = await fetch(pinataUrl, {
-          method: 'POST',
-          headers: authHeader,
-          body: pinataData,
-        });
+        try {
+          const pinataResponse = await fetch(pinataUrl, {
+            method: 'POST',
+            headers: authHeader,
+            body: pinataData,
+          });
 
-        if (!pinataResponse.ok) {
-          const errorText = await pinataResponse.text();
-          console.error('Pinata API error:', pinataResponse.status, errorText);
-          throw new Error(`Pinata API error: ${pinataResponse.status} - ${errorText}`);
+          if (!pinataResponse.ok) {
+            const errorText = await pinataResponse.text();
+            console.error('Pinata API error:', pinataResponse.status, errorText);
+            throw new Error(`Pinata API error: ${pinataResponse.status} - ${errorText}`);
+          }
+
+          const data = await pinataResponse.json();
+          console.log('Successfully pinned file to IPFS:', data);
+
+          return new Response(JSON.stringify({
+            success: true,
+            ipfsHash: data.IpfsHash,
+            pinataUrl: `https://gateway.pinata.cloud/ipfs/${data.IpfsHash}`,
+            gatewayUrl: `https://purple-accessible-wolverine-380.mypinata.cloud/ipfs/${data.IpfsHash}`
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (err) {
+          console.error("Error during Pinata upload:", err);
+          throw err;
         }
-
-        const data = await pinataResponse.json();
-        console.log('Successfully pinned file to IPFS:', data);
-
-        return new Response(JSON.stringify({
-          success: true,
-          ipfsHash: data.IpfsHash,
-          pinataUrl: `https://gateway.pinata.cloud/ipfs/${data.IpfsHash}`,
-          gatewayUrl: `https://purple-accessible-wolverine-380.mypinata.cloud/ipfs/${data.IpfsHash}`
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
       } catch (formError) {
         console.error("Form data processing error:", formError);
         throw formError;

@@ -20,34 +20,44 @@ const Create = () => {
   
   const [defaultEditMode] = useState<boolean>(false);
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Simplified auth check
+  // Improved auth check with protection against looping
   useEffect(() => {
-    const checkAuth = () => {
-      // If auth is still loading, wait
-      if (loading) {
-        return;
-      }
-      
-      // If not authenticated after loading completes, redirect to login
-      if (!session && !loading) {
-        console.log('User not authenticated, redirecting to login');
-        localStorage.setItem('returnUrl', '/create');
-        navigate('/login');
-        return;
-      }
-
-      // Once authenticated, load prompt
-      loadPrompt();
-    };
+    // Skip if we've already completed the auth check
+    if (authChecked) return;
     
-    checkAuth();
-  }, [loading, session, navigate]);
+    // If auth is still loading, wait
+    if (loading) return;
+    
+    // Mark auth check as completed
+    setAuthChecked(true);
+    
+    // If not authenticated after loading completes, redirect to login
+    if (!session && !loading) {
+      console.log('User not authenticated, redirecting to login');
+      try {
+        localStorage.setItem('returnUrl', '/create');
+      } catch (err) {
+        console.error('Failed to set localStorage:', err);
+      }
+      navigate('/login');
+      return;
+    }
+    
+    // Once authenticated, load prompt
+    loadPrompt();
+  }, [loading, session, navigate, authChecked]);
 
   const loadPrompt = () => {
     try {
       // Look for challenge prompt in localStorage
-      const storedPromptData = localStorage.getItem('active_challenge_prompt');
+      let storedPromptData;
+      try {
+        storedPromptData = localStorage.getItem('active_challenge_prompt');
+      } catch (err) {
+        console.error('Failed to access localStorage:', err);
+      }
       
       if (storedPromptData) {
         console.log('Found stored prompt data:', storedPromptData);
@@ -75,7 +85,11 @@ const Create = () => {
           });
           
           // Remove from localStorage to prevent future issues
-          localStorage.removeItem('active_challenge_prompt');
+          try {
+            localStorage.removeItem('active_challenge_prompt');
+          } catch (err) {
+            console.error('Failed to remove from localStorage:', err);
+          }
         } else {
           console.log('Using fallback prompt (stored prompt invalid)');
           setFallbackPrompt();
@@ -109,6 +123,11 @@ const Create = () => {
     console.log('Meme created successfully:', meme);
     setCreatedMeme(meme);
     
+    toast({
+      title: "Meme Created!",
+      description: "Your meme has been successfully saved.",
+    });
+    
     // Navigate to the meme profile page after a short delay
     setTimeout(() => {
       if (user) {
@@ -134,7 +153,18 @@ const Create = () => {
 
   // If not authenticated, redirection is handled in useEffect
   if (!user) {
-    return null;
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="container mx-auto px-4 py-8 flex-grow">
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h2 className="text-lg font-medium text-yellow-800">Authentication Required</h2>
+            <p className="text-sm text-yellow-700">Please login to create memes. You'll be redirected shortly...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   return (
