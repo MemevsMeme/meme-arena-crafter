@@ -349,7 +349,7 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
 
     return {
       id: data.id,
-      prompt_id: data.prompt_id || '',
+      promptId: data.prompt_id || '',
       memeOneId: data.meme_one_id,
       memeTwoId: data.meme_two_id,
       status: data.status,
@@ -530,7 +530,7 @@ export async function getActiveBattles(limit = 10, offset = 0, filter: 'all' | '
 
     return data.map(battle => ({
       id: battle.id,
-      prompt_id: battle.prompt_id || '',
+      promptId: battle.prompt_id || '',
       memeOneId: battle.meme_one_id,
       memeTwoId: battle.meme_two_id,
       status: battle.status,
@@ -679,12 +679,10 @@ export async function createPrompt(promptData: {
  */
 export async function getTrendingMemes(limit = 10): Promise<Meme[]> {
   try {
+    // Get memes without trying to join with creator since that's not working correctly
     const { data, error } = await supabase
       .from('memes')
-      .select(`
-        *,
-        creator:creator_id(username, avatar_url, id)
-      `)
+      .select('*')
       .order('votes', { ascending: false })
       .limit(limit);
 
@@ -697,29 +695,45 @@ export async function getTrendingMemes(limit = 10): Promise<Meme[]> {
       return [];
     }
 
-    return data.map(meme => ({
-      id: meme.id,
-      prompt: meme.prompt || '',
-      prompt_id: meme.prompt_id || '',
-      imageUrl: meme.image_url,
-      ipfsCid: meme.ipfs_cid || '',
-      caption: meme.caption,
-      creatorId: meme.creator_id,
-      votes: meme.votes || 0,
-      createdAt: new Date(meme.created_at),
-      tags: meme.tags || [],
-      creator: meme.creator ? {
-        id: meme.creator.id,
-        username: meme.creator.username,
-        avatarUrl: meme.creator.avatar_url || '',
-        memeStreak: 0,
-        wins: 0,
-        losses: 0,
-        level: 1,
-        xp: 0,
-        createdAt: new Date()
-      } : undefined
-    }));
+    // Then fetch any profiles we need separately
+    const creatorIds = [...new Set(data.map(meme => meme.creator_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', creatorIds);
+
+    const profilesMap = (profiles || []).reduce((acc, profile) => {
+      acc[profile.id] = profile;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return data.map(meme => {
+      const creatorProfile = profilesMap[meme.creator_id];
+      
+      return {
+        id: meme.id,
+        prompt: meme.prompt || '',
+        prompt_id: meme.prompt_id || '',
+        imageUrl: meme.image_url,
+        ipfsCid: meme.ipfs_cid || '',
+        caption: meme.caption,
+        creatorId: meme.creator_id,
+        votes: meme.votes || 0,
+        createdAt: new Date(meme.created_at),
+        tags: meme.tags || [],
+        creator: creatorProfile ? {
+          id: creatorProfile.id,
+          username: creatorProfile.username,
+          avatarUrl: creatorProfile.avatar_url || '',
+          memeStreak: creatorProfile.meme_streak || 0,
+          wins: creatorProfile.wins || 0,
+          losses: creatorProfile.losses || 0,
+          level: creatorProfile.level || 1,
+          xp: creatorProfile.xp || 0,
+          createdAt: new Date(creatorProfile.created_at)
+        } : undefined
+      };
+    });
   } catch (error) {
     console.error('Error in getTrendingMemes:', error);
     return [];
@@ -731,12 +745,10 @@ export async function getTrendingMemes(limit = 10): Promise<Meme[]> {
  */
 export async function getNewestMemes(limit = 10): Promise<Meme[]> {
   try {
+    // Get memes without trying to join with creator since that's not working correctly
     const { data, error } = await supabase
       .from('memes')
-      .select(`
-        *,
-        creator:creator_id(username, avatar_url, id)
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -749,29 +761,45 @@ export async function getNewestMemes(limit = 10): Promise<Meme[]> {
       return [];
     }
 
-    return data.map(meme => ({
-      id: meme.id,
-      prompt: meme.prompt || '',
-      prompt_id: meme.prompt_id || '',
-      imageUrl: meme.image_url,
-      ipfsCid: meme.ipfs_cid || '',
-      caption: meme.caption,
-      creatorId: meme.creator_id,
-      votes: meme.votes || 0,
-      createdAt: new Date(meme.created_at),
-      tags: meme.tags || [],
-      creator: meme.creator ? {
-        id: meme.creator.id,
-        username: meme.creator.username,
-        avatarUrl: meme.creator.avatar_url || '',
-        memeStreak: 0,
-        wins: 0,
-        losses: 0,
-        level: 1,
-        xp: 0,
-        createdAt: new Date()
-      } : undefined
-    }));
+    // Then fetch any profiles we need separately
+    const creatorIds = [...new Set(data.map(meme => meme.creator_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', creatorIds);
+
+    const profilesMap = (profiles || []).reduce((acc, profile) => {
+      acc[profile.id] = profile;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return data.map(meme => {
+      const creatorProfile = profilesMap[meme.creator_id];
+      
+      return {
+        id: meme.id,
+        prompt: meme.prompt || '',
+        prompt_id: meme.prompt_id || '',
+        imageUrl: meme.image_url,
+        ipfsCid: meme.ipfs_cid || '',
+        caption: meme.caption,
+        creatorId: meme.creator_id,
+        votes: meme.votes || 0,
+        createdAt: new Date(meme.created_at),
+        tags: meme.tags || [],
+        creator: creatorProfile ? {
+          id: creatorProfile.id,
+          username: creatorProfile.username,
+          avatarUrl: creatorProfile.avatar_url || '',
+          memeStreak: creatorProfile.meme_streak || 0,
+          wins: creatorProfile.wins || 0,
+          losses: creatorProfile.losses || 0,
+          level: creatorProfile.level || 1,
+          xp: creatorProfile.xp || 0,
+          createdAt: new Date(creatorProfile.created_at)
+        } : undefined
+      };
+    });
   } catch (error) {
     console.error('Error in getNewestMemes:', error);
     return [];

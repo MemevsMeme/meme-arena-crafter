@@ -412,28 +412,24 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       const fileExt = isGif ? '.gif' : '.png';
       const fileName = `${uuidv4()}${fileExt}`;
       
-      console.log('Uploading meme to storage bucket');
+      console.log('Uploading meme to storage');
       
-      // Check if storage bucket exists, if not create it
-      const { data: bucketData } = await supabase.storage.getBucket('memes');
+      // First check if bucket exists
+      const { data: bucketList } = await supabase.storage.listBuckets();
       
-      if (!bucketData) {
-        console.log('Creating memes storage bucket');
-        const { data: newBucket, error: createBucketError } = await supabase.storage.createBucket('memes', {
-          public: true,
-          fileSizeLimit: 10485760, // 10MB
-        });
-        
-        if (createBucketError) {
-          console.error('Error creating storage bucket:', createBucketError);
-          setSaveError(`Error creating storage bucket: ${createBucketError.message}`);
-          throw new Error(`Error creating storage bucket: ${createBucketError.message}`);
-        }
+      // Check if memes bucket exists
+      let memesBucketExists = false;
+      if (bucketList) {
+        memesBucketExists = bucketList.some(bucket => bucket.name === 'memes');
       }
+      
+      // If memes bucket doesn't exist yet, we'll use the default public bucket instead
+      // The user would need to set up proper permissions for bucket creation
+      const bucketName = memesBucketExists ? 'memes' : 'public';
       
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('memes')
+        .from(bucketName)
         .upload(`public/${user.id}/${fileName}`, blob, {
           cacheControl: '3600',
           upsert: false,
@@ -450,7 +446,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       
       // Get public URL for the uploaded file
       const { data: publicUrlData } = supabase.storage
-        .from('memes')
+        .from(bucketName)
         .getPublicUrl(`public/${user.id}/${fileName}`);
       
       if (!publicUrlData?.publicUrl) {
@@ -543,7 +539,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       setIsCreatingMeme(false);
     }
   };
-  
   
   return (
     <div className="meme-generator border rounded-xl p-4 bg-background shadow-sm">
