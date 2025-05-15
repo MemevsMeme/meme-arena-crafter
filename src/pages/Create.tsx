@@ -20,44 +20,34 @@ const Create = () => {
   
   const [defaultEditMode] = useState<boolean>(false);
   const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
-  const [authChecked, setAuthChecked] = useState(false);
 
-  // Improved auth check with protection against looping
+  // Simplified auth check
   useEffect(() => {
-    // Skip if we've already completed the auth check
-    if (authChecked) return;
-    
-    // If auth is still loading, wait
-    if (loading) return;
-    
-    // Mark auth check as completed
-    setAuthChecked(true);
-    
-    // If not authenticated after loading completes, redirect to login
-    if (!session && !loading) {
-      console.log('User not authenticated, redirecting to login');
-      try {
-        localStorage.setItem('returnUrl', '/create');
-      } catch (err) {
-        console.error('Failed to set localStorage:', err);
+    const checkAuth = () => {
+      // If auth is still loading, wait
+      if (loading) {
+        return;
       }
-      navigate('/login');
-      return;
-    }
+      
+      // If not authenticated after loading completes, redirect to login
+      if (!session && !loading) {
+        console.log('User not authenticated, redirecting to login');
+        localStorage.setItem('returnUrl', '/create');
+        navigate('/login');
+        return;
+      }
+
+      // Once authenticated, load prompt
+      loadPrompt();
+    };
     
-    // Once authenticated, load prompt
-    loadPrompt();
-  }, [loading, session, navigate, authChecked]);
+    checkAuth();
+  }, [loading, session, navigate]);
 
   const loadPrompt = () => {
     try {
       // Look for challenge prompt in localStorage
-      let storedPromptData;
-      try {
-        storedPromptData = localStorage.getItem('active_challenge_prompt');
-      } catch (err) {
-        console.error('Failed to access localStorage:', err);
-      }
+      const storedPromptData = localStorage.getItem('active_challenge_prompt');
       
       if (storedPromptData) {
         console.log('Found stored prompt data:', storedPromptData);
@@ -85,11 +75,7 @@ const Create = () => {
           });
           
           // Remove from localStorage to prevent future issues
-          try {
-            localStorage.removeItem('active_challenge_prompt');
-          } catch (err) {
-            console.error('Failed to remove from localStorage:', err);
-          }
+          localStorage.removeItem('active_challenge_prompt');
         } else {
           console.log('Using fallback prompt (stored prompt invalid)');
           setFallbackPrompt();
@@ -123,10 +109,6 @@ const Create = () => {
     console.log('Meme created successfully:', meme);
     setCreatedMeme(meme);
     
-    toast("Meme Created!", {
-      description: "Your meme has been successfully saved."
-    });
-    
     // Navigate to the meme profile page after a short delay
     setTimeout(() => {
       if (user) {
@@ -152,18 +134,7 @@ const Create = () => {
 
   // If not authenticated, redirection is handled in useEffect
   if (!user) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Navbar />
-        <main className="container mx-auto px-4 py-8 flex-grow">
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h2 className="text-lg font-medium text-yellow-800">Authentication Required</h2>
-            <p className="text-sm text-yellow-700">Please login to create memes. You'll be redirected shortly...</p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -193,7 +164,7 @@ const Create = () => {
           <div className="lg:col-span-2">
             <MemeGenerator 
               promptText={activePrompt?.text || 'Create a funny meme!'} 
-              promptId={null} // Pass null instead of activePrompt?.id to avoid FK constraint issues
+              promptId={activePrompt?.id}
               onSave={handleMemeSave}
               defaultEditMode={defaultEditMode}
               defaultTemplate={defaultTemplate}
