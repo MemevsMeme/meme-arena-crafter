@@ -12,11 +12,12 @@ export const supabase = createClient<Database>(
   SUPABASE_PUBLISHABLE_KEY,
   {
     auth: {
-      storage: localStorage,
+      storage: typeof window !== 'undefined' ? localStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
     }
   }
 );
 
+// Log some debug information
 console.info("✅ Supabase client connected successfully");

@@ -1,5 +1,3 @@
-
-
 // Update the import statement to reference the correct path
 import { supabase } from '@/integrations/supabase/client';
 import { Prompt, User, Meme, Battle } from './types';
@@ -841,4 +839,3 @@ export async function getMemesByUserId(userId: string): Promise<Meme[]> {
     return [];
   }
 }
-

@@ -17,15 +17,22 @@ export async function uploadFileToIPFS(file: File, name?: string): Promise<{
   try {
     console.log(`Uploading file to IPFS: ${file.name}, size: ${file.size}, type: ${file.type}`);
     
+    // Create a fresh FormData instance
     const formData = new FormData();
     formData.append('file', file);
     if (name) {
       formData.append('name', name);
     }
 
-    // Use the edge function to upload to Pinata
+    console.log("FormData created successfully, sending to edge function");
+
+    // Use the edge function to upload to Pinata with custom caching headers
     const { data, error } = await supabase.functions.invoke('pinata-upload', {
       body: formData,
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      }
     });
 
     if (error) {
