@@ -2,7 +2,7 @@
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Create from "./pages/Create";
@@ -26,8 +26,8 @@ const App = () => (
     <BrowserRouter>
       <AuthProvider>
         <TooltipProvider>
-          {/* Use only Sonner toast to avoid conflicts */}
-          <Toaster position="top-right" closeButton />
+          {/* Only use Sonner toast - remove references to other toast systems */}
+          <Toaster position="top-right" closeButton richColors />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/create" element={<Create />} />

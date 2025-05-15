@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
@@ -34,47 +34,27 @@ const Register = () => {
 
   const validateForm = () => {
     if (!username || !email || !password || !confirmPassword) {
-      toast({
-        title: "Required Fields Missing",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
+      toast.error("Please fill in all required fields.");
       return false;
     }
 
     if (username.length < 3) {
-      toast({
-        title: "Username Too Short",
-        description: "Username must be at least 3 characters.",
-        variant: "destructive",
-      });
+      toast.error("Username must be at least 3 characters.");
       return false;
     }
 
     if (password.length < 6) {
-      toast({
-        title: "Password Too Short",
-        description: "Password must be at least 6 characters.",
-        variant: "destructive",
-      });
+      toast.error("Password must be at least 6 characters.");
       return false;
     }
 
     if (password !== confirmPassword) {
-      toast({
-        title: "Password Mismatch",
-        description: "Passwords do not match.",
-        variant: "destructive",
-      });
+      toast.error("Passwords do not match.");
       return false;
     }
 
     if (!agreeToTerms) {
-      toast({
-        title: "Terms Not Accepted",
-        description: "Please agree to the terms and conditions.",
-        variant: "destructive",
-      });
+      toast.error("Please agree to the terms and conditions.");
       return false;
     }
 
@@ -100,27 +80,15 @@ const Register = () => {
           errorMessage = 'This email is already registered.';
         }
         
-        toast({
-          title: "Registration Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        toast.error(errorMessage);
       } else {
-        toast({
-          title: "Success",
-          description: 'Registration successful! Please check your email to confirm your account.',
-          variant: "default",
-        });
+        toast.success('Registration successful! Please check your email to confirm your account.');
         hasRedirected.current = true;
         navigate('/login', { replace: true });
       }
     } catch (error: any) {
       console.error('Unexpected signup error:', error);
-      toast({
-        title: "Registration Failed",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
