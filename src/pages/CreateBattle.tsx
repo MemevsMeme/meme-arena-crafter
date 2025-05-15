@@ -12,7 +12,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+// Update the import statement to reference the correct path
+import { supabase } from '@/integrations/supabase/client';
 import { TagsInput } from '@/components/ui/tags-input';
 import { createPrompt } from '@/lib/database';
 

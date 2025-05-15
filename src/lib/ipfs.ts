@@ -1,5 +1,6 @@
 
-import { supabase } from './supabase';
+// Update the import statement to reference the correct path
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Upload a file to IPFS via Pinata

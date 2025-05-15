@@ -7,7 +7,8 @@ import UserAvatar from '@/components/ui/UserAvatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MOCK_USERS } from '@/lib/constants';
 import { Award, Crown, Star, TrendingUp } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+// Update the import statement to reference the correct path
+import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/lib/types';
 
 const Leaderboard = () => {
