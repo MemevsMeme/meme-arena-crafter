@@ -160,48 +160,8 @@ export async function createMeme(memeData: {
     if (error) {
       console.error('Error creating meme:', error);
       
-      // Fallback approach - try the memes_storage table
-      try {
-        // Use upsert instead of insert to handle potential duplication
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('memes_storage')
-          .upsert({
-            user_id: memeData.creatorId,
-            prompt_text: memeData.prompt,
-            image_url: memeData.imageUrl,
-            ipfs_hash: memeData.ipfsCid || null,
-            caption: memeData.caption,
-            created_at: memeData.createdAt.toISOString()
-          })
-          .select()
-          .single();
-          
-        if (fallbackError) {
-          console.error('Fallback approach also failed:', fallbackError);
-          return null;
-        }
-        
-        if (fallbackData) {
-          console.log("Created fallback meme record:", fallbackData);
-          
-          // Convert to Meme type for consistency
-          return {
-            id: fallbackData.id,
-            prompt: fallbackData.prompt_text || '',
-            prompt_id: '',
-            imageUrl: fallbackData.image_url,
-            ipfsCid: fallbackData.ipfs_hash || '',
-            caption: fallbackData.caption || '',
-            creatorId: fallbackData.user_id,
-            votes: 0,
-            createdAt: new Date(fallbackData.created_at),
-            tags: []
-          };
-        }
-      } catch (fallbackError) {
-        console.error('Fallback approach also failed:', fallbackError);
-      }
-      
+      // We'll use a different approach without referencing a non-existent table
+      console.error('Failed to create meme record:', error.message);
       return null;
     }
 
@@ -604,27 +564,27 @@ export async function getActiveBattles(limit = 10, offset = 0, filter: 'all' | '
       winnerId: battle.winner_id || '',
       memeOne: battle.meme_one ? {
         id: battle.meme_one.id,
-        prompt: battle.meme_one.prompt || '',
-        prompt_id: battle.meme_one.prompt_id || '',
-        imageUrl: battle.meme_one.image_url,
-        caption: battle.meme_one.caption,
-        creatorId: battle.meme_one.creator_id,
-        votes: battle.meme_one.votes || 0,
-        createdAt: new Date(battle.meme_one.created_at),
-        ipfsCid: battle.meme_one.ipfs_cid || '',
-        tags: battle.meme_one.tags || []
+        prompt: data.meme_one.prompt || '',
+        prompt_id: data.meme_one.prompt_id || '',
+        imageUrl: data.meme_one.image_url,
+        caption: data.meme_one.caption,
+        creatorId: data.meme_one.creator_id,
+        votes: data.meme_one.votes || 0,
+        createdAt: new Date(data.meme_one.created_at),
+        ipfsCid: data.meme_one.ipfs_cid || '',
+        tags: data.meme_one.tags || []
       } : undefined,
       memeTwo: battle.meme_two ? {
-        id: battle.meme_two.id,
-        prompt: battle.meme_two.prompt || '',
-        prompt_id: battle.meme_two.prompt_id || '',
-        imageUrl: battle.meme_two.image_url,
-        caption: battle.meme_two.caption,
-        creatorId: battle.meme_two.creator_id,
-        votes: battle.meme_two.votes || 0,
-        createdAt: new Date(battle.meme_two.created_at),
-        ipfsCid: battle.meme_two.ipfs_cid || '',
-        tags: battle.meme_two.tags || []
+        id: data.meme_two.id,
+        prompt: data.meme_two.prompt || '',
+        prompt_id: data.meme_two.prompt_id || '',
+        imageUrl: data.meme_two.image_url,
+        caption: data.meme_two.caption,
+        creatorId: data.meme_two.creator_id,
+        votes: data.meme_two.votes || 0,
+        createdAt: new Date(data.meme_two.created_at),
+        ipfsCid: data.meme_two.ipfs_cid || '',
+        tags: data.meme_two.tags || []
       } : undefined,
       is_community: battle.is_community || false
     }));
