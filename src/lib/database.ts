@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User, Battle, Prompt, Meme } from './types';
 
@@ -326,8 +325,8 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
           text: promptData.text,
           theme: promptData.theme || '',
           description: promptData.description || '',
-          isCommunity: promptData.is_community || false,
-          creatorId: promptData.creator_id || '',
+          is_community: promptData.is_community || false, // Changed from isCommunity to is_community
+          creator_id: promptData.creator_id || '', // Changed from creatorId to creator_id
           startDate: new Date(promptData.start_date),
           endDate: new Date(promptData.end_date),
           active: promptData.active,
@@ -346,10 +345,10 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
         promptId: battle.prompt_id || '',
         memeOneId: battle.meme_one_id,
         memeTwoId: battle.meme_two_id,
-        creatorId: battle.creator_id || '',
+        creator_id: battle.creator_id || '', // Changed from creatorId to creator_id
         winnerId: battle.winner_id || '',
         voteCount: battle.vote_count,
-        isCommunity: battle.is_community || false,
+        is_community: battle.is_community || false, // Changed from isCommunity to is_community
         memeOne,
         memeTwo
       };
@@ -443,8 +442,8 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
         text: promptData.text,
         theme: promptData.theme || '',
         description: promptData.description || '',
-        isCommunity: promptData.is_community || false,
-        creatorId: promptData.creator_id || '',
+        is_community: promptData.is_community || false, // Changed from isCommunity to is_community
+        creator_id: promptData.creator_id || '', // Changed from creatorId to creator_id
         startDate: new Date(promptData.start_date),
         endDate: new Date(promptData.end_date),
         active: promptData.active,
@@ -462,10 +461,10 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
       promptId: battle.prompt_id || '',
       memeOneId: battle.meme_one_id,
       memeTwoId: battle.meme_two_id,
-      creatorId: battle.creator_id || '',
+      creator_id: battle.creator_id || '', // Changed from creatorId to creator_id
       winnerId: battle.winner_id || '',
       voteCount: battle.vote_count,
-      isCommunity: battle.is_community || false,
+      is_community: battle.is_community || false, // Changed from isCommunity to is_community
       memeOne,
       memeTwo
     };
@@ -496,8 +495,8 @@ export async function getPromptById(promptId: string): Promise<Prompt | null> {
       text: data.text,
       theme: data.theme || '',
       description: data.description || '',
-      isCommunity: data.is_community || false,
-      creatorId: data.creator_id || '',
+      is_community: data.is_community || false, // Changed from isCommunity to is_community
+      creator_id: data.creator_id || '', // Changed from creatorId to creator_id
       startDate: new Date(data.start_date),
       endDate: new Date(data.end_date),
       active: data.active,
@@ -542,8 +541,8 @@ export async function getPrompts(limit: number = 10, offset: number = 0, isCommu
       text: prompt.text,
       theme: prompt.theme || '',
       description: prompt.description || '',
-      isCommunity: prompt.is_community || false,
-      creatorId: prompt.creator_id || '',
+      is_community: prompt.is_community || false, // Changed from isCommunity to is_community
+      creator_id: prompt.creator_id || '', // Changed from creatorId to creator_id
       startDate: new Date(prompt.start_date),
       endDate: new Date(prompt.end_date),
       active: prompt.active,
@@ -784,8 +783,8 @@ export async function createPrompt(promptData: {
   theme?: string;
   description?: string;
   tags: string[];
-  is_community: boolean;
-  creator_id: string;
+  is_community: boolean; // Changed from isCommunity to is_community
+  creator_id: string; // Changed from creatorId to creator_id
   startDate: Date;
   endDate: Date;
 }): Promise<Prompt | null> {
@@ -797,8 +796,8 @@ export async function createPrompt(promptData: {
         theme: promptData.theme || null,
         description: promptData.description || null,
         tags: promptData.tags,
-        is_community: promptData.is_community,
-        creator_id: promptData.creator_id,
+        is_community: promptData.is_community, // Changed from isCommunity to is_community
+        creator_id: promptData.creator_id, // Changed from creatorId to creator_id
         start_date: promptData.startDate.toISOString(),
         end_date: promptData.endDate.toISOString(),
         active: true
@@ -816,8 +815,8 @@ export async function createPrompt(promptData: {
       text: data.text,
       theme: data.theme || '',
       description: data.description || '',
-      isCommunity: data.is_community || false,
-      creatorId: data.creator_id || '',
+      is_community: data.is_community || false, // Changed from isCommunity to is_community
+      creator_id: data.creator_id || '', // Changed from creatorId to creator_id
       startDate: new Date(data.start_date),
       endDate: new Date(data.end_date),
       active: data.active,
@@ -867,8 +866,8 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
         text: fallback.text,
         theme: fallback.theme || '',
         description: fallback.description || '',
-        isCommunity: fallback.is_community || false,
-        creatorId: fallback.creator_id || '',
+        is_community: fallback.is_community || false, // Changed from isCommunity to is_community
+        creator_id: fallback.creator_id || '', // Changed from creatorId to creator_id
         startDate: new Date(fallback.start_date),
         endDate: new Date(fallback.end_date),
         active: fallback.active,
@@ -892,8 +891,8 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
           text: linkedPrompt.text,
           theme: linkedPrompt.theme || '',
           description: linkedPrompt.description || '',
-          isCommunity: linkedPrompt.is_community || false,
-          creatorId: linkedPrompt.creator_id || '',
+          is_community: linkedPrompt.is_community || false, // Changed from isCommunity to is_community
+          creator_id: linkedPrompt.creator_id || '', // Changed from creatorId to creator_id
           startDate: new Date(linkedPrompt.start_date),
           endDate: new Date(linkedPrompt.end_date),
           active: linkedPrompt.active,
@@ -912,9 +911,9 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
         .insert({
           text: challenge.text,
           theme: challenge.theme,
-          tags: challenge.tags,
-          is_community: false,
-          creator_id: null, // System-created
+          tags: challenge.tags || [],
+          is_community: false, // Changed from isCommunity to is_community
+          creator_id: null, // Changed from creatorId to creator_id - System-created
           start_date: now.toISOString(),
           end_date: tomorrow.toISOString(),
           active: true,
@@ -933,8 +932,8 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
         text: newPrompt.text,
         theme: newPrompt.theme || '',
         description: newPrompt.description || '',
-        isCommunity: newPrompt.is_community || false,
-        creatorId: newPrompt.creator_id || '',
+        is_community: newPrompt.is_community || false, // Changed from isCommunity to is_community
+        creator_id: newPrompt.creator_id || '', // Changed from creatorId to creator_id
         startDate: new Date(newPrompt.start_date),
         endDate: new Date(newPrompt.end_date),
         active: newPrompt.active,
