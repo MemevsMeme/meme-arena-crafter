@@ -38,4 +38,5 @@ refresh_token_reuse_interval = 10
 
 [functions]
 [functions.import-daily-challenges]
-verify_jwt = true
+verify_jwt = false
+

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.14.0";
 
@@ -132,7 +131,6 @@ function generateDailyChallenges(): Challenge[] {
       "When your pet judges your life choices",
       "Create a meme about animals with attitude"
     ],
-    // I'll add 20+ prompts for each theme to ensure we have plenty of variety
     'movies': [
       "When the movie adaptation is nothing like the book",
       "Create a meme about horror movie characters making bad decisions",
@@ -231,21 +229,25 @@ serve(async (req) => {
   }
   
   try {
-    // Get auth header from request
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
+    console.log("Import daily challenges function called");
+    
+    // Create Supabase client with anonymous key
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("Missing Supabase environment variables");
+      return new Response(JSON.stringify({ error: "Server configuration error" }), {
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-
-    // Create Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || authHeader.split(' ')[1];
+    
+    console.log("Creating Supabase client");
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     // Get the challenges
+    console.log("Generating daily challenges");
     const challenges = generateDailyChallenges();
     
     // Process request body
@@ -258,6 +260,7 @@ serve(async (req) => {
         body = await req.json();
         mode = body.mode || 'all';
         dayNum = body.day || null;
+        console.log(`Request mode: ${mode}, day: ${dayNum}`);
       } catch (e) {
         console.error('Error parsing request body:', e);
       }
@@ -267,6 +270,7 @@ serve(async (req) => {
       const day = url.searchParams.get('day');
       mode = url.searchParams.get('mode') || 'all';
       dayNum = day ? parseInt(day, 10) : null;
+      console.log(`URL params mode: ${mode}, day: ${dayNum}`);
     }
     
     let result;
@@ -280,6 +284,7 @@ serve(async (req) => {
         });
       }
       
+      console.log(`Finding challenge for day ${dayNum}`);
       const challenge = challenges.find(c => c.day_of_year === dayNum);
       if (!challenge) {
         return new Response(JSON.stringify({ error: 'Challenge not found' }), {
@@ -288,27 +293,43 @@ serve(async (req) => {
         });
       }
       
+      console.log(`Upserting challenge for day ${dayNum}`);
       // Upsert the specific challenge
       const { data, error } = await supabase
         .from('daily_challenges')
         .upsert([challenge], { onConflict: 'day_of_year' });
       
+      if (error) {
+        console.error(`Error upserting challenge: ${error.message}`);
+      } else {
+        console.log(`Successfully upserted challenge for day ${dayNum}`);
+      }
+      
       result = { mode: 'day', day: dayNum, inserted: !error ? 1 : 0, error: error?.message };
     } else {
+      console.log(`Bulk inserting ${challenges.length} challenges`);
       // Bulk insert all challenges
       const { data, error } = await supabase
         .from('daily_challenges')
         .upsert(challenges, { onConflict: 'day_of_year' });
       
+      if (error) {
+        console.error(`Error upserting challenges: ${error.message}`);
+      } else {
+        console.log(`Successfully upserted all challenges`);
+      }
+      
       result = { mode: 'all', inserted: !error ? challenges.length : 0, error: error?.message };
     }
 
+    console.log("Import result:", result);
     // Return the result with CORS headers
     return new Response(JSON.stringify(result), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
+    console.error("Unexpected error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

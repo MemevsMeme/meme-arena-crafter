@@ -18,17 +18,42 @@ const ImportChallenges = () => {
   // Check if the current user is an admin
   useEffect(() => {
     const checkAdminStatus = async () => {
+      // Get the current session
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       
-      if (session?.user) {
-        const { data: profile } = await supabase
+      if (!session?.user) {
+        console.log('No session found, user is not logged in');
+        setIsAdmin(false);
+        return;
+      }
+      
+      console.log('User is logged in with ID:', session.user.id);
+      
+      try {
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('is_admin')
           .eq('id', session.user.id)
           .single();
         
+        if (error) {
+          console.error('Error fetching profile:', error);
+          toast.error('Error checking admin status');
+          setIsAdmin(false);
+          return;
+        }
+        
+        console.log('Profile data:', profile);
         setIsAdmin(!!profile?.is_admin);
+        
+        if (!profile?.is_admin) {
+          console.log('User is not an admin');
+          toast.error('You need admin permissions to access this page');
+        }
+      } catch (error) {
+        console.error('Unexpected error checking admin status:', error);
+        setIsAdmin(false);
       }
     };
     
@@ -43,6 +68,7 @@ const ImportChallenges = () => {
     
     setLoading(true);
     try {
+      // Pass the session token to authenticate the function call
       const { data, error } = await supabase.functions.invoke('import-daily-challenges', {
         body: { mode: 'all' }
       });
@@ -50,11 +76,12 @@ const ImportChallenges = () => {
       setResult(data);
       
       if (error) {
+        console.error('Error importing challenges:', error);
         toast.error('Error importing challenges: ' + error.message);
       } else {
         toast.success(`Successfully imported ${data?.inserted || 0} daily challenges!`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error importing challenges:', error);
       toast.error('Failed to import challenges: ' + (error.message || 'Unknown error'));
     } finally {
@@ -79,6 +106,7 @@ const ImportChallenges = () => {
     
     setLoading(true);
     try {
+      // Pass the session token to authenticate the function call
       const { data, error } = await supabase.functions.invoke('import-daily-challenges', {
         body: { mode: 'day', day: dayNum }
       });
@@ -86,11 +114,12 @@ const ImportChallenges = () => {
       setResult(data);
       
       if (error) {
+        console.error('Error importing challenge:', error);
         toast.error('Error importing challenge: ' + error.message);
       } else {
         toast.success(`Successfully imported challenge for day ${dayNum}!`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error importing challenge:', error);
       toast.error('Failed to import challenge: ' + (error.message || 'Unknown error'));
     } finally {
