@@ -64,6 +64,7 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
     }
     
     // Prepare basic insert data with only the essential fields
+    // IMPORTANT: Do not include prompt_id by default - we'll check if it exists first
     const insertData = {
       prompt: meme.prompt || '',
       caption: meme.caption || '',
@@ -73,13 +74,28 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
       ipfs_cid: ipfsCid
     };
     
-    // Only include prompt_id if it's a valid UUID, not an empty string or null
-    // This is critical to avoid foreign key constraint violations
+    // Only try to use prompt_id if it's a valid UUID
     if (meme.prompt_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(meme.prompt_id)) {
-      console.log('Adding prompt_id to insertion data:', meme.prompt_id);
-      Object.assign(insertData, { prompt_id: meme.prompt_id });
+      // Before adding prompt_id, verify it exists in the prompts table
+      const { data: promptExists, error: promptCheckError } = await supabase
+        .from('prompts')
+        .select('id')
+        .eq('id', meme.prompt_id)
+        .single();
+      
+      if (promptExists) {
+        console.log('Verified prompt_id exists in prompts table:', meme.prompt_id);
+        Object.assign(insertData, { prompt_id: meme.prompt_id });
+      } else {
+        console.log('prompt_id not found in prompts table, using only the prompt text:', meme.prompt);
+        // Do not add prompt_id to avoid foreign key constraint error
+      }
+      
+      if (promptCheckError) {
+        console.log('Error checking prompt_id, will not include it:', promptCheckError);
+      }
     } else {
-      console.log('Not including prompt_id as it is invalid:', meme.prompt_id);
+      console.log('No valid prompt_id provided:', meme.prompt_id);
     }
     
     // Log what we're sending to the database

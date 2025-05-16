@@ -271,30 +271,25 @@ const MemeGenerator = ({
       // Get the meme metadata
       const activeTags = tags.filter(tag => tag.selected).map(tag => tag.name);
       
-      // Get prompt information
-      const promptId = promptData?.id || null;
-      const promptText = promptData?.text || customPrompt || '';
-      
-      console.log('Using prompt:', { 
-        promptId, 
-        promptText, 
-        customPrompt
-      });
-      
       // Create a FormData object
       const formData = new FormData();
       formData.append('file', file);
       
-      // Create the meme object
+      // Create the meme object - simplified to avoid confusion
+      // We only pass prompt_id if promptData exists and has an id
       const memeData = {
-        prompt: promptText,
-        prompt_id: promptId,
+        prompt: promptData?.text || customPrompt || '',
         caption: caption,
         creatorId: user?.id || '',
         tags: activeTags,
         battleId: battleId || null,
         isBattleSubmission: battleId ? true : false
       };
+      
+      // Only add prompt_id if it actually exists in promptData
+      if (promptData?.id) {
+        Object.assign(memeData, { prompt_id: promptData.id });
+      }
       
       console.log('Calling uploadMeme with meme data:', memeData);
       
