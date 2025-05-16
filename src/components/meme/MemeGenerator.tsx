@@ -90,28 +90,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveDetails, setSaveDetails] = useState<any | null>(null);
 
-  // Add text handler
-  const handleAddText = () => {
-    const newPosition: TextPosition = {
-      text: 'New text',
-      x: 50,
-      y: 50,
-      fontSize: 30,
-      maxWidth: 300,
-      alignment: 'center',
-      color: '#ffffff',
-      isBold: true,
-      fontFamily: 'Impact'
-    };
-    
-    setTextPositions([...textPositions, newPosition]);
-    
-    // Enter edit mode when adding text
-    if (!isEditMode) {
-      setIsEditMode(true);
-    }
-  };
-  
   // Image upload handler
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -136,6 +114,28 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
     }
   };
   
+  // Handler for adding text
+  const handleAddText = () => {
+    const newPosition: TextPosition = {
+      text: 'New text',
+      x: 50,
+      y: 50,
+      fontSize: 30,
+      maxWidth: 300,
+      alignment: 'center',
+      color: '#ffffff',
+      isBold: true,
+      fontFamily: 'Impact'
+    };
+    
+    setTextPositions([...textPositions, newPosition]);
+    
+    // Enter edit mode when adding text
+    if (!isEditMode) {
+      setIsEditMode(true);
+    }
+  };
+  
   // Handler for setting captions
   const handleSetCaption = (newCaption: string) => {
     setCaption(newCaption);
@@ -149,6 +149,18 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       };
       setTextPositions(updatedPositions);
     }
+  };
+
+  // Handler for updating text positions
+  const handleTextPositionsChange = (positions: TextPosition[]) => {
+    setTextPositions(positions);
+  };
+  
+  // Handler for removing text
+  const handleRemoveText = (index: number) => {
+    const updatedPositions = [...textPositions];
+    updatedPositions.splice(index, 1);
+    setTextPositions(updatedPositions);
   };
 
   // Handler for generating AI image with custom prompt
@@ -233,18 +245,6 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
     handleSetCaption(caption);
   };
 
-  // Handler for updating text positions
-  const handleTextPositionsChange = (positions: TextPosition[]) => {
-    setTextPositions(positions);
-  };
-  
-  // Handler for removing text
-  const handleRemoveText = (index: number) => {
-    const updatedPositions = [...textPositions];
-    updatedPositions.splice(index, 1);
-    setTextPositions(updatedPositions);
-  };
-  
   // Handler for saving the meme
   const handleSaveMeme = async () => {
     if (!user) {
@@ -413,43 +413,24 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       const fileExt = isGif ? '.gif' : '.png';
       const fileName = `${uuidv4()}${fileExt}`;
       
-      console.log('Uploading meme to storage');
+      console.log('Uploading meme to IPFS and storage');
       
-      // Use our helper function to upload to Supabase
+      // Use our helper function to upload to IPFS and fallback to Supabase
       const uploadResult = await uploadMemeImage(blob, fileName, user.id, isGif);
       
       if (!uploadResult.success || !uploadResult.imageUrl) {
-        setSaveError(`Error uploading to storage: ${uploadResult.error}`);
-        throw new Error(`Error uploading to storage: ${uploadResult.error}`);
+        setSaveError(`Error uploading image: ${uploadResult.error}`);
+        throw new Error(`Error uploading image: ${uploadResult.error}`);
       }
       
       const imageUrl = uploadResult.imageUrl;
-      console.log('Public URL:', imageUrl);
+      const ipfsCid = uploadResult.ipfsCid;
       
-      // Upload to IPFS in the background (don't wait for it)
-      let ipfsCid: string | undefined = undefined;
-      try {
-        setIsUploadingToIPFS(true);
-        console.log('Starting IPFS upload');
-        
-        // Create a File from the blob
-        const file = new File([blob], fileName, {
-          type: isGif ? 'image/gif' : 'image/png',
-        });
-        
-        // Upload to IPFS
-        const ipfsResult = await uploadFileToIPFS(file, `Meme: ${caption.substring(0, 30)}...`);
-        
-        if (ipfsResult.success && ipfsResult.ipfsHash) {
-          ipfsCid = ipfsResult.ipfsHash;
-          console.log('Successfully pinned to IPFS with CID:', ipfsCid);
-        }
-      } catch (ipfsError) {
-        console.error('IPFS upload failed but continuing:', ipfsError);
-        // Non-fatal error, continue without IPFS
-      } finally {
-        setIsUploadingToIPFS(false);
-      }
+      console.log('Upload complete - Public URL:', imageUrl);
+      if (ipfsCid) console.log('IPFS CID:', ipfsCid);
+      
+      // Generate a unique battle_id (can match prompt_id if available)
+      const battleId = promptId || null;
       
       console.log('Creating meme record in database with:', {
         promptText,
@@ -457,20 +438,22 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
         imageUrl,
         ipfsCid,
         caption: caption || '',
-        creatorId: user.id
+        creatorId: user.id,
+        battleId
       });
 
-      // Create meme record in database
+      // Create meme record in database with correct fields
       const newMeme = await createMeme({
         prompt: promptText,
-        prompt_id: promptId,
+        prompt_id: promptId, // This is now handled correctly in the createMeme function
         imageUrl,
         ipfsCid,
         caption: caption || '',
         creatorId: user.id,
         votes: 0,
         createdAt: new Date(),
-        tags: []
+        tags: [],
+        battle_id: battleId
       });
       
       if (!newMeme) {
@@ -506,6 +489,7 @@ const MemeGenerator: React.FC<MemeGeneratorProps> = ({
       });
     } finally {
       setIsCreatingMeme(false);
+      setIsUploadingToIPFS(false);
     }
   };
   

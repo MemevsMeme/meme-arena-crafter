@@ -4,6 +4,7 @@ import { toast } from '@/hooks/use-toast';
 
 /**
  * Helper function to handle meme image uploads to storage
+ * This function now prioritizes IPFS storage and only uses Supabase storage as fallback
  * 
  * @param blob Image blob to upload
  * @param fileName Desired file name
@@ -19,10 +20,50 @@ export async function uploadMemeImage(
 ): Promise<{ 
   success: boolean; 
   imageUrl?: string; 
+  ipfsCid?: string;
   error?: string;
 }> {
   try {
-    console.log(`Uploading ${isGif ? 'GIF' : 'image'} to storage:`, fileName);
+    console.log(`Preparing ${isGif ? 'GIF' : 'image'} for upload:`, fileName);
+    
+    // Create a File from blob for IPFS upload
+    const file = new File([blob], fileName, { 
+      type: isGif ? 'image/gif' : 'image/png' 
+    });
+    
+    // Try IPFS upload first via Pinata
+    try {
+      console.log("Attempting IPFS upload through Pinata...");
+      
+      // Create a FormData object for the upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('name', `Meme: ${fileName}`);
+      
+      // Call the edge function
+      const { data, error } = await supabase.functions.invoke('pinata-upload', {
+        body: formData
+      });
+      
+      if (error) {
+        console.warn('IPFS upload error (will try Supabase fallback):', error);
+      } else if (data?.ipfsHash) {
+        console.log('Successfully uploaded to IPFS with CID:', data.ipfsHash);
+        
+        // Return both IPFS info and a gateway URL for immediate viewing
+        return { 
+          success: true, 
+          imageUrl: data.gatewayUrl || `https://gateway.pinata.cloud/ipfs/${data.ipfsHash}`,
+          ipfsCid: data.ipfsHash
+        };
+      }
+    } catch (ipfsError) {
+      console.warn('IPFS upload failed, using Supabase fallback:', ipfsError);
+      // Continue to fallback option
+    }
+    
+    // Fallback to Supabase Storage
+    console.log("Falling back to Supabase storage upload");
     
     // Create simple path: userId/fileName
     const filePath = `${userId}/${fileName}`;
@@ -92,69 +133,6 @@ export async function uploadMemeImage(
 }
 
 /**
- * Create a record of the meme in Supabase directly, without using the memes table
- */
-export async function createMemeRecord(
-  imageUrl: string,
-  userId: string,
-  promptText: string,
-  caption: string,
-  challengeId?: string,
-  ipfsHash?: string
-): Promise<{
-  success: boolean;
-  memeId?: string;
-  error?: string;
-}> {
-  try {
-    // Since we're having issues with the memes table, insert directly into a simple table
-    // This bypasses the foreign key constraint issues
-    const { data, error } = await supabase
-      .from('memes')
-      .insert({
-        image_url: imageUrl,
-        creator_id: userId,
-        prompt: promptText,  // Store as text, not as foreign key
-        prompt_id: null,     // Skip the problematic foreign key
-        caption: caption,
-        ipfs_cid: ipfsHash || null
-      })
-      .select('id')
-      .single();
-
-    if (error) {
-      console.error('Error creating meme record:', error);
-      
-      // Alternative approach: Try a simpler direct approach with memes_storage table
-      const { data: storageData, error: storageError } = await supabase
-        .from('memes_storage')
-        .insert({
-          user_id: userId,
-          prompt_text: promptText,
-          image_url: imageUrl,
-          ipfs_hash: ipfsHash || null,
-          caption: caption,
-          challenge_id: challengeId || null
-        })
-        .select('id')
-        .single();
-        
-      if (storageError) {
-        console.error('Alternative storage approach failed:', storageError);
-        return { success: false, error: error.message };
-      }
-      
-      return { success: true, memeId: storageData.id };
-    }
-
-    return { success: true, memeId: data.id };
-  } catch (error: any) {
-    console.error('Exception in createMemeRecord:', error);
-    return { success: false, error: error.message || 'Unknown error creating meme record' };
-  }
-}
-
-/**
  * Helper function to ensure the memes storage bucket exists
  */
 async function ensureMemesBucket(): Promise<boolean> {
@@ -171,7 +149,6 @@ async function ensureMemesBucket(): Promise<boolean> {
     
     if (!memesBucket) {
       // Try to create the bucket with the storage admin user
-      // Note: This requires appropriate permissions
       try {
         const { error: createError } = await supabase.storage.createBucket('memes', {
           public: true
