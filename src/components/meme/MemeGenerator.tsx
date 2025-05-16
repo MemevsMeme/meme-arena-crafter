@@ -149,15 +149,13 @@ const MemeGenerator = ({
           selected: meme.tags.includes(tag.name)
         })));
       } else {
-        toast({
-          title: "Error",
+        toast("Error", {
           description: "Meme not found."
         });
       }
     } catch (error) {
       console.error("Error loading meme:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Failed to load meme."
       });
     }
@@ -315,9 +313,8 @@ const MemeGenerator = ({
       
       console.log("Meme saved successfully:", memeData);
       
-      toast({
-        title: "Meme Saved!",
-        description: "Your meme has been successfully saved and published.",
+      toast("Meme Saved!", {
+        description: "Your meme has been successfully saved and published."
       });
       
       // Redirect to user profile page
@@ -330,8 +327,7 @@ const MemeGenerator = ({
       }
     } catch (error: any) {
       console.error("Error saving meme:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: `Failed to save meme: ${error.message || "Unknown error"}`
       });
     } finally {
@@ -354,22 +350,19 @@ const MemeGenerator = ({
       navigator.clipboard.writeText(imageUrl)
         .then(() => {
           setIsCopied(true);
-          toast({
-            title: "Image URL Copied",
-            description: "The image URL has been copied to your clipboard.",
+          toast("Image URL Copied", {
+            description: "The image URL has been copied to your clipboard."
           });
           setTimeout(() => setIsCopied(false), 2000);
         })
         .catch(err => {
           console.error("Failed to copy:", err);
-          toast({
-            title: "Copy Failed",
+          toast("Copy Failed", {
             description: "Failed to copy the image URL to clipboard."
           });
         });
     } else {
-      toast({
-        title: "No Image",
+      toast("No Image", {
         description: "Please upload an image first."
       });
     }
