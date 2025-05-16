@@ -14,8 +14,9 @@ export interface User {
 export interface Meme {
   id: string;
   prompt: string;
-  prompt_id: string; 
+  prompt_id?: string; // Changed from promptId to prompt_id to match database schema
   imageUrl: string;
+  ipfsCid: string;
   caption: string;
   creatorId: string;
   creator?: User;
@@ -23,7 +24,8 @@ export interface Meme {
   createdAt: Date;
   tags: string[];
   isBattleSubmission?: boolean;
-  ipfsCid?: string;
+  battleId?: string;
+  challengeDay?: number;
 }
 
 export interface Prompt {
@@ -37,7 +39,7 @@ export interface Prompt {
   description?: string;
   creator_id?: string;
   is_community?: boolean;
-  daily_challenge_id?: string | null;
+  daily_challenge_id?: string;
   challengeDay?: number;
 }
 
@@ -124,7 +126,8 @@ export type Database = {
           votes: number;
           created_at: string;
           tags: string[];
-          is_battle_submission: boolean | null;
+          battle_id: string | null;
+          is_battle_submission: boolean;
         };
         Insert: {
           id?: string;
@@ -137,6 +140,7 @@ export type Database = {
           votes?: number;
           created_at?: string;
           tags?: string[];
+          battle_id?: string | null;
           is_battle_submission?: boolean;
         };
         Update: {
@@ -150,6 +154,7 @@ export type Database = {
           votes?: number;
           created_at?: string;
           tags?: string[];
+          battle_id?: string | null;
           is_battle_submission?: boolean;
         };
       };
@@ -165,8 +170,6 @@ export type Database = {
           description: string | null;
           creator_id: string | null;
           is_community: boolean;
-          daily_challenge_id: string | null;
-          challengeDay: number | null;
         };
         Insert: {
           id?: string;
@@ -179,8 +182,6 @@ export type Database = {
           description?: string | null;
           creator_id?: string | null;
           is_community?: boolean;
-          daily_challenge_id?: string | null;
-          challengeDay?: number | null;
         };
         Update: {
           id?: string;
@@ -193,8 +194,6 @@ export type Database = {
           description?: string | null;
           creator_id?: string | null;
           is_community?: boolean;
-          daily_challenge_id?: string | null;
-          challengeDay?: number | null;
         };
       };
       battles: {
