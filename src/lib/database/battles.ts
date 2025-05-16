@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Battle, Meme } from '../types';
 import { getMemesByPromptId } from './memes';
@@ -174,13 +175,14 @@ export async function deleteBattle(battleId: string): Promise<boolean> {
 
 export async function incrementBattleVote(memeId: string, battleId: string): Promise<boolean> {
   try {
-    // Cast the entire call to any type to avoid TypeScript errors with RPC function names
-    const result = await (supabase.rpc('increment_battle_vote', {
-      meme_id: memeId,
-      battle_id: battleId
-    }) as any);
-    
-    const { data, error } = result;
+    // Fix TypeScript errors by using a type assertion
+    const { error } = await supabase.rpc(
+      'increment_battle_vote' as any, 
+      {
+        meme_id: memeId,
+        battle_id: battleId
+      }
+    );
     
     if (error) {
       console.error('Error incrementing battle vote:', error);
@@ -377,15 +379,21 @@ export async function completeBattlesAndDetermineWinners(): Promise<boolean> {
           continue;
         }
         
-        // Cast to any type to avoid TypeScript errors with RPC function names
-        await (supabase.rpc('increment_user_wins', { 
-          user_id: winnerMeme.creator_id 
-        }) as any);
+        // Fix TypeScript errors by using type assertions
+        await supabase.rpc(
+          'increment_user_wins' as any, 
+          { 
+            user_id: winnerMeme.creator_id 
+          }
+        );
         
-        // Cast to any type to avoid TypeScript errors with RPC function names
-        await (supabase.rpc('increment_user_losses', { 
-          user_id: loserMeme.creator_id 
-        }) as any);
+        // Fix TypeScript errors by using type assertions
+        await supabase.rpc(
+          'increment_user_losses' as any, 
+          { 
+            user_id: loserMeme.creator_id 
+          }
+        );
       }
     }
     

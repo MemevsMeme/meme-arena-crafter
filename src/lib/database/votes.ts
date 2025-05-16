@@ -117,13 +117,14 @@ export async function getBattleVotes(battleId: string): Promise<Vote[]> {
  */
 async function incrementBattleVoteInternal(memeId: string, battleId: string): Promise<boolean> {
   try {
-    // Cast to any type to avoid TypeScript errors with RPC function names
-    const result = await (supabase.rpc('increment_battle_vote', {
-      meme_id: memeId,
-      battle_id: battleId
-    }) as any);
-    
-    const { error } = result;
+    // Fix TypeScript errors by using type assertion
+    const { error } = await supabase.rpc(
+      'increment_battle_vote' as any, 
+      {
+        meme_id: memeId,
+        battle_id: battleId
+      }
+    );
     
     if (error) {
       console.error('Error incrementing battle vote:', error);
