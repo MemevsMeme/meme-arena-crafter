@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
-import { getFallbackChallenge } from '@/lib/dailyChallenges';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner'; // Switch to sonner toast
+import { toast } from 'sonner';
 
 interface PromptOfTheDayProps {
   prompt?: Prompt | null; // Accept Prompt object or null
@@ -19,9 +18,7 @@ const PromptOfTheDay = ({
 }: PromptOfTheDayProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  // Always get a default prompt from our local challenges in case the database query fails
-  const defaultPrompt = getFallbackChallenge();
-
+  
   // Store the actual prompt to display
   const [displayPrompt, setDisplayPrompt] = useState<Prompt | null>(null);
 
@@ -30,11 +27,8 @@ const PromptOfTheDay = ({
     if (prompt) {
       // If we have a prompt from props (database), use it
       setDisplayPrompt(prompt);
-    } else if (!isLoading) {
-      // If we're not loading and don't have a prompt, use the fallback
-      setDisplayPrompt(defaultPrompt);
     }
-  }, [prompt, isLoading, defaultPrompt]);
+  }, [prompt, isLoading]);
 
   if (isLoading) {
     return (
@@ -53,7 +47,7 @@ const PromptOfTheDay = ({
     );
   }
 
-  // If somehow we still don't have a prompt, show a message
+  // If somehow we don't have a prompt, show a message
   if (!displayPrompt) {
     return (
       <div className="prompt-card bg-muted">

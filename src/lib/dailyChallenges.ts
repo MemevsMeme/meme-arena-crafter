@@ -14,8 +14,8 @@ export async function getTodaysChallenge(): Promise<Prompt | null> {
     // Fetch the challenge for today
     const challenge = await getDailyChallenge(dayOfYear);
     
-    // If no challenge is found, return null instead of a fallback
-    // This will allow the UI to handle the case appropriately
+    // If no challenge is found, return null
+    // The UI will handle displaying an appropriate message
     return challenge;
   } catch (error) {
     console.error('Error retrieving today\'s challenge:', error);
