@@ -15,34 +15,8 @@ import { Prompt } from '@/lib/types';
 import AiImageGenerator from '@/components/meme/AiImageGenerator';
 import { generateMemeImage } from '@/lib/ai';
 import { useIsMobile } from '@/hooks/use-mobile';
-
-interface Template {
-  id: string;
-  name: string;
-  url: string;
-  textPositions: { x: number; y: number }[];
-}
-
-const defaultTemplates: Template[] = [
-  {
-    id: "1",
-    name: "Drake",
-    url: "https://i.imgflip.com/30b5v.jpg",
-    textPositions: [{ x: 0.25, y: 0.25 }, { x: 0.75, y: 0.75 }],
-  },
-  {
-    id: "2",
-    name: "Distracted Boyfriend",
-    url: "https://i.imgflip.com/1bij.jpg",
-    textPositions: [{ x: 0.2, y: 0.8 }, { x: 0.5, y: 0.2 }, { x: 0.8, y: 0.8 }],
-  },
-  {
-    id: "3",
-    name: "Change My Mind",
-    url: "https://i.imgflip.com/24y43o.jpg",
-    textPositions: [{ x: 0.5, y: 0.8 }],
-  },
-];
+import TemplateSelector from '@/components/meme/TemplateSelector';
+import { MEME_TEMPLATES } from '@/lib/constants';
 
 const Create = () => {
   const navigate = useNavigate();
@@ -51,8 +25,7 @@ const Create = () => {
   const isMobile = useIsMobile();
   const [prompt, setPrompt] = useState('');
   const [promptId, setPromptId] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<Template>(defaultTemplates[0]);
-  const [editMode, setEditMode] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(MEME_TEMPLATES[0]);
   const [isGeneratingAIImage, setIsGeneratingAIImage] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
@@ -80,10 +53,6 @@ const Create = () => {
       }
     }
   }, [user, navigate]);
-
-  const handleTemplateSelect = (template: Template) => {
-    setSelectedTemplate(template);
-  };
 
   const handlePromptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPrompt(e.target.value);
@@ -114,23 +83,25 @@ const Create = () => {
   };
 
   const handleSaveAsTemplate = (imageUrl: string) => {
-    // Add the generated image to available templates
-    const newTemplate: Template = {
+    // Create a new template from the generated image
+    const newTemplate = {
       id: `ai-${Date.now()}`,
       name: "AI Generated",
       url: imageUrl,
-      textPositions: [{ x: 0.5, y: 0.8 }],
+      textPositions: [{ 
+        x: 50, 
+        y: 25, 
+        fontSize: 24, 
+        maxWidth: 300, 
+        alignment: "center" 
+      }],
     };
     
     // Select the new template
     setSelectedTemplate(newTemplate);
-  };
-  
-  const handleSaveMeme = async (meme: { id: string; caption: string; imageUrl: string }) => {
-    // Placeholder for saving the meme
-    console.log('Meme saved:', meme);
-    toast.success('Meme saved successfully!');
-    navigate('/');
+    
+    // Store the image URL in localStorage for the MemeGenerator component
+    localStorage.setItem('meme_image', imageUrl);
   };
 
   // Create a proper Prompt object
@@ -166,18 +137,10 @@ const Create = () => {
               {/* Template Selection */}
               <div className="space-y-2">
                 <Label htmlFor="template">Select a Template</Label>
-                <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
-                  {defaultTemplates.map((template) => (
-                    <Button
-                      key={template.id}
-                      variant={selectedTemplate.id === template.id ? 'default' : 'outline'}
-                      onClick={() => handleTemplateSelect(template)}
-                      size={isMobile ? "sm" : "default"}
-                    >
-                      {template.name}
-                    </Button>
-                  ))}
-                </div>
+                <TemplateSelector 
+                  selectedTemplate={selectedTemplate} 
+                  setSelectedTemplate={setSelectedTemplate} 
+                />
               </div>
 
               {/* Prompt Input */}
@@ -199,7 +162,7 @@ const Create = () => {
                   isGeneratingAIImage={isGeneratingAIImage}
                   generatedImage={generatedImage}
                   handleGenerateImage={handleGenerateImage}
-                  onSaveAsTemplate={(imageUrl) => handleSaveAsTemplate(imageUrl)}
+                  onSaveAsTemplate={handleSaveAsTemplate}
                 />
               </div>
             </CardContent>
@@ -216,7 +179,9 @@ const Create = () => {
                 <MemeGenerator 
                   promptData={promptData} 
                   battleId={null} 
-                  memeId={null} 
+                  memeId={null}
+                  selectedTemplate={selectedTemplate}
+                  generatedImage={generatedImage} 
                 />
               </div>
             </CardContent>

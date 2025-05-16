@@ -44,16 +44,34 @@ type Tag = {
   selected: boolean;
 };
 
+// Define the template type
+type Template = {
+  id: string;
+  name: string;
+  url: string;
+  textPositions: { 
+    x: number; 
+    y: number;
+    fontSize?: number;
+    maxWidth?: number;
+    alignment?: string;
+  }[];
+};
+
 interface MemeGeneratorProps {
   promptData?: Prompt | null;
   battleId?: string | null;
   memeId?: string | null;
+  selectedTemplate?: Template | null;
+  generatedImage?: string | null;
 }
 
 const MemeGenerator = ({ 
   promptData,
   battleId,
-  memeId
+  memeId,
+  selectedTemplate,
+  generatedImage
 }: MemeGeneratorProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -77,6 +95,20 @@ const MemeGenerator = ({
   const [tags, setTags] = useState<Tag[]>(defaultTags);
   const [isCopied, setIsCopied] = useState<boolean>(false);
   
+  // Load generated image if provided
+  useEffect(() => {
+    if (generatedImage) {
+      setImageUrl(generatedImage);
+    }
+  }, [generatedImage]);
+  
+  // Load selected template if provided
+  useEffect(() => {
+    if (selectedTemplate && selectedTemplate.url) {
+      setImageUrl(selectedTemplate.url);
+    }
+  }, [selectedTemplate]);
+  
   // Load existing meme if memeId is provided
   useEffect(() => {
     if (memeId) {
@@ -86,11 +118,13 @@ const MemeGenerator = ({
   
   // Load image from localStorage if available
   useEffect(() => {
-    const storedImage = localStorage.getItem('meme_image');
-    if (storedImage) {
-      setImageUrl(storedImage);
+    if (!imageUrl) {
+      const storedImage = localStorage.getItem('meme_image');
+      if (storedImage) {
+        setImageUrl(storedImage);
+      }
     }
-  }, []);
+  }, [imageUrl]);
   
   // Handle navigation
   const handleBack = () => {
