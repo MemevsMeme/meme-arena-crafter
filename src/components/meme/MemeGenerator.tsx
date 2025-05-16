@@ -148,15 +148,11 @@ const MemeGenerator = ({
           selected: meme.tags.includes(tag.name)
         })));
       } else {
-        toast("Error", {
-          description: "Meme not found."
-        });
+        toast("Meme not found");
       }
     } catch (error) {
       console.error("Error loading meme:", error);
-      toast("Error", {
-        description: "Failed to load meme."
-      });
+      toast("Failed to load meme");
     }
   };
 
@@ -249,15 +245,11 @@ const MemeGenerator = ({
   const handleSave = async () => {
     if (!canvas.current || !imageUrl || isSubmitting || !user) {
       if (!user) {
-        toast("Error", {
-          description: "You must be logged in to save a meme."
-        });
+        toast("You must be logged in to save a meme");
         return;
       }
       if (!imageUrl) {
-        toast("Error", {
-          description: "Please add an image first."
-        });
+        toast("Please add an image first");
       }
       return;
     }
@@ -290,9 +282,7 @@ const MemeGenerator = ({
         prompt_id: currentPromptData.id || null,
         caption: caption,
         creatorId: user?.id || '',
-        tags: activeTags,
-        battleId: battleId || null,
-        isBattleSubmission: battleId ? true : false
+        tags: activeTags
       };
       
       console.log('Calling uploadMeme with meme data:', memeData);
@@ -321,8 +311,8 @@ const MemeGenerator = ({
       }
     } catch (error: any) {
       console.error("Error saving meme:", error);
-      toast("Error", {
-        description: `Failed to save meme: ${error.message || "Unknown error"}`
+      toast("Error saving meme", {
+        description: error.message || "Unknown error"
       });
     } finally {
       setIsSubmitting(false);

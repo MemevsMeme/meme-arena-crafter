@@ -64,6 +64,7 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
     }
     
     // Create the meme record in the database
+    // Match only the fields that exist in the database schema
     console.log('Creating meme record with data:', {
       prompt: meme.prompt,
       caption: meme.caption,
@@ -82,9 +83,7 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
         ipfs_cid: ipfsCid,
         caption: meme.caption || '',
         creator_id: meme.creatorId || '',
-        tags: meme.tags || [],
-        battle_id: meme.battleId,
-        is_battle_submission: meme.isBattleSubmission || false
+        tags: meme.tags || []
       })
       .select('*')
       .single();
