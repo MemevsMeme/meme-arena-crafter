@@ -109,12 +109,9 @@ export type Database = {
       }
       memes: {
         Row: {
-          battle_id: string | null
           caption: string
-          challenge_day: number | null
           created_at: string
           creator_id: string
-          daily_challenge_id: string | null
           id: string
           image_url: string
           ipfs_cid: string | null
@@ -125,12 +122,9 @@ export type Database = {
           votes: number
         }
         Insert: {
-          battle_id?: string | null
           caption: string
-          challenge_day?: number | null
           created_at?: string
           creator_id: string
-          daily_challenge_id?: string | null
           id?: string
           image_url: string
           ipfs_cid?: string | null
@@ -141,12 +135,9 @@ export type Database = {
           votes?: number
         }
         Update: {
-          battle_id?: string | null
           caption?: string
-          challenge_day?: number | null
           created_at?: string
           creator_id?: string
-          daily_challenge_id?: string | null
           id?: string
           image_url?: string
           ipfs_cid?: string | null
@@ -157,20 +148,6 @@ export type Database = {
           votes?: number
         }
         Relationships: [
-          {
-            foreignKeyName: "memes_battle_id_fkey"
-            columns: ["battle_id"]
-            isOneToOne: false
-            referencedRelation: "battles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "memes_daily_challenge_id_fkey"
-            columns: ["daily_challenge_id"]
-            isOneToOne: false
-            referencedRelation: "daily_challenges"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "memes_prompt_id_fkey"
             columns: ["prompt_id"]

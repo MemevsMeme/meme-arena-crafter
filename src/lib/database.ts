@@ -330,8 +330,7 @@ export async function getActiveBattles(limit: number = 10, offset: number = 0, f
           startDate: new Date(promptData.start_date),
           endDate: new Date(promptData.end_date),
           active: promptData.active,
-          tags: promptData.tags || [],
-          daily_challenge_id: promptData.daily_challenge_id
+          tags: promptData.tags || []
         };
       }
       
@@ -447,8 +446,7 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
         startDate: new Date(promptData.start_date),
         endDate: new Date(promptData.end_date),
         active: promptData.active,
-        tags: promptData.tags || [],
-        daily_challenge_id: promptData.daily_challenge_id
+        tags: promptData.tags || []
       };
     }
     
@@ -500,8 +498,7 @@ export async function getPromptById(promptId: string): Promise<Prompt | null> {
       startDate: new Date(data.start_date),
       endDate: new Date(data.end_date),
       active: data.active,
-      tags: data.tags || [],
-      daily_challenge_id: data.daily_challenge_id
+      tags: data.tags || []
     };
   } catch (error) {
     console.error('Error in getPromptById:', error);
@@ -546,8 +543,7 @@ export async function getPrompts(limit: number = 10, offset: number = 0, isCommu
       startDate: new Date(prompt.start_date),
       endDate: new Date(prompt.end_date),
       active: prompt.active,
-      tags: prompt.tags || [],
-      daily_challenge_id: prompt.daily_challenge_id
+      tags: prompt.tags || []
     }));
   } catch (error) {
     console.error('Error in getPrompts:', error);
@@ -820,8 +816,7 @@ export async function createPrompt(promptData: {
       startDate: new Date(data.start_date),
       endDate: new Date(data.end_date),
       active: data.active,
-      tags: data.tags || [],
-      daily_challenge_id: data.daily_challenge_id
+      tags: data.tags || []
     };
   } catch (error) {
     console.error('Error in createPrompt:', error);
@@ -852,7 +847,7 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
         .from('prompts')
         .select('*')
         .eq('is_community', false)
-        .order('created_at', { ascending: false })
+        .order('start_date', { ascending: false })
         .limit(1)
         .maybeSingle();
       
@@ -871,8 +866,7 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
         startDate: new Date(fallback.start_date),
         endDate: new Date(fallback.end_date),
         active: fallback.active,
-        tags: fallback.tags || [],
-        daily_challenge_id: fallback.daily_challenge_id
+        tags: fallback.tags || []
       };
     }
     
@@ -896,8 +890,7 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
           startDate: new Date(linkedPrompt.start_date),
           endDate: new Date(linkedPrompt.end_date),
           active: linkedPrompt.active,
-          tags: linkedPrompt.tags || [],
-          daily_challenge_id: linkedPrompt.daily_challenge_id
+          tags: linkedPrompt.tags || []
         };
       }
       
@@ -937,8 +930,7 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
         startDate: new Date(newPrompt.start_date),
         endDate: new Date(newPrompt.end_date),
         active: newPrompt.active,
-        tags: newPrompt.tags || [],
-        daily_challenge_id: newPrompt.daily_challenge_id
+        tags: newPrompt.tags || []
       };
     }
     
