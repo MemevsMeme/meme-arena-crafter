@@ -63,7 +63,8 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
       }
     }
     
-    // Create the meme record in the database with all the appropriate fields
+    // Prepare data for inserting into the database
+    // Only include fields that definitely exist in the database schema
     console.log('Creating meme record with data:', {
       prompt: meme.prompt,
       caption: meme.caption,
@@ -74,19 +75,48 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
       prompt_id: meme.prompt_id
     });
     
+    // Create insert object with only valid columns
+    const insertData = {
+      prompt: meme.prompt || '',
+      caption: meme.caption || '',
+      creator_id: meme.creatorId || '',
+      tags: meme.tags || [],
+      image_url: imageUrl,
+      ipfs_cid: ipfsCid
+    };
+    
+    // Only add prompt_id if it exists and is not null
+    if (meme.prompt_id) {
+      Object.assign(insertData, { prompt_id: meme.prompt_id });
+    }
+    
+    // Only add battle related fields if they exist in the schema and have values
+    // We'll check the database first to avoid errors
+    try {
+      const { data: tableInfo, error: tableError } = await supabase
+        .from('memes')
+        .select('id')
+        .limit(1);
+      
+      if (!tableError) {
+        // If we can query the table, it's likely these columns exist
+        // We still check to avoid adding properties with undefined values
+        if (meme.battleId) {
+          Object.assign(insertData, { battle_id: meme.battleId });
+        }
+        
+        if (meme.isBattleSubmission !== undefined) {
+          Object.assign(insertData, { is_battle_submission: meme.isBattleSubmission });
+        }
+      }
+    } catch (error) {
+      console.warn('Error checking memes table schema:', error);
+      // Continue without battle fields if there was an error
+    }
+    
     const { data: memeData, error: memeError } = await supabase
       .from('memes')
-      .insert({
-        prompt: meme.prompt || '',
-        prompt_id: meme.prompt_id,
-        image_url: imageUrl,
-        ipfs_cid: ipfsCid,
-        caption: meme.caption || '',
-        creator_id: meme.creatorId || '',
-        tags: meme.tags || [],
-        battle_id: meme.battleId || null,
-        is_battle_submission: meme.isBattleSubmission || false
-      })
+      .insert(insertData)
       .select('*')
       .single();
       
