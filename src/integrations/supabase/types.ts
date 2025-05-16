@@ -162,6 +162,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           id: string
+          is_admin: boolean | null
           level: number
           losses: number
           meme_streak: number
@@ -173,6 +174,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           id: string
+          is_admin?: boolean | null
           level?: number
           losses?: number
           meme_streak?: number
@@ -184,6 +186,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           id?: string
+          is_admin?: boolean | null
           level?: number
           losses?: number
           meme_streak?: number
