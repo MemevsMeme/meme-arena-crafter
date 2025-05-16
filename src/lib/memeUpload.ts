@@ -147,32 +147,31 @@ export async function uploadMeme(formData: FormData, memeData: any): Promise<{ m
     // Check if the file is a GIF
     const isGif = file.type === 'image/gif';
     
-    // Use enhanced upload helper for more reliable storage
-    // Using the renamed imported function
-    const uploadResult = await uploadMemeToStorage(
-      file, 
-      `meme-${memeData.creatorId}-${uuidv4()}`, 
-      memeData.creatorId, 
-      isGif
-    );
-    
-    if (!uploadResult || !uploadResult.success) {
-      console.error('Failed to upload image', uploadResult?.error || 'Unknown error');
-      return { error: uploadResult?.error || 'Failed to upload image' };
-    }
-    
-    console.log('Image uploaded successfully:', uploadResult);
-    
-    // Save the meme with the image URL
-    const fullMemeData = {
-      ...memeData,
-      image_url: uploadResult.imageUrl,
-      ipfs_cid: uploadResult.ipfsCid,
-    };
-    
-    console.log('Saving meme with full data:', JSON.stringify(fullMemeData));
-    
     try {
+      // Using the renamed imported function with proper parameters
+      const uploadResult = await uploadMemeToStorage(
+        file, 
+        `meme-${memeData.creatorId}-${uuidv4()}`, 
+        memeData.creatorId, 
+        isGif
+      );
+      
+      if (!uploadResult || !uploadResult.success) {
+        console.error('Failed to upload image', uploadResult?.error || 'Unknown error');
+        return { error: uploadResult?.error || 'Failed to upload image' };
+      }
+      
+      console.log('Image uploaded successfully:', uploadResult);
+      
+      // Save the meme with the image URL
+      const fullMemeData = {
+        ...memeData,
+        image_url: uploadResult.imageUrl,
+        ipfs_cid: uploadResult.ipfsCid,
+      };
+      
+      console.log('Saving meme with full data:', JSON.stringify(fullMemeData));
+      
       // Remove battleId from memeData if it's causing problems
       const cleanMemeData = { ...fullMemeData };
       delete cleanMemeData.battleId;
@@ -189,8 +188,8 @@ export async function uploadMeme(formData: FormData, memeData: any): Promise<{ m
       
       return { meme: savedMeme };
     } catch (error: any) {
-      console.error('Error saving meme:', error);
-      return { error: error.message || 'Failed to save meme data' };
+      console.error('Error in upload/save process:', error);
+      return { error: error.message || 'Failed to upload or save meme' };
     }
   } catch (error: any) {
     console.error('Error in uploadMeme:', error);
