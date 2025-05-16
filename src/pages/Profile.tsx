@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -10,37 +10,55 @@ import { getMemesByUserId } from '@/lib/database';
 import { User, Meme } from '@/lib/types';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { getProfile } from '@/lib/auth';
+import { toast } from 'sonner';
 
 const Profile = () => {
-  const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { userId } = useParams<{ userId: string }>();
+  const navigate = useNavigate();
+  const { user, session } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
   const [memes, setMemes] = useState<Meme[]>([]);
   const [loading, setLoading] = useState(true);
-  const isOwnProfile = user?.id === id;
+  const isOwnProfile = user?.id === userId;
 
   useEffect(() => {
     const fetchProfileData = async () => {
       setLoading(true);
       
+      if (!userId) {
+        toast.error('No user ID provided');
+        navigate('/');
+        return;
+      }
+      
       // If viewing own profile, use the cached user
       if (isOwnProfile && user) {
         setProfile(user);
-      } else if (id) {
-        const profileData = await getProfile(id);
+      } else if (userId) {
+        const profileData = await getProfile(userId);
+        
+        if (!profileData) {
+          toast.error('Profile not found');
+          // If user is logged in but trying to view nonexistent profile, redirect to their own profile
+          if (session?.user) {
+            navigate(`/profile/${session.user.id}`);
+            return;
+          }
+        }
+        
         setProfile(profileData);
       }
       
-      if (id) {
-        const userMemes = await getMemesByUserId(id);
-        setMemes(userMemes);
+      if (userId) {
+        const userMemes = await getMemesByUserId(userId);
+        setMemes(userMemes || []);
       }
       
       setLoading(false);
     };
     
     fetchProfileData();
-  }, [id, isOwnProfile, user]);
+  }, [userId, isOwnProfile, user, session, navigate]);
 
   if (loading) {
     return (
@@ -61,8 +79,14 @@ const Profile = () => {
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <main className="container mx-auto px-4 py-8 flex-grow">
-          <div className="flex justify-center items-center h-full">
-            <p className="text-muted-foreground">Profile not found</p>
+          <div className="flex justify-center items-center h-full flex-col gap-4">
+            <p className="text-xl">Profile not found</p>
+            <button 
+              onClick={() => navigate('/')}
+              className="bg-primary text-white px-4 py-2 rounded"
+            >
+              Return to Home
+            </button>
           </div>
         </main>
         <Footer />

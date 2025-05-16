@@ -1,8 +1,10 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User as AuthUser } from '@supabase/supabase-js';
 import { User } from '@/lib/types';
 import { getProfile, createProfile, updateProfile } from '@/lib/auth';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -84,12 +86,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (newUser) {
             console.log('New profile created:', newUser.username);
             setUser(newUser as User);
+            toast.success('Welcome! Your profile has been created.');
           } else {
             console.error('Failed to create new user profile');
+            toast.error('Failed to create user profile');
           }
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
+        toast.error('Error loading profile');
       } finally {
         setUserLoading(false);
       }

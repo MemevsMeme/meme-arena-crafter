@@ -35,12 +35,44 @@ export async function getProfile(userId: string): Promise<User | null> {
  */
 export async function createProfile(profile: { id: string; username: string; avatarUrl?: string | null }): Promise<User | null> {
   try {
+    // First check if profile already exists to avoid duplicates
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', profile.id)
+      .single();
+      
+    if (existingProfile) {
+      console.log('Profile already exists, returning existing profile');
+      return mapProfile(existingProfile);
+    }
+    
+    // Check if username is already taken
+    const { data: existingUsername } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', profile.username)
+      .single();
+    
+    // If username exists, make it unique by adding random numbers
+    let finalUsername = profile.username;
+    if (existingUsername) {
+      finalUsername = `${profile.username}_${Math.floor(Math.random() * 10000)}`;
+      console.log('Username already taken, using:', finalUsername);
+    }
+
+    // Create new profile
     const { data, error } = await supabase
       .from('profiles')
       .insert({
         id: profile.id,
-        username: profile.username,
-        avatar_url: profile.avatarUrl
+        username: finalUsername,
+        avatar_url: profile.avatarUrl,
+        meme_streak: 0,
+        wins: 0,
+        losses: 0,
+        level: 1,
+        xp: 0
       })
       .select('*')
       .single();
@@ -102,11 +134,11 @@ function mapProfile(data: any): User {
     id: data.id,
     username: data.username,
     avatarUrl: data.avatar_url,
-    memeStreak: data.meme_streak,
-    wins: data.wins,
-    losses: data.losses,
-    level: data.level,
-    xp: data.xp,
+    memeStreak: data.meme_streak || 0,
+    wins: data.wins || 0,
+    losses: data.losses || 0,
+    level: data.level || 1,
+    xp: data.xp || 0,
     createdAt: new Date(data.created_at)
   };
 }
