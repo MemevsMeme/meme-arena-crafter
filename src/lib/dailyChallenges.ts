@@ -7,17 +7,26 @@ import { Prompt } from './types';
  * Get today's challenge for display
  */
 export async function getTodaysChallenge(): Promise<Prompt | null> {
-  // Get the current day of year
-  const dayOfYear = getCurrentDayOfYear();
-  
-  // Fetch the challenge for today
-  const challenge = await getDailyChallenge(dayOfYear);
-  
-  return challenge;
+  try {
+    // Get the current day of year
+    const dayOfYear = getCurrentDayOfYear();
+    
+    // Fetch the challenge for today
+    const challenge = await getDailyChallenge(dayOfYear);
+    
+    // If no challenge is found, return null instead of a fallback
+    // This will allow the UI to handle the case appropriately
+    return challenge;
+  } catch (error) {
+    console.error('Error retrieving today\'s challenge:', error);
+    return null;
+  }
 }
 
 /**
  * Get a fallback challenge when no daily challenge is available
+ * This is kept for backward compatibility but should eventually be removed
+ * as we transition to using only database-sourced challenges
  */
 export function getFallbackChallenge(): Prompt {
   // Return a default prompt when no database prompt is available

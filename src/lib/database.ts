@@ -14,7 +14,7 @@ export async function createMeme(memeData: {
   votes: number;
   createdAt: Date;
   tags: string[];
-  battle_id?: string | null;
+  battleId?: string | null;
 }): Promise<Meme | null> {
   try {
     console.log("Creating meme with data:", memeData);
@@ -30,7 +30,7 @@ export async function createMeme(memeData: {
       votes: memeData.votes || 0,
       created_at: memeData.createdAt.toISOString(),
       tags: memeData.tags || []
-      // Note: battle_id is intentionally omitted here, it will be conditionally added below
+      // battle_id is intentionally omitted here, it will be conditionally added below
     };
     
     // Only add prompt_id if it exists and is valid
@@ -51,19 +51,19 @@ export async function createMeme(memeData: {
     }
 
     // Only add battle_id if it exists and is valid
-    if (memeData.battle_id) {
+    if (memeData.battleId) {
       // Try to find if the battle exists
       const { data: battleExists } = await supabase
         .from('battles')
         .select('id')
-        .eq('id', memeData.battle_id)
+        .eq('id', memeData.battleId)
         .maybeSingle();
         
       // Only include battle_id if it exists in the battles table
       if (battleExists) {
-        dataToInsert['battle_id'] = memeData.battle_id;
+        dataToInsert['battle_id'] = memeData.battleId;
       } else {
-        console.log(`Battle with ID ${memeData.battle_id} not found, omitting from meme data`);
+        console.log(`Battle with ID ${memeData.battleId} not found, omitting from meme data`);
       }
     }
 
@@ -97,7 +97,8 @@ export async function createMeme(memeData: {
       votes: data.votes || 0,
       createdAt: new Date(data.created_at),
       tags: data.tags || [],
-      battleId: data.battle_id || ''
+      battleId: data.battle_id || undefined,
+      isBattleSubmission: data.is_battle_submission
     };
   } catch (error) {
     console.error('Error in createMeme:', error);
@@ -767,7 +768,8 @@ export async function getMemesByBattleId(battleId: string): Promise<Meme[]> {
       votes: meme.votes || 0,
       createdAt: new Date(meme.created_at),
       tags: meme.tags || [],
-      battleId: meme.battle_id || ''
+      battleId: meme.battle_id || undefined,
+      isBattleSubmission: meme.is_battle_submission
     }));
   } catch (error) {
     console.error('Error in getMemesByBattleId:', error);
@@ -837,112 +839,100 @@ export async function getDailyChallenge(dayOfYear?: number): Promise<Prompt | nu
     // If day not provided, calculate current day of year
     const currentDay = dayOfYear || getCurrentDayOfYear();
     
-    // First try to find in challenges table
-    const { data: challenge, error: challengeError } = await supabase
-      .from('daily_challenges')
+    // Use the get_daily_challenge database function
+    const { data: challengeData, error } = await supabase
+      .rpc('get_daily_challenge', { day: currentDay });
+    
+    if (error) {
+      console.error('Error fetching daily challenge:', error);
+      return null;
+    }
+    
+    if (!challengeData || challengeData.length === 0) {
+      console.log(`No challenge found for day ${currentDay}`);
+      return null;
+    }
+    
+    const challenge = challengeData[0];
+    
+    // Check if a prompt is linked to this challenge
+    const { data: linkedPrompt } = await supabase
+      .from('prompts')
       .select('*')
-      .eq('day_of_year', currentDay)
+      .eq('daily_challenge_id', challenge.id)
+      .maybeSingle();
+    
+    if (linkedPrompt) {
+      return {
+        id: linkedPrompt.id,
+        text: linkedPrompt.text,
+        theme: linkedPrompt.theme || '',
+        description: linkedPrompt.description || '',
+        is_community: linkedPrompt.is_community || false,
+        creator_id: linkedPrompt.creator_id || '',
+        startDate: new Date(linkedPrompt.start_date),
+        endDate: new Date(linkedPrompt.end_date),
+        active: linkedPrompt.active,
+        tags: linkedPrompt.tags || [],
+        daily_challenge_id: linkedPrompt.daily_challenge_id,
+        challengeDay: currentDay
+      };
+    }
+    
+    // No linked prompt found, create a new one
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    
+    const { data: newPrompt, error: newPromptError } = await supabase
+      .from('prompts')
+      .insert({
+        text: challenge.text,
+        theme: challenge.theme,
+        tags: challenge.tags || [],
+        is_community: false,
+        creator_id: null,
+        start_date: now.toISOString(),
+        end_date: tomorrow.toISOString(),
+        active: true,
+        daily_challenge_id: challenge.id
+      })
+      .select()
       .single();
     
-    if (challengeError) {
-      console.log('No daily challenge found for today, using fallback');
+    if (newPromptError) {
+      console.error('Error creating prompt from challenge:', newPromptError);
       
-      // Fallback to prompts where is_community=false (official prompts)
-      const { data: fallback, error: fallbackError } = await supabase
-        .from('prompts')
-        .select('*')
-        .eq('is_community', false)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      if (fallbackError || !fallback) {
-        console.error('Error fetching fallback prompt:', fallbackError);
-        return null;
-      }
-      
+      // Return a direct prompt from the challenge instead
       return {
-        id: fallback.id,
-        text: fallback.text,
-        theme: fallback.theme || '',
-        description: fallback.description || '',
-        is_community: fallback.is_community || false,
-        creator_id: fallback.creator_id || '',
-        startDate: new Date(fallback.start_date),
-        endDate: new Date(fallback.end_date),
-        active: fallback.active,
-        tags: fallback.tags || [],
-        daily_challenge_id: fallback.daily_challenge_id
+        id: challenge.id,
+        text: challenge.text,
+        theme: challenge.theme || '',
+        tags: challenge.tags || [],
+        active: true,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        is_community: false,
+        creator_id: 'system',
+        daily_challenge_id: challenge.id,
+        challengeDay: currentDay
       };
     }
     
-    // Convert to prompt format
-    if (challenge) {
-      // First check if a prompt is already linked to this challenge
-      const { data: linkedPrompt, error: linkedPromptError } = await supabase
-        .from('prompts')
-        .select('*')
-        .eq('daily_challenge_id', challenge.id)
-        .maybeSingle();
-      
-      if (!linkedPromptError && linkedPrompt) {
-        return {
-          id: linkedPrompt.id,
-          text: linkedPrompt.text,
-          theme: linkedPrompt.theme || '',
-          description: linkedPrompt.description || '',
-          is_community: linkedPrompt.is_community || false,
-          creator_id: linkedPrompt.creator_id || '',
-          startDate: new Date(linkedPrompt.start_date),
-          endDate: new Date(linkedPrompt.end_date),
-          active: linkedPrompt.active,
-          tags: linkedPrompt.tags || [],
-          daily_challenge_id: linkedPrompt.daily_challenge_id
-        };
-      }
-      
-      // No linked prompt found, create a new one
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(now.getDate() + 1);
-      
-      const { data: newPrompt, error: newPromptError } = await supabase
-        .from('prompts')
-        .insert({
-          text: challenge.text,
-          theme: challenge.theme,
-          tags: challenge.tags || [],
-          is_community: false,
-          creator_id: null,
-          start_date: now.toISOString(),
-          end_date: tomorrow.toISOString(),
-          active: true,
-          daily_challenge_id: challenge.id
-        })
-        .select()
-        .single();
-      
-      if (newPromptError) {
-        console.error('Error creating prompt from challenge:', newPromptError);
-        return null;
-      }
-      
-      return {
-        id: newPrompt.id,
-        text: newPrompt.text,
-        theme: newPrompt.theme || '',
-        description: newPrompt.description || '',
-        is_community: newPrompt.is_community || false,
-        creator_id: newPrompt.creator_id || '',
-        startDate: new Date(newPrompt.start_date),
-        endDate: new Date(newPrompt.end_date),
-        active: newPrompt.active,
-        tags: newPrompt.tags || [],
-        daily_challenge_id: newPrompt.daily_challenge_id
-      };
-    }
-    
-    return null;
+    return {
+      id: newPrompt.id,
+      text: newPrompt.text,
+      theme: newPrompt.theme || '',
+      description: newPrompt.description || '',
+      is_community: newPrompt.is_community || false,
+      creator_id: newPrompt.creator_id || '',
+      startDate: new Date(newPrompt.start_date),
+      endDate: new Date(newPrompt.end_date),
+      active: newPrompt.active,
+      tags: newPrompt.tags || [],
+      daily_challenge_id: newPrompt.daily_challenge_id,
+      challengeDay: currentDay
+    };
   } catch (error) {
     console.error('Error in getDailyChallenge:', error);
     return null;
