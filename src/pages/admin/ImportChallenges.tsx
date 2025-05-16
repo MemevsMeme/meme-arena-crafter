@@ -21,8 +21,13 @@ const ImportChallenges = () => {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6dW5wamN4bnJmbnBjc2lidHliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDMzNzMsImV4cCI6MjA2MjQ3OTM3M30.eMCv2hMmifpFuK3e7y_tS5X0B6LqIGBNlvef3z_nPQc'
         },
-        body: JSON.stringify({ mode: 'all' })
+        body: JSON.stringify({ mode: 'all' }),
+        credentials: 'omit' // Ensure we're not sending cookies
       });
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${await response.text()}`);
+      }
       
       const data = await response.json();
       setResult(data);
@@ -52,13 +57,19 @@ const ImportChallenges = () => {
     
     setLoading(true);
     try {
-      const response = await fetch(`https://ezunpjcxnrfnpcsibtyb.supabase.co/functions/v1/import-daily-challenges?day=${dayNum}&mode=day`, {
+      const response = await fetch('https://ezunpjcxnrfnpcsibtyb.supabase.co/functions/v1/import-daily-challenges', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6dW5wamN4bnJmbnBjc2lidHliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDMzNzMsImV4cCI6MjA2MjQ3OTM3M30.eMCv2hMmifpFuK3e7y_tS5X0B6LqIGBNlvef3z_nPQc'
-        }
+        },
+        body: JSON.stringify({ mode: 'day', day: dayNum }),
+        credentials: 'omit' // Ensure we're not sending cookies
       });
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${await response.text()}`);
+      }
       
       const data = await response.json();
       setResult(data);

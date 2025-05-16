@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { getTodaysChallenge } from '@/lib/dailyChallenges';
 
 interface PromptOfTheDayProps {
   prompt?: Prompt | null; // Accept Prompt object or null
@@ -21,16 +22,30 @@ const PromptOfTheDay = ({
   
   // Store the actual prompt to display
   const [displayPrompt, setDisplayPrompt] = useState<Prompt | null>(null);
+  const [loading, setLoading] = useState(isLoading);
 
   // Handle prompt loading and ensure we always have a valid prompt to display
   useEffect(() => {
     if (prompt) {
       // If we have a prompt from props (database), use it
       setDisplayPrompt(prompt);
+    } else if (!isLoading) {
+      // If no prompt is provided and we're not loading, try to fetch today's challenge
+      setLoading(true);
+      getTodaysChallenge()
+        .then(todayPrompt => {
+          setDisplayPrompt(todayPrompt);
+        })
+        .catch(err => {
+          console.error('Error loading daily challenge:', err);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     }
   }, [prompt, isLoading]);
 
-  if (isLoading) {
+  if (isLoading || loading) {
     return (
       <div className="prompt-card animate-pulse bg-muted">
         <div className="h-6 w-3/4 bg-muted-foreground/20 rounded mb-2"></div>

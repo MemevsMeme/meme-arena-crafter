@@ -1,6 +1,6 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.14.0";
+import { corsHeaders } from "../_shared/cors.ts";
 
 interface Challenge {
   day_of_year: number;
@@ -215,38 +215,61 @@ function generateDailyChallenges(): Challenge[] {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
+  }
+  
   try {
     // Get auth header from request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || authHeader.split(' ')[1];
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     // Get the challenges
     const challenges = generateDailyChallenges();
     
-    // Process mode (insert all or specific day)
-    const url = new URL(req.url);
-    const day = url.searchParams.get('day');
-    const mode = url.searchParams.get('mode') || 'all';
+    // Process request body
+    let body = {};
+    let mode = 'all';
+    let dayNum: number | null = null;
+    
+    if (req.method === 'POST') {
+      try {
+        body = await req.json();
+        mode = body.mode || 'all';
+        dayNum = body.day || null;
+      } catch (e) {
+        console.error('Error parsing request body:', e);
+      }
+    } else {
+      // Process mode (insert all or specific day) from URL params
+      const url = new URL(req.url);
+      const day = url.searchParams.get('day');
+      mode = url.searchParams.get('mode') || 'all';
+      dayNum = day ? parseInt(day, 10) : null;
+    }
     
     let result;
     
-    if (mode === 'day' && day) {
+    if (mode === 'day' && dayNum) {
       // Find the specific day's challenge
-      const dayNum = parseInt(day, 10);
       if (isNaN(dayNum) || dayNum < 1 || dayNum > 365) {
         return new Response(JSON.stringify({ error: 'Invalid day parameter' }), {
           status: 400,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
       
@@ -254,7 +277,7 @@ serve(async (req) => {
       if (!challenge) {
         return new Response(JSON.stringify({ error: 'Challenge not found' }), {
           status: 404,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
       
@@ -263,24 +286,25 @@ serve(async (req) => {
         .from('daily_challenges')
         .upsert([challenge], { onConflict: 'day_of_year' });
       
-      result = { mode: 'day', day: dayNum, inserted: !error, error };
+      result = { mode: 'day', day: dayNum, inserted: !error ? 1 : 0, error: error?.message };
     } else {
       // Bulk insert all challenges
       const { data, error } = await supabase
         .from('daily_challenges')
         .upsert(challenges, { onConflict: 'day_of_year' });
       
-      result = { mode: 'all', inserted: challenges.length, error };
+      result = { mode: 'all', inserted: !error ? challenges.length : 0, error: error?.message };
     }
 
+    // Return the result with CORS headers
     return new Response(JSON.stringify(result), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
