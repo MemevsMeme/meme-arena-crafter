@@ -17,6 +17,9 @@ import { generateMemeImage } from '@/lib/ai';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TemplateSelector from '@/components/meme/TemplateSelector';
 import { MEME_TEMPLATES } from '@/lib/constants';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import ImageUploader from '@/components/meme/ImageUploader';
+import { PictureInPicture, Bot, FileImage } from 'lucide-react';
 
 const Create = () => {
   const navigate = useNavigate();
@@ -28,6 +31,9 @@ const Create = () => {
   const [selectedTemplate, setSelectedTemplate] = useState(MEME_TEMPLATES[0]);
   const [isGeneratingAIImage, setIsGeneratingAIImage] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("ai");
+  const [isGif, setIsGif] = useState(false);
 
   useEffect(() => {
     // Check if the user is authenticated
@@ -104,6 +110,35 @@ const Create = () => {
     localStorage.setItem('meme_image', imageUrl);
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check if the file is a GIF
+      const isGifFile = file.type === 'image/gif';
+      setIsGif(isGifFile);
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const imageUrl = reader.result as string;
+        setUploadedImage(imageUrl);
+        // Set this tab as active
+        setActiveTab("upload");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const getCurrentImage = () => {
+    if (activeTab === "ai" && generatedImage) {
+      return generatedImage;
+    } else if (activeTab === "template" && selectedTemplate) {
+      return selectedTemplate.url;
+    } else if (activeTab === "upload" && uploadedImage) {
+      return uploadedImage;
+    }
+    return null;
+  };
+
   // Create a proper Prompt object
   const promptData: Prompt = {
     id: promptId,
@@ -131,40 +166,68 @@ const Create = () => {
           <Card>
             <CardHeader>
               <CardTitle>Options</CardTitle>
-              <CardDescription>Choose a template or generate an image</CardDescription>
+              <CardDescription>Choose how to create your meme</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Template Selection */}
-              <div className="space-y-2">
-                <Label htmlFor="template">Select a Template</Label>
-                <TemplateSelector 
-                  selectedTemplate={selectedTemplate} 
-                  setSelectedTemplate={setSelectedTemplate} 
-                />
-              </div>
+              {/* Tabs for Image Source Selection */}
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="w-full justify-start mb-4">
+                  <TabsTrigger value="ai" className="flex items-center gap-1">
+                    <Bot className="w-4 h-4" /> AI Generate
+                  </TabsTrigger>
+                  <TabsTrigger value="template" className="flex items-center gap-1">
+                    <PictureInPicture className="w-4 h-4" /> Templates
+                  </TabsTrigger>
+                  <TabsTrigger value="upload" className="flex items-center gap-1">
+                    <FileImage className="w-4 h-4" /> Upload
+                  </TabsTrigger>
+                </TabsList>
 
-              {/* Prompt Input */}
-              <div className="space-y-2">
-                <Label htmlFor="prompt">Enter a Prompt</Label>
-                <Input
-                  id="prompt"
-                  placeholder="e.g., When you realize it's Monday again"
-                  value={prompt}
-                  onChange={handlePromptChange}
-                />
-              </div>
+                {/* Prompt Input - Common for AI and Templates */}
+                <div className="space-y-2">
+                  <Label htmlFor="prompt">Enter a Prompt</Label>
+                  <Input
+                    id="prompt"
+                    placeholder="e.g., When you realize it's Monday again"
+                    value={prompt}
+                    onChange={handlePromptChange}
+                  />
+                </div>
 
-              {/* AI Image Generator - Compact for mobile */}
-              <div className="bg-muted/30 p-4 rounded-lg">
-                <h3 className="text-lg font-medium mb-2">Generate AI Image</h3>
-                <AiImageGenerator
-                  promptText={prompt}
-                  isGeneratingAIImage={isGeneratingAIImage}
-                  generatedImage={generatedImage}
-                  handleGenerateImage={handleGenerateImage}
-                  onSaveAsTemplate={handleSaveAsTemplate}
-                />
-              </div>
+                {/* AI Generation Content */}
+                <TabsContent value="ai" className="pt-2 mt-0">
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <h3 className="text-lg font-medium mb-2">Generate AI Image</h3>
+                    <AiImageGenerator
+                      promptText={prompt}
+                      isGeneratingAIImage={isGeneratingAIImage}
+                      generatedImage={generatedImage}
+                      handleGenerateImage={handleGenerateImage}
+                      onSaveAsTemplate={handleSaveAsTemplate}
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Templates Content */}
+                <TabsContent value="template" className="pt-2 mt-0">
+                  <div className="space-y-2">
+                    <Label htmlFor="template">Select a Template</Label>
+                    <TemplateSelector 
+                      selectedTemplate={selectedTemplate} 
+                      setSelectedTemplate={setSelectedTemplate} 
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Upload Content */}
+                <TabsContent value="upload" className="pt-2 mt-0">
+                  <ImageUploader 
+                    uploadedImage={uploadedImage} 
+                    isGif={isGif}
+                    handleImageUpload={handleImageUpload}
+                  />
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
 
@@ -180,8 +243,8 @@ const Create = () => {
                   promptData={promptData} 
                   battleId={null} 
                   memeId={null}
-                  selectedTemplate={selectedTemplate}
-                  generatedImage={generatedImage} 
+                  selectedTemplate={activeTab === "template" ? selectedTemplate : null}
+                  generatedImage={getCurrentImage()} 
                 />
               </div>
             </CardContent>

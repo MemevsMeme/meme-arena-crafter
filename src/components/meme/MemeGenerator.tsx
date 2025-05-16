@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   AlertDialog,
@@ -34,9 +34,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { getMemeById } from '@/lib/database';
-import { uploadMeme } from '@/lib/memeUpload';
+import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, ArrowRight, CheckCircle2, CheckCircle, Copy, CopyCheck, Plus, RefreshCcw, Upload, UploadCloud } from 'lucide-react';
 import { tags as defaultTags } from '@/lib/tags';
+import { uploadFileToIPFS, uploadFileToSupabase } from '@/lib/ipfs';
 
 // Define a type for the tag objects
 type Tag = {
@@ -76,7 +77,6 @@ const MemeGenerator = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { toast } = useToast();
   
   // Canvas references
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -151,31 +151,15 @@ const MemeGenerator = ({
       } else {
         toast({
           title: "Error",
-          description: "Meme not found.",
-          variant: "destructive",
+          description: "Meme not found."
         });
       }
     } catch (error) {
       console.error("Error loading meme:", error);
       toast({
         title: "Error",
-        description: "Failed to load meme.",
-        variant: "destructive",
+        description: "Failed to load meme."
       });
-    }
-  };
-
-  // Image upload handler
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const newImageUrl = reader.result as string;
-        setImageUrl(newImageUrl);
-        localStorage.setItem('meme_image', newImageUrl);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -246,7 +230,7 @@ const MemeGenerator = ({
 
   // Function to convert base64 data to Blob
   const base64DataToBlob = (base64Data: string, contentType: string): Blob => {
-    const byteCharacters = atob(base64Data);
+    const byteCharacters = atob(base64Data.split(',')[1]);
     const byteArrays = [];
   
     for (let offset = 0; offset < byteCharacters.length; offset += 512) {
@@ -276,57 +260,79 @@ const MemeGenerator = ({
       // Generate the final image as a data URL
       const dataUrl = canvas.current.toDataURL('image/png');
       
-      // Extract the base64 data
-      const base64Data = dataUrl.split(',')[1];
+      // Create file from dataURL
+      const blob = base64DataToBlob(dataUrl, 'image/png');
+      const file = new File([blob], 'meme.png', { type: 'image/png' });
       
-      // Create form data for the upload
-      const formData = new FormData();
-      formData.append('file', base64DataToBlob(base64Data, 'image/png'), 'meme.png');
+      // Upload to IPFS first
+      const ipfsResult = await uploadFileToIPFS(file, 'meme-image');
+      
+      if (!ipfsResult.success) {
+        throw new Error(`IPFS upload failed: ${ipfsResult.error}`);
+      }
+      
+      const ipfsCid = ipfsResult.ipfsHash;
+      console.log("Successfully uploaded to IPFS:", ipfsCid);
+      
+      // Also upload to Supabase Storage as fallback
+      const storageResult = await uploadFileToSupabase(
+        file, 
+        user?.id || 'anonymous', 
+        `meme-${Date.now()}.png`
+      );
+      
+      if (!storageResult.success) {
+        console.warn("Supabase storage upload failed, using IPFS only:", storageResult.error);
+      }
+
+      const imageUrl = storageResult.success ? storageResult.url : ipfsResult.gatewayUrl;
       
       // Get the meme metadata
       const activeTags = tags.filter(tag => tag.selected).map(tag => tag.name);
       const currentPromptData = promptData || { text: customPrompt, id: null };
-      
-      // Create meme object
-      const meme = {
-        prompt: currentPromptData.text || customPrompt,
-        promptId: currentPromptData.id || null,
-        imageUrl: '',  // Will be filled by the uploader
-        ipfsCid: null, // Will be filled by the IPFS service
-        caption: caption,
-        creatorId: user?.id || 'anonymous',
-        votes: 0,
-        createdAt: new Date(),
-        tags: activeTags,
-        battleId: battleId || null, // Using battleId, not battle_id
-        isBattleSubmission: battleId ? true : false,
-      };
-      
-      // Upload the meme
-      const { publicUrl, ipfsCid, error } = await uploadMeme(formData, meme);
-      
-      if (error) {
-        console.error("Upload error:", error);
-        toast({
-          title: "Upload Error",
-          description: "Failed to upload meme. Please try again.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Meme Uploaded",
-          description: "Your meme has been successfully uploaded!",
-        });
+
+      // Create the meme record in the database
+      const { data: memeData, error: memeError } = await supabase
+        .from('memes')
+        .insert({
+          prompt: currentPromptData.text || customPrompt,
+          prompt_id: currentPromptData.id || null,
+          image_url: imageUrl || '',
+          ipfs_cid: ipfsCid || null,
+          caption: caption,
+          creator_id: user?.id || '',
+          tags: activeTags,
+          battle_id: battleId || null,
+          is_battle_submission: battleId ? true : false
+        })
+        .select('*')
+        .single();
         
-        // Redirect to the meme's page
-        navigate(`/meme/${ipfsCid}`);
+      if (memeError) {
+        console.error('Error creating meme record:', memeError);
+        throw new Error(`Database error: ${memeError.message}`);
       }
-    } catch (error) {
-      console.error("Unexpected error:", error);
+      
+      console.log("Meme saved successfully:", memeData);
+      
       toast({
-        title: "Unexpected Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
+        title: "Meme Saved!",
+        description: "Your meme has been successfully saved and published.",
+      });
+      
+      // Redirect to user profile page
+      if (user) {
+        setTimeout(() => {
+          navigate(`/profile/${user.id}`);
+        }, 1000);
+      } else {
+        navigate('/');
+      }
+    } catch (error: any) {
+      console.error("Error saving meme:", error);
+      toast({
+        title: "Error",
+        description: `Failed to save meme: ${error.message || "Unknown error"}`
       });
     } finally {
       setIsSubmitting(false);
@@ -358,15 +364,13 @@ const MemeGenerator = ({
           console.error("Failed to copy:", err);
           toast({
             title: "Copy Failed",
-            description: "Failed to copy the image URL to clipboard.",
-            variant: "destructive",
+            description: "Failed to copy the image URL to clipboard."
           });
         });
     } else {
       toast({
         title: "No Image",
-        description: "Please upload an image first.",
-        variant: "destructive",
+        description: "Please upload an image first."
       });
     }
   };
@@ -403,7 +407,7 @@ const MemeGenerator = ({
             {/* Hidden Image */}
             <img
               ref={image}
-              src={imageUrl}
+              src={imageUrl || ''}
               alt="Uploaded Meme"
               style={{ display: 'none' }}
               onLoad={drawTextOnCanvas}
@@ -422,47 +426,6 @@ const MemeGenerator = ({
         {/* Controls Section */}
         <div className="w-full md:w-1/2 p-4 flex flex-col">
           <h2 className="text-2xl font-bold mb-4">Meme Generator</h2>
-          
-          {/* Upload Image */}
-          <div className="mb-4">
-            <Label htmlFor="image" className="block text-sm font-medium text-gray-700">
-              Upload Image
-            </Label>
-            <div className="mt-1 flex rounded-md shadow-sm">
-              <Input
-                type="file"
-                id="image"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="focus:ring-indigo-500 focus:border-indigo-500 block w-full min-w-0 flex-1 sm:text-sm border-gray-300 rounded-md"
-              />
-            </div>
-            
-            {/* Copy Image URL */}
-            {imageUrl && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-2 w-full justify-center gap-2"
-                onClick={handleCopyToClipboard}
-                disabled={isCopied}
-              >
-                {isCopied ? (
-                  <>
-                    <CopyCheck className="h-4 w-4" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4" />
-                    Copy Image URL
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-          
-          <Separator className="my-2" />
           
           {/* Caption Input */}
           <div className="mb-4">
