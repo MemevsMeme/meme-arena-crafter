@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   username: string;
@@ -63,6 +62,7 @@ export interface Battle {
   votes_a?: number; // Database field
   votes_b?: number; // Database field
   submissions?: Meme[];
+  createdAt: Date; // Add this property to match mapBattle
 }
 
 export interface Vote {

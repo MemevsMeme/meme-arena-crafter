@@ -476,7 +476,7 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
  * Insert a new battle
  * @param battle 
  */
-export async function insertBattle(battle: Omit<Battle, 'id' | 'createdAt' | 'status' | 'votesA' | 'votesB' | 'memeOneId' | 'memeTwoId'>): Promise<Battle | null> {
+export async function insertBattle(battle: Omit<Battle, 'id' | 'createdAt' | 'status' | 'votes_a' | 'votes_b' | 'meme_one_id' | 'meme_two_id'>): Promise<Battle | null> {
   try {
     const { data, error } = await supabase
       .from('battles')
@@ -591,6 +591,6 @@ function mapBattle(data: any): Battle {
     memeTwoId: data.meme_two_id,
     winnerId: data.winner_id,
     is_community: data.is_community,
-    createdAt: new Date(data.created_at),
+    createdAt: new Date(data.created_at)
   };
 }
