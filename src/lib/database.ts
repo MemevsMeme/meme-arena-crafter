@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User, Battle, Prompt, Meme } from './types';
 
@@ -594,9 +595,10 @@ export async function castVote(battleId: string, memeId: string, userId: string)
     }
     
     // Increment the vote count on the meme
-    const { error: memeError } = await supabase.rpc('increment_vote', {
-      meme_id: memeId
-    });
+    const { error: memeError } = await supabase
+      .rpc('increment_meme_vote', {
+        meme_id: memeId
+      });
     
     if (memeError) {
       console.error('Error incrementing meme vote:', memeError);
@@ -604,9 +606,10 @@ export async function castVote(battleId: string, memeId: string, userId: string)
     }
     
     // Update battle vote count
-    const { error: battleError } = await supabase.rpc('increment_battle_vote_count', {
-      battle_id: battleId
-    });
+    const { error: battleError } = await supabase
+      .rpc('increment_battle_vote', {
+        battle_id: battleId
+      });
     
     if (battleError) {
       console.error('Error incrementing battle vote count:', battleError);
