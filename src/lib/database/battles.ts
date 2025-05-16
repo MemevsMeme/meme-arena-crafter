@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { Battle } from '../types';
 
