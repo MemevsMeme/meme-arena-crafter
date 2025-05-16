@@ -99,3 +99,22 @@
 .create-button {
   @apply bg-gradient-to-r from-brand-purple to-brand-orange text-white font-medium px-6 py-3 rounded-full hover:opacity-90 transition-all;
 }
+
+/* Add animation keyframes and classes */
+@keyframes pulse-slight {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.92; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+.animate-pulse-slight {
+  animation: pulse-slight 3s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}

@@ -149,15 +149,20 @@ const Create = () => {
       <Navbar />
 
       <div className="flex-grow w-full px-4 py-6 bg-gradient-to-b from-background to-muted/30">
-        <Card className="w-full max-w-4xl mx-auto">
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-heading">Create a Meme</CardTitle>
-            <CardDescription>Unleash your creativity and make the world laugh!</CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            {/* More organized layout for mobile and desktop */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="w-full max-w-4xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="text-center">
+            <h1 className="text-3xl font-bold font-heading">Create a Meme</h1>
+            <p className="text-muted-foreground">Unleash your creativity and make the world laugh!</p>
+          </div>
+          
+          {/* Top Options Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Options</CardTitle>
+              <CardDescription>Choose a template or generate an image</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
               {/* Template Selection */}
               <div className="space-y-2">
                 <Label htmlFor="template">Select a Template</Label>
@@ -185,41 +190,38 @@ const Create = () => {
                   onChange={handlePromptChange}
                 />
               </div>
-            </div>
 
-            <Separator className="my-4" />
+              {/* AI Image Generator - Compact for mobile */}
+              <div className="bg-muted/30 p-4 rounded-lg">
+                <h3 className="text-lg font-medium mb-2">Generate AI Image</h3>
+                <AiImageGenerator
+                  promptText={prompt}
+                  isGeneratingAIImage={isGeneratingAIImage}
+                  generatedImage={generatedImage}
+                  handleGenerateImage={handleGenerateImage}
+                  onSaveAsTemplate={(imageUrl) => handleSaveAsTemplate(imageUrl)}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* AI Image Generator - Compact for mobile */}
-            <div className="bg-muted/30 p-4 rounded-lg">
-              <h3 className="text-lg font-medium mb-2">Generate AI Image</h3>
-              <AiImageGenerator
-                promptText={prompt}
-                isGeneratingAIImage={isGeneratingAIImage}
-                generatedImage={generatedImage}
-                handleGenerateImage={handleGenerateImage}
-                onSaveAsTemplate={(imageUrl) => handleSaveAsTemplate(imageUrl)}
-              />
-            </div>
-
-            {/* Improved Meme Generator layout */}
-            <div className={`mt-6 ${isMobile ? 'p-0' : 'p-4'}`}>
-              <MemeGenerator 
-                promptData={promptData} 
-                battleId={null} 
-                memeId={null} 
-              />
-            </div>
-          </CardContent>
-
-          <CardFooter className="flex flex-col space-y-4">
-            <Separator />
-            <div className="text-center text-sm">
-              <Button variant="link" onClick={() => setEditMode(!editMode)}>
-                {editMode ? 'Exit Edit Mode' : 'Enter Edit Mode'}
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
+          {/* Meme Generator in its own card */}
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <CardTitle>Meme Generator</CardTitle>
+              <CardDescription>Design your meme with captions and effects</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0 md:p-6">
+              <div className="h-full">
+                <MemeGenerator 
+                  promptData={promptData} 
+                  battleId={null} 
+                  memeId={null} 
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Footer />
