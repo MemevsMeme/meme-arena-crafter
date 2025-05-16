@@ -15,11 +15,12 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
     // Extract the file from form data
     const file = formData.get('file') as File;
     if (!file) {
+      console.error('No file provided in formData');
       return { error: 'No file provided' };
     }
 
     // First, try to upload to IPFS
-    console.log('Uploading meme to IPFS...');
+    console.log('Uploading meme to IPFS...', file.name, file.type, file.size);
     const ipfsResult = await uploadFileToIPFS(file, `Meme: ${meme.caption || 'Untitled'}`);
     
     let ipfsCid = null;
@@ -38,7 +39,7 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
     
     // Generate a unique filename
     const timestamp = Date.now();
-    const fileName = `${meme.creatorId}_${timestamp}.png`;
+    const fileName = `${meme.creatorId || 'anonymous'}_${timestamp}.png`;
     
     const supabaseResult = await uploadFileToSupabase(
       file,
@@ -63,18 +64,27 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
     }
     
     // Create the meme record in the database
+    console.log('Creating meme record with data:', {
+      prompt: meme.prompt,
+      caption: meme.caption,
+      creator_id: meme.creatorId,
+      tags: meme.tags,
+      image_url: imageUrl,
+      ipfs_cid: ipfsCid
+    });
+    
     const { data: memeData, error: memeError } = await supabase
       .from('memes')
       .insert({
-        prompt: meme.prompt,
+        prompt: meme.prompt || '',
         prompt_id: meme.prompt_id,
         image_url: imageUrl,
         ipfs_cid: ipfsCid,
-        caption: meme.caption,
-        creator_id: meme.creatorId,
+        caption: meme.caption || '',
+        creator_id: meme.creatorId || '',
         tags: meme.tags || [],
         battle_id: meme.battleId,
-        is_battle_submission: meme.isBattleSubmission
+        is_battle_submission: meme.isBattleSubmission || false
       })
       .select('*')
       .single();
@@ -84,6 +94,7 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
       return { error: memeError };
     }
     
+    console.log('Successfully saved meme with ID:', memeData.id);
     return { 
       publicUrl: imageUrl, 
       ipfsCid 

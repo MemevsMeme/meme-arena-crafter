@@ -34,10 +34,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { getMemeById } from '@/lib/database';
-import { supabase } from '@/integrations/supabase/client';
+import { uploadMeme } from '@/lib/memeUpload';
 import { ArrowLeft, ArrowRight, CheckCircle2, CheckCircle, Copy, CopyCheck, Plus, RefreshCcw, Upload, UploadCloud } from 'lucide-react';
 import { tags as defaultTags } from '@/lib/tags';
-import { uploadFileToIPFS, uploadFileToSupabase } from '@/lib/ipfs';
 
 // Define a type for the tag objects
 type Tag = {
@@ -248,70 +247,65 @@ const MemeGenerator = ({
 
   // Save handler
   const handleSave = async () => {
-    if (!canvas.current || !imageUrl || isSubmitting) {
+    if (!canvas.current || !imageUrl || isSubmitting || !user) {
+      if (!user) {
+        toast("Error", {
+          description: "You must be logged in to save a meme."
+        });
+        return;
+      }
+      if (!imageUrl) {
+        toast("Error", {
+          description: "Please add an image first."
+        });
+      }
       return;
     }
 
     setIsSubmitting(true);
     
     try {
+      console.log('Starting meme save process...');
+      
       // Generate the final image as a data URL
       const dataUrl = canvas.current.toDataURL('image/png');
+      console.log('Canvas image generated successfully');
       
       // Create file from dataURL
       const blob = base64DataToBlob(dataUrl, 'image/png');
       const file = new File([blob], 'meme.png', { type: 'image/png' });
-      
-      // Upload to IPFS first
-      const ipfsResult = await uploadFileToIPFS(file, 'meme-image');
-      
-      if (!ipfsResult.success) {
-        throw new Error(`IPFS upload failed: ${ipfsResult.error}`);
-      }
-      
-      const ipfsCid = ipfsResult.ipfsHash;
-      console.log("Successfully uploaded to IPFS:", ipfsCid);
-      
-      // Also upload to Supabase Storage as fallback
-      const storageResult = await uploadFileToSupabase(
-        file, 
-        user?.id || 'anonymous', 
-        `meme-${Date.now()}.png`
-      );
-      
-      if (!storageResult.success) {
-        console.warn("Supabase storage upload failed, using IPFS only:", storageResult.error);
-      }
-
-      const imageUrl = storageResult.success ? storageResult.url : ipfsResult.gatewayUrl;
+      console.log('File created from canvas:', file.size, 'bytes');
       
       // Get the meme metadata
       const activeTags = tags.filter(tag => tag.selected).map(tag => tag.name);
       const currentPromptData = promptData || { text: customPrompt, id: null };
-
-      // Create the meme record in the database
-      const { data: memeData, error: memeError } = await supabase
-        .from('memes')
-        .insert({
-          prompt: currentPromptData.text || customPrompt,
-          prompt_id: currentPromptData.id || null,
-          image_url: imageUrl || '',
-          ipfs_cid: ipfsCid || null,
-          caption: caption,
-          creator_id: user?.id || '',
-          tags: activeTags,
-          battle_id: battleId || null,
-          is_battle_submission: battleId ? true : false
-        })
-        .select('*')
-        .single();
-        
-      if (memeError) {
-        console.error('Error creating meme record:', memeError);
-        throw new Error(`Database error: ${memeError.message}`);
+      
+      // Create a FormData object
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Create the meme object
+      const memeData = {
+        prompt: currentPromptData.text || customPrompt || '',
+        prompt_id: currentPromptData.id || null,
+        caption: caption,
+        creatorId: user?.id || '',
+        tags: activeTags,
+        battleId: battleId || null,
+        isBattleSubmission: battleId ? true : false
+      };
+      
+      console.log('Calling uploadMeme with meme data:', memeData);
+      
+      // Upload the meme
+      const result = await uploadMeme(formData, memeData);
+      
+      if (result.error) {
+        console.error('Error from uploadMeme:', result.error);
+        throw new Error(typeof result.error === 'string' ? result.error : 'Failed to save meme');
       }
       
-      console.log("Meme saved successfully:", memeData);
+      console.log("Meme saved successfully", result);
       
       toast("Meme Saved!", {
         description: "Your meme has been successfully saved and published."
@@ -404,6 +398,7 @@ const MemeGenerator = ({
               alt="Uploaded Meme"
               style={{ display: 'none' }}
               onLoad={drawTextOnCanvas}
+              crossOrigin="anonymous"
             />
             
             {/* Image Placeholder */}
