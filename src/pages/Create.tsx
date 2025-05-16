@@ -1,214 +1,137 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import MemeGenerator from '@/components/meme/MemeGenerator';
-import { Prompt } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { MEME_TEMPLATES } from '@/lib/constants';
-import { safeJsonParse } from '@/lib/utils';
-import { toast } from 'sonner';
-import { v4 as uuidv4 } from 'uuid';
+
+interface Template {
+  id: string;
+  name: string;
+  url: string;
+  textPositions: { x: number; y: number }[];
+}
+
+const defaultTemplates: Template[] = [
+  {
+    id: "1",
+    name: "Drake",
+    url: "https://i.imgflip.com/30b5v.jpg",
+    textPositions: [{ x: 0.25, y: 0.25 }, { x: 0.75, y: 0.75 }],
+  },
+  {
+    id: "2",
+    name: "Distracted Boyfriend",
+    url: "https://i.imgflip.com/1bij.jpg",
+    textPositions: [{ x: 0.2, y: 0.8 }, { x: 0.5, y: 0.2 }, { x: 0.8, y: 0.8 }],
+  },
+  {
+    id: "3",
+    name: "Change My Mind",
+    url: "https://i.imgflip.com/24y43o.jpg",
+    textPositions: [{ x: 0.5, y: 0.8 }],
+  },
+];
 
 const Create = () => {
   const navigate = useNavigate();
-  const { user, loading, session } = useAuth();
-  const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [createdMeme, setCreatedMeme] = useState<{ id: string; caption: string; imageUrl: string } | null>(null);
-  
-  const [defaultEditMode] = useState<boolean>(false);
-  const [defaultTemplate] = useState(MEME_TEMPLATES[0]);
+  const location = useLocation();
+  const { user } = useAuth();
+  const [prompt, setPrompt] = useState('');
+  const [promptId, setPromptId] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<Template>(defaultTemplates[0]);
+  const [editMode, setEditMode] = useState(false);
 
-  // Simplified auth check
   useEffect(() => {
-    const checkAuth = () => {
-      // If auth is still loading, wait
-      if (loading) {
-        return;
-      }
-      
-      // If not authenticated after loading completes, redirect to login
-      if (!session && !loading) {
-        console.log('User not authenticated, redirecting to login');
-        localStorage.setItem('returnUrl', '/create');
-        navigate('/login');
-        return;
-      }
-
-      // Once authenticated, load prompt
-      loadPrompt();
-    };
-    
-    checkAuth();
-  }, [loading, session, navigate]);
-
-  const loadPrompt = () => {
-    try {
-      // Look for challenge prompt in localStorage
-      const storedPromptData = localStorage.getItem('active_challenge_prompt');
-      
-      if (storedPromptData) {
-        console.log('Found stored prompt data:', storedPromptData);
-        const promptData = safeJsonParse(storedPromptData, null);
-        
-        if (promptData && promptData.text) {
-          console.log('Setting active prompt from localStorage data');
-          
-          // Generate a valid UUID if the ID isn't already a valid UUID
-          let promptId = promptData.id;
-          if (!promptId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(promptId)) {
-            // If the ID isn't a UUID, generate a new one
-            promptId = uuidv4();
-            console.log('Generated new UUID for prompt:', promptId);
-          }
-          
-          setActivePrompt({
-            id: promptId,
-            text: promptData.text,
-            tags: promptData.tags || [],
-            active: true,
-            startDate: new Date(),
-            endDate: new Date(Date.now() + 86400000),
-            theme: promptData.theme || ''
-          });
-          
-          // Remove from localStorage to prevent future issues
-          localStorage.removeItem('active_challenge_prompt');
-        } else {
-          console.log('Using fallback prompt (stored prompt invalid)');
-          setFallbackPrompt();
-        }
-      } else {
-        console.log('No stored prompt found, using fallback');
-        setFallbackPrompt();
-      }
-      
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error processing prompt data:', error);
-      setFallbackPrompt();
-      setIsLoading(false);
+    // Check if the user is authenticated
+    if (!user) {
+      // Redirect to the login page
+      toast.error('You must be logged in to create memes.');
+      navigate('/login', { replace: true });
     }
+  }, [user, navigate]);
+
+  const handleTemplateSelect = (template: Template) => {
+    setSelectedTemplate(template);
   };
 
-  const setFallbackPrompt = () => {
-    setActivePrompt({
-      id: uuidv4(), // Always use a valid UUID for fallback
-      text: 'Create a funny meme!',
-      theme: 'humor',
-      tags: ['funny', 'meme'],
-      active: true,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 86400000)
-    });
+  const handlePromptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPrompt(e.target.value);
   };
 
-  const handleMemeSave = async (meme: { id: string; caption: string; imageUrl: string }) => {
-    console.log('Meme created successfully:', meme);
-    setCreatedMeme(meme);
-    
-    // Navigate to the meme profile page after a short delay
-    setTimeout(() => {
-      if (user) {
-        navigate(`/profile/${user.id}`);
-      }
-    }, 2000);
+  const handleSaveMeme = async (meme: { id: string; caption: string; imageUrl: string }) => {
+    // Placeholder for saving the meme
+    console.log('Meme saved:', meme);
+    toast.success('Meme saved successfully!');
+    navigate('/');
   };
-
-  // Show loading state while authentication is being checked
-  if (loading || isLoading) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Navbar />
-        <main className="container mx-auto px-4 py-8 flex-grow">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-purple"></div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // If not authenticated, redirection is handled in useEffect
-  if (!user) {
-    return null;
-  }
 
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      
-      <main className="container mx-auto px-4 py-8 flex-grow">
-        <h1 className="text-3xl font-heading mb-6">Create a Meme</h1>
-        
-        {createdMeme && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
-            <h2 className="text-xl font-heading text-green-800 mb-2">Meme Created!</h2>
-            <p className="mb-2">Your meme has been successfully created and saved.</p>
-            <div className="flex justify-between items-center">
-              <span>You will be redirected to your profile...</span>
-              <button 
-                className="bg-brand-purple text-white px-4 py-1 rounded-md text-sm"
-                onClick={() => navigate(`/profile/${user.id}`)}
-              >
-                Go to Profile
-              </button>
-            </div>
-          </div>
-        )}
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <MemeGenerator 
-              promptText={activePrompt?.text || 'Create a funny meme!'} 
-              promptId={activePrompt?.id}
-              onSave={handleMemeSave}
-              defaultEditMode={defaultEditMode}
-              defaultTemplate={defaultTemplate}
-            />
-          </div>
-          
-          <div className="lg:col-span-1">
-            <div className="bg-background border rounded-xl p-4 shadow-sm">
-              <h2 className="text-xl font-heading mb-4">Tips for Creating Great Memes</h2>
-              
-              <ul className="space-y-3 text-sm">
-                <li className="flex gap-2">
-                  <span className="text-brand-purple font-bold">1.</span>
-                  <span>Keep your captions concise and punchy (or leave blank for image-only memes)</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-brand-purple font-bold">2.</span>
-                  <span>Match your caption style to the template</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-brand-purple font-bold">3.</span>
-                  <span>Use the AI generator for inspiration</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-brand-purple font-bold">4.</span>
-                  <span>Preview your meme before submitting</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-brand-purple font-bold">5.</span>
-                  <span>Be original and creative with your ideas</span>
-                </li>
-              </ul>
 
-              <div className="mt-8 p-4 bg-muted rounded-lg">
-                <h3 className="font-medium mb-2">How Meme Battles Work</h3>
-                <p className="text-sm text-muted-foreground">
-                  After creating a meme, it will enter the battle queue. Your meme will be paired with another user's creation, and the community will vote for their favorite. Win battles to earn XP and climb the leaderboard!
-                </p>
+      <div className="flex-grow flex items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
+        <Card className="w-full max-w-4xl">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-heading">Create a Meme</CardTitle>
+            <CardDescription>Unleash your creativity and make the world laugh!</CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Template Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="template">Select a Template</Label>
+                <div className="flex flex-wrap gap-2">
+                  {defaultTemplates.map((template) => (
+                    <Button
+                      key={template.id}
+                      variant={selectedTemplate.id === template.id ? 'default' : 'outline'}
+                      onClick={() => handleTemplateSelect(template)}
+                    >
+                      {template.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Prompt Input */}
+              <div className="space-y-2">
+                <Label htmlFor="prompt">Enter a Prompt</Label>
+                <Input
+                  id="prompt"
+                  placeholder="e.g., When you realize it's Monday again"
+                  value={prompt}
+                  onChange={handlePromptChange}
+                />
               </div>
             </div>
-          </div>
-        </div>
-      </main>
-      
+
+            <Separator className="my-4" />
+
+            {/* Meme Generator */}
+            <MemeGenerator promptData={{ id: promptId, text: prompt, tags: [] }} battleId={null} memeId={null} />
+          </CardContent>
+
+          <CardFooter className="flex flex-col space-y-4">
+            <Separator />
+
+            <div className="text-center text-sm">
+              <Button variant="link" onClick={() => setEditMode(!editMode)}>
+                {editMode ? 'Exit Edit Mode' : 'Enter Edit Mode'}
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
+      </div>
+
       <Footer />
     </div>
   );

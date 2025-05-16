@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +33,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
-import { getMemeById, uploadMeme } from '@/lib/database';
+import { getMemeById } from '@/lib/database';
+import { uploadMeme } from '@/lib/memeUpload';
 import { ArrowLeft, ArrowRight, CheckCircle2, CheckCircle, Copy, CopyCheck, Plus, RefreshCcw, Upload, UploadCloud } from 'lucide-react';
 import { tags as defaultTags } from '@/lib/tags';
 

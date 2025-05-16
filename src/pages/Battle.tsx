@@ -1,323 +1,273 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import MemeCard from '@/components/meme/MemeCard';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import UserAvatar from '@/components/ui/UserAvatar';
-import { ArrowLeft, Share, RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { Battle as BattleType, Meme as MemeType } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { getBattleById, getPromptById, castVote } from '@/lib/database';
+import { Battle as BattleType, Meme, Prompt } from '@/lib/types';
+import { getBattleById, getMemeById } from '@/lib/database';
+import { getPromptById, castVote } from '@/lib/databaseAdapter';
+import { ArrowLeft, Award, Clock, ThumbsUp, Users } from 'lucide-react';
+import UserAvatar from '@/components/ui/UserAvatar';
+import MemeCard from '@/components/meme/MemeCard';
+import { formatDistanceToNow } from 'date-fns';
 
 const Battle = () => {
-  const { id } = useParams<{ id: string }>();
-  const [voteSubmitted, setVoteSubmitted] = useState<'one' | 'two' | null>(null);
-  const queryClient = useQueryClient();
+  const { battleId } = useParams<{ battleId: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   
-  // Query battle data
-  const { data: battle, isLoading: battleLoading } = useQuery({
-    queryKey: ['battle', id],
-    queryFn: async () => {
-      if (!id) return null;
-      return await getBattleById(id);
-    },
-    enabled: !!id
-  });
-
-  // Get prompt data if available
-  const { data: prompt } = useQuery({
-    queryKey: ['prompt', battle?.promptId],
-    queryFn: async () => {
-      if (!battle?.promptId) return null;
-      return await getPromptById(battle.promptId);
-    },
-    enabled: !!battle?.promptId
-  });
+  const [battle, setBattle] = useState<BattleType | null>(null);
+  const [memeOne, setMemeOne] = useState<Meme | null>(null);
+  const [memeTwo, setMemeTwo] = useState<Meme | null>(null);
+  const [prompt, setPrompt] = useState<Prompt | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [voting, setVoting] = useState(false);
+  const [hasVoted, setHasVoted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<string>('');
   
-  // Check if user has already voted
-  const { data: userVote } = useQuery({
-    queryKey: ['user_vote', id, user?.id],
-    queryFn: async () => {
-      if (!user || !id) return null;
+  useEffect(() => {
+    const fetchBattleData = async () => {
+      if (!battleId) return;
       
-      const { data, error } = await supabase
-        .from('votes')
-        .select('meme_id')
-        .eq('battle_id', id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error checking vote:', error);
-        return null;
-      }
-      
-      if (data) {
-        if (battle?.memeOneId === data.meme_id) {
-          return 'one';
-        } else if (battle?.memeTwoId === data.meme_id) {
-          return 'two';
+      try {
+        setLoading(true);
+        
+        // Fetch battle data
+        const battleData = await getBattleById(battleId);
+        if (!battleData) {
+          toast.error('Battle not found');
+          navigate('/battles');
+          return;
         }
+        
+        setBattle(battleData);
+        
+        // Fetch memes
+        if (battleData.memeOneId) {
+          const memeOneData = await getMemeById(battleData.memeOneId);
+          setMemeOne(memeOneData);
+        }
+        
+        if (battleData.memeTwoId) {
+          const memeTwoData = await getMemeById(battleData.memeTwoId);
+          setMemeTwo(memeTwoData);
+        }
+        
+        // Fetch prompt
+        if (battleData.promptId) {
+          const promptData = await getPromptById(battleData.promptId);
+          setPrompt(promptData);
+        }
+        
+        // Check if user has voted
+        if (user) {
+          // TODO: Implement check if user has voted
+          // For now, we'll just assume they haven't
+          setHasVoted(false);
+        }
+      } catch (error) {
+        console.error('Error fetching battle data:', error);
+        toast.error('Failed to load battle data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchBattleData();
+  }, [battleId, navigate, user]);
+  
+  // Update time left
+  useEffect(() => {
+    if (!battle) return;
+    
+    const updateTimeLeft = () => {
+      const now = new Date();
+      const endTime = new Date(battle.endTime);
+      
+      if (now >= endTime) {
+        setTimeLeft('Battle ended');
+        return;
       }
       
-      return null;
-    },
-    enabled: !!user && !!id && !!battle
-  });
+      setTimeLeft(formatDistanceToNow(endTime, { addSuffix: true }));
+    };
+    
+    updateTimeLeft();
+    const interval = setInterval(updateTimeLeft, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, [battle]);
   
-  // Set vote state based on query result
-  React.useEffect(() => {
-    if (userVote) {
-      setVoteSubmitted(userVote);
+  const handleVote = async (memeId: string) => {
+    if (!user || !battleId || hasVoted || voting) return;
+    
+    try {
+      setVoting(true);
+      
+      const success = await castVote(user.id, battleId, memeId);
+      
+      if (success) {
+        toast.success('Vote cast successfully!');
+        setHasVoted(true);
+        
+        // Update the battle data
+        const updatedBattle = await getBattleById(battleId);
+        if (updatedBattle) {
+          setBattle(updatedBattle);
+        }
+      } else {
+        toast.error('Failed to cast vote');
+      }
+    } catch (error) {
+      console.error('Error casting vote:', error);
+      toast.error('An error occurred while voting');
+    } finally {
+      setVoting(false);
     }
-  }, [userVote]);
-  
-  // Handle voting
-  const voteMutation = useMutation({
-    mutationFn: async ({ battleId, memeId, userId }: { battleId: string, memeId: string, userId: string }) => {
-      return await castVote(battleId, memeId, userId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['battle', id] });
-      queryClient.invalidateQueries({ queryKey: ['user_vote', id, user?.id] });
-    }
-  });
-  
-  const handleVote = (meme: 'one' | 'two') => {
-    if (voteSubmitted || !user || !battle) return;
-    
-    const memeId = meme === 'one' ? battle.memeOneId : battle.memeTwoId;
-    setVoteSubmitted(meme);
-    
-    voteMutation.mutate({ 
-      battleId: battle.id, 
-      memeId, 
-      userId: user.id 
-    });
-    
-    // Show success message
-    toast.success('Vote submitted!', {
-      description: 'Thanks for participating in this battle.'
-    });
   };
   
-  const handleShare = () => {
-    // Copy battle link to clipboard
-    const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => {
-      toast.success('Battle link copied to clipboard!', {
-        description: 'Share with friends to get more votes!'
-      });
-    }).catch(err => {
-      console.error('Failed to copy:', err);
-      toast.error('Failed to copy link');
-    });
-  };
-
-  if (battleLoading) {
+  if (loading) {
     return (
-      <div className="flex flex-col min-h-screen">
+      <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="container mx-auto px-4 py-6 flex-grow">
-          <div className="flex justify-center items-center h-full">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-          </div>
-        </main>
+        <div className="flex-grow flex items-center justify-center">
+          <p>Loading battle...</p>
+        </div>
         <Footer />
       </div>
     );
   }
-
-  if (!battle) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Navbar />
-        <main className="container mx-auto px-4 py-6 flex-grow">
-          <div className="text-center p-10">
-            <p>Battle not found or has been removed.</p>
-            <Link to="/battles" className="mt-4 inline-block">
-              <Button>Back to Battles</Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Extract memes for convenience
-  const { memeOne, memeTwo } = battle;
-
-  if (!memeOne || !memeTwo) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Navbar />
-        <main className="container mx-auto px-4 py-6 flex-grow">
-          <div className="text-center p-10">
-            <p>This battle is missing one or both memes.</p>
-            <Link to="/battles" className="mt-4 inline-block">
-              <Button>Back to Battles</Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Calculate votes
-  const totalVotes = battle.voteCount || 0;
-  const percentOne = totalVotes > 0 && battle.voteCount ? Math.round((memeOne.votes / totalVotes) * 100) : 50;
-  const percentTwo = 100 - percentOne;
   
-  const timeRemaining = new Date(battle.endTime).getTime() - Date.now();
-  const isActive = battle.status === 'active' && timeRemaining > 0;
-
+  if (!battle || !memeOne || !memeTwo) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-grow flex items-center justify-center">
+          <p>Battle not found or incomplete</p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+  
+  const isActive = battle.status === 'active';
+  const isCompleted = battle.status === 'completed';
+  const winnerMeme = battle.winnerId ? (battle.winnerId === memeOne.id ? memeOne : memeTwo) : null;
+  
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-6 flex-grow">
-        <div className="flex justify-between items-center mb-6">
-          <Link to="/battles" className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Battles</span>
-          </Link>
+      <main className="container mx-auto px-4 py-8 flex-grow">
+        <Button 
+          variant="ghost" 
+          className="mb-6"
+          onClick={() => navigate('/battles')}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Battles
+        </Button>
+        
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold font-heading">Meme Battle</h1>
+          {prompt && (
+            <p className="text-xl mt-2 text-muted-foreground">"{prompt.text}"</p>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center">
+                <Clock className="mr-2 h-5 w-5" />
+                Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <span className={`inline-block w-3 h-3 rounded-full mr-2 ${isActive ? 'bg-green-500' : 'bg-gray-500'}`}></span>
+                <span>{isActive ? 'Active' : 'Completed'}</span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">{timeLeft}</p>
+            </CardContent>
+          </Card>
           
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={handleShare} className="flex items-center gap-1.5">
-              <Share className="h-4 w-4" />
-              Share
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center">
+                <ThumbsUp className="mr-2 h-5 w-5" />
+                Votes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{battle.voteCount}</p>
+              <p className="text-sm text-muted-foreground">Total votes cast</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center">
+                <Award className="mr-2 h-5 w-5" />
+                Winner
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isCompleted && winnerMeme ? (
+                <div className="flex items-center">
+                  <UserAvatar user={winnerMeme.creator} size="sm" />
+                  <span className="ml-2">{winnerMeme.creator?.username || 'Unknown'}</span>
+                </div>
+              ) : (
+                <p className="text-muted-foreground">Not determined yet</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <MemeCard 
+              meme={memeOne} 
+              showVoteButton={isActive && !hasVoted && !!user}
+              onVote={() => handleVote(memeOne.id)}
+              votingDisabled={voting}
+              showVoteCount
+              voteCount={battle.voteCount > 0 ? Math.floor(battle.voteCount / 2) : 0}
+            />
+          </div>
+          
+          <div>
+            <MemeCard 
+              meme={memeTwo} 
+              showVoteButton={isActive && !hasVoted && !!user}
+              onVote={() => handleVote(memeTwo.id)}
+              votingDisabled={voting}
+              showVoteCount
+              voteCount={battle.voteCount > 0 ? Math.ceil(battle.voteCount / 2) : 0}
+            />
+          </div>
+        </div>
+        
+        {!user && isActive && (
+          <div className="mt-8 p-4 bg-muted rounded-lg text-center">
+            <p>You need to be logged in to vote in this battle.</p>
+            <Button 
+              className="mt-2"
+              onClick={() => navigate('/login')}
+            >
+              Log In to Vote
             </Button>
-            
-            {user && battle.promptId && (
-              <Link to={`/create?promptId=${battle.promptId}`}>
-                <Button variant="default" size="sm" className="flex items-center gap-1.5">
-                  <RefreshCw className="h-4 w-4" />
-                  Create Meme
-                </Button>
-              </Link>
-            )}
           </div>
-        </div>
+        )}
         
-        <div className="bg-background border rounded-xl p-4 mb-6">
-          <h1 className="text-2xl font-heading mb-2">Meme Battle</h1>
-          <p className="text-muted-foreground mb-4">{prompt?.text || "Battle challenge"}</p>
-          
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center gap-1.5">
-              <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-muted'}`}></div>
-              <span className={`text-sm ${isActive ? 'text-green-500 font-medium' : 'text-muted-foreground'}`}>
-                {isActive ? 'Live Battle' : 'Battle Ended'}
-              </span>
-            </div>
-            
-            <div className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{totalVotes}</span> votes
-            </div>
-          </div>
-          
-          <Progress value={percentOne} className="h-2" />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div>
-            <div className="mb-3 flex justify-between">
-              <UserAvatar user={{ id: memeOne.creatorId }} showUsername />
-              <span className="text-xl font-bold">{percentOne}%</span>
-            </div>
-            
-            <div className={`battle-card ${voteSubmitted === 'one' ? 'border-2 border-brand-orange' : 'border'} rounded-lg overflow-hidden`}>
-              <MemeCard meme={memeOne as MemeType} showActions={false} />
-              
-              <div className="p-4 bg-background">
-                {!isActive ? (
-                  <div className="text-center text-muted-foreground">
-                    {battle.status === 'completed' ? (
-                      battle.winnerId === memeOne.id ? 
-                        <span className="text-green-500 font-medium">Winner!</span> : 
-                        <span>Better luck next time</span>
-                    ) : (
-                      <span>Voting closed</span>
-                    )}
-                  </div>
-                ) : !voteSubmitted ? (
-                  <Button 
-                    className="w-full bg-brand-purple hover:bg-brand-purple/90" 
-                    onClick={() => handleVote('one')}
-                    disabled={!user}
-                  >
-                    {user ? 'Vote for this meme' : 'Sign in to vote'}
-                  </Button>
-                ) : (
-                  <div className="text-center">
-                    {voteSubmitted === 'one' ? (
-                      <span className="text-brand-orange font-medium">You voted for this meme</span>
-                    ) : (
-                      <span className="text-muted-foreground">You voted for the other meme</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <div className="mb-3 flex justify-between">
-              <UserAvatar user={{ id: memeTwo.creatorId }} showUsername />
-              <span className="text-xl font-bold">{percentTwo}%</span>
-            </div>
-            
-            <div className={`battle-card ${voteSubmitted === 'two' ? 'border-2 border-brand-orange' : 'border'} rounded-lg overflow-hidden`}>
-              <MemeCard meme={memeTwo as MemeType} showActions={false} />
-              
-              <div className="p-4 bg-background">
-                {!isActive ? (
-                  <div className="text-center text-muted-foreground">
-                    {battle.status === 'completed' ? (
-                      battle.winnerId === memeTwo.id ? 
-                        <span className="text-green-500 font-medium">Winner!</span> : 
-                        <span>Better luck next time</span>
-                    ) : (
-                      <span>Voting closed</span>
-                    )}
-                  </div>
-                ) : !voteSubmitted ? (
-                  <Button 
-                    className="w-full bg-brand-purple hover:bg-brand-purple/90" 
-                    onClick={() => handleVote('two')}
-                    disabled={!user}
-                  >
-                    {user ? 'Vote for this meme' : 'Sign in to vote'}
-                  </Button>
-                ) : (
-                  <div className="text-center">
-                    {voteSubmitted === 'two' ? (
-                      <span className="text-brand-orange font-medium">You voted for this meme</span>
-                    ) : (
-                      <span className="text-muted-foreground">You voted for the other meme</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {user && battle.promptId && (
-          <div className="bg-muted p-6 rounded-lg text-center">
-            <h2 className="text-xl font-heading mb-4">Want to join this battle?</h2>
-            <p className="mb-4">Create your own meme for this prompt and it could be featured in future battles!</p>
-            <Link to={`/create?promptId=${battle.promptId}`}>
-              <Button>Create a Meme</Button>
-            </Link>
+        {hasVoted && (
+          <div className="mt-8 p-4 bg-muted rounded-lg text-center">
+            <p>Thanks for voting! Check back later to see the results.</p>
           </div>
         )}
       </main>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,9 +6,10 @@ import Footer from '@/components/layout/Footer';
 import MemeCard from '@/components/meme/MemeCard';
 import UserProfileForm from '@/components/profile/UserProfileForm';
 import { useAuth } from '@/contexts/AuthContext';
-import { getProfile, getMemesByUserId } from '@/lib/database';
+import { getMemesByUserId } from '@/lib/database';
 import { User, Meme } from '@/lib/types';
 import UserAvatar from '@/components/ui/UserAvatar';
+import { getProfile } from '@/lib/auth';
 
 const Profile = () => {
   const { id } = useParams<{ id: string }>();
