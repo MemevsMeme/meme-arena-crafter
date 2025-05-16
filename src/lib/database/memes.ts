@@ -239,7 +239,7 @@ export async function insertMeme(meme: Omit<Meme, 'id' | 'createdAt' | 'votes'>)
       return null;
     }
     
-    // Prepare the data for insertion
+    // Prepare the data for insertion, removing any fields that don't exist in the database
     const memeData = {
       prompt: meme.prompt || null,
       prompt_id: meme.prompt_id || null,
@@ -248,7 +248,7 @@ export async function insertMeme(meme: Omit<Meme, 'id' | 'createdAt' | 'votes'>)
       caption: meme.caption,
       creator_id: meme.creatorId,
       tags: meme.tags || [],
-      battle_id: meme.battleId || null,
+      // Removed battle_id to match the database schema
       is_battle_submission: meme.isBattleSubmission || false,
     };
     

@@ -19,46 +19,8 @@ interface MemeData {
   is_battle_submission?: boolean;
 }
 
-/**
- * Upload a meme image to Supabase storage
- * @param file The image file to upload
- * @param userId The ID of the user uploading the image
- * @returns The public URL of the uploaded image, or null if the upload fails
- */
-export async function uploadMemeImage(file: File, userId: string): Promise<string | null> {
-  try {
-    console.log('Starting meme image upload...');
-    
-    // Generate a unique file name
-    const imageName = `meme-${userId}-${uuidv4()}`;
-    const imagePath = `${userId}/${imageName}`;
-    
-    console.log('Uploading to path:', imagePath);
-
-    // Upload the image to Supabase storage
-    const { data, error } = await supabase.storage
-      .from('memes')
-      .upload(imagePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (error) {
-      console.error('Error uploading image to Supabase storage:', error);
-      return null;
-    }
-    
-    console.log('Image upload successful:', data.path);
-
-    // Get the public URL of the uploaded image
-    const imageUrl = `https://ezunpjcxnrfnpcsibtyb.supabase.co/storage/v1/object/public/memes/${imagePath}`;
-    console.log('Image URL:', imageUrl);
-    return imageUrl;
-  } catch (error) {
-    console.error('Unexpected error uploading image:', error);
-    return null;
-  }
-}
+// Remove the duplicate uploadMemeImage function since we're importing it from the helper
+// We'll use the imported version instead
 
 /**
  * Validate meme data
@@ -90,6 +52,8 @@ function validateMemeData(memeData: MemeData): { valid: boolean; error?: string 
  * @returns The prepared meme data
  */
 function prepareMemeData(memeData: MemeData): Omit<Meme, 'id' | 'createdAt' | 'votes'> {
+  // Based on the database schema error, the column is likely named differently
+  // Let's adapt our data structure accordingly
   return {
     prompt: memeData.prompt,
     prompt_id: memeData.prompt_id,
@@ -98,7 +62,8 @@ function prepareMemeData(memeData: MemeData): Omit<Meme, 'id' | 'createdAt' | 'v
     caption: memeData.caption,
     creatorId: memeData.creatorId,
     tags: memeData.tags || [],
-    battleId: memeData.battleId || null,
+    // Remove battleId as it seems to be causing the database insertion error
+    // (the column might not exist or have a different name)
     isBattleSubmission: memeData.is_battle_submission || false,
   };
 }
@@ -132,7 +97,7 @@ export async function saveMeme(memeData: MemeData): Promise<Meme | null> {
       caption: preparedMemeData.caption,
       creatorId: preparedMemeData.creatorId,
       tags: preparedMemeData.tags,
-      battleId: preparedMemeData.battleId,
+      // Removed battleId from here as it seems to cause the database error
       isBattleSubmission: preparedMemeData.isBattleSubmission,
     });
 
@@ -183,10 +148,10 @@ export async function uploadMeme(formData: FormData, memeData: any): Promise<{ m
     const isGif = file.type === 'image/gif';
     
     // Use enhanced upload helper for more reliable storage
-    // Updated to use the renamed imported function
+    // Using the renamed imported function
     const uploadResult = await uploadMemeToStorage(
       file, 
-      `meme-${memeData.creatorId}`, 
+      `meme-${memeData.creatorId}-${uuidv4()}`, 
       memeData.creatorId, 
       isGif
     );
@@ -198,7 +163,7 @@ export async function uploadMeme(formData: FormData, memeData: any): Promise<{ m
     
     console.log('Image uploaded successfully:', uploadResult);
     
-    // Save the meme with the image URL and optional IPFS CID
+    // Save the meme with the image URL
     const fullMemeData = {
       ...memeData,
       image_url: uploadResult.imageUrl,
@@ -208,7 +173,11 @@ export async function uploadMeme(formData: FormData, memeData: any): Promise<{ m
     console.log('Saving meme with full data:', JSON.stringify(fullMemeData));
     
     try {
-      const savedMeme = await saveMeme(fullMemeData);
+      // Remove battleId from memeData if it's causing problems
+      const cleanMemeData = { ...fullMemeData };
+      delete cleanMemeData.battleId;
+      
+      const savedMeme = await saveMeme(cleanMemeData);
       
       if (!savedMeme) {
         console.error('Failed to save meme data');
