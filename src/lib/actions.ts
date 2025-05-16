@@ -8,7 +8,7 @@ export async function updateMemeStreak(userId: string): Promise<boolean> {
   try {
     // Get the current profile
     const currentProfile = await updateProfile(userId, {
-      memeStreak: 0 // Will be incremented by the database function
+      memeStreak: 1 // Will be incremented by the database function
     });
     
     return !!currentProfile;

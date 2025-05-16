@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   username: string;
@@ -36,7 +37,7 @@ export interface Prompt {
   description?: string;
   creator_id?: string;
   is_community?: boolean;
-  daily_challenge_id?: string;
+  daily_challenge_id?: string | null;
   challengeDay?: number;
 }
 
