@@ -25,21 +25,27 @@ const ImportChallenges = () => {
         credentials: 'omit' // Ensure we're not sending cookies
       });
       
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}: ${await response.text()}`);
+      const responseText = await response.text();
+      let data;
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse response as JSON:', responseText);
+        throw new Error(`Server responded with invalid JSON: ${responseText.substring(0, 100)}...`);
       }
       
-      const data = await response.json();
       setResult(data);
       
-      if (data.error) {
-        toast.error('Error importing challenges: ' + data.error);
+      if (!response.ok || data.error) {
+        const errorMessage = data.error || `Server responded with status ${response.status}`;
+        toast.error('Error importing challenges: ' + errorMessage);
       } else {
         toast.success(`Successfully imported ${data.inserted} daily challenges!`);
       }
     } catch (error) {
       console.error('Error importing challenges:', error);
-      toast.error('Failed to import challenges. Check console for details.');
+      toast.error('Failed to import challenges: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -67,21 +73,27 @@ const ImportChallenges = () => {
         credentials: 'omit' // Ensure we're not sending cookies
       });
       
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}: ${await response.text()}`);
+      const responseText = await response.text();
+      let data;
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse response as JSON:', responseText);
+        throw new Error(`Server responded with invalid JSON: ${responseText.substring(0, 100)}...`);
       }
       
-      const data = await response.json();
       setResult(data);
       
-      if (data.error) {
-        toast.error('Error importing challenge: ' + data.error);
+      if (!response.ok || data.error) {
+        const errorMessage = data.error || `Server responded with status ${response.status}`;
+        toast.error('Error importing challenge: ' + errorMessage);
       } else {
         toast.success(`Successfully imported challenge for day ${dayNum}!`);
       }
     } catch (error) {
       console.error('Error importing challenge:', error);
-      toast.error('Failed to import challenge. Check console for details.');
+      toast.error('Failed to import challenge: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
