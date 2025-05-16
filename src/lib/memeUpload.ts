@@ -5,7 +5,7 @@ import { Meme } from './types';
 import { insertMeme } from './database';
 import { checkForBattles } from './services/battleService';
 import { toast } from 'sonner';
-import { uploadMemeImage } from '@/components/meme/MemeUploadHelper';
+import { uploadMemeImage as uploadMemeToStorage } from '@/components/meme/MemeUploadHelper';
 
 interface MemeData {
   prompt: string;
@@ -183,19 +183,26 @@ export async function uploadMeme(formData: FormData, memeData: any): Promise<{ m
     const isGif = file.type === 'image/gif';
     
     // Use enhanced upload helper for more reliable storage
-    const uploadResult = await uploadMemeImage(file, memeData.creatorId);
+    // Updated to use the renamed imported function
+    const uploadResult = await uploadMemeToStorage(
+      file, 
+      `meme-${memeData.creatorId}`, 
+      memeData.creatorId, 
+      isGif
+    );
     
-    if (!uploadResult) {
-      console.error('Failed to upload image');
-      return { error: 'Failed to upload image' };
+    if (!uploadResult || !uploadResult.success) {
+      console.error('Failed to upload image', uploadResult?.error || 'Unknown error');
+      return { error: uploadResult?.error || 'Failed to upload image' };
     }
     
     console.log('Image uploaded successfully:', uploadResult);
     
-    // Save the meme with the image URL
+    // Save the meme with the image URL and optional IPFS CID
     const fullMemeData = {
       ...memeData,
-      image_url: uploadResult,
+      image_url: uploadResult.imageUrl,
+      ipfs_cid: uploadResult.ipfsCid,
     };
     
     console.log('Saving meme with full data:', JSON.stringify(fullMemeData));
