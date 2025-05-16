@@ -1,4 +1,4 @@
-// Only updating the relevant functions, keeping everything else the same
+// Only updating the insertMeme function to handle prompt_id correctly, keeping everything else the same
 
 import { supabase } from './client';
 import { Meme } from '../types';
@@ -229,24 +229,20 @@ export async function insertMeme(meme: Omit<Meme, 'id' | 'createdAt' | 'votes'>)
       return null;
     }
     
-    // Caption is now optional, provide a default empty string
-    const caption = meme.caption || '';
-    
     if (!meme.creatorId) {
       console.error('Cannot insert meme: creatorId is required');
       return null;
     }
     
-    // Prepare the data for insertion, removing any fields that don't exist in the database
+    // Prepare the data for insertion, with correct handling of prompt_id
     const memeData = {
       prompt: meme.prompt || null,
-      prompt_id: null, // Force null to avoid foreign key constraint errors
+      prompt_id: meme.prompt_id || null, // Keep prompt_id if provided
       image_url: meme.imageUrl,
       ipfs_cid: meme.ipfsCid || null,
-      caption: caption,
+      caption: meme.caption || '',
       creator_id: meme.creatorId,
       tags: meme.tags || [],
-      // Removed battle_id to match the database schema
       is_battle_submission: meme.isBattleSubmission || false,
     };
     

@@ -173,7 +173,7 @@ const Create = () => {
 
   // Create a proper Prompt object
   const promptData: Prompt = {
-    id: promptId,
+    id: promptId || '', // Make sure we pass the promptId if available
     text: prompt,
     theme: null,
     tags: [],
