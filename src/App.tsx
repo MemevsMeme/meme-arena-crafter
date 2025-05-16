@@ -12,8 +12,9 @@ import NotFound from './pages/NotFound';
 import { AuthProvider } from './contexts/AuthContext';
 import { QueryProvider } from './contexts/QueryContext';
 
-// Add the import for our new ImportChallenges page
+// Add imports for all pages including Leaderboard
 import ImportChallenges from './pages/admin/ImportChallenges';
+import Leaderboard from './pages/Leaderboard';
 
 function App() {
   return (
@@ -28,8 +29,9 @@ function App() {
             <Route path="/battles" element={<Battles />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             
-            {/* Add the new route for importing challenges */}
+            {/* Admin routes */}
             <Route path="/admin/import-challenges" element={<ImportChallenges />} />
             
             {/* The NotFound route should remain last */}

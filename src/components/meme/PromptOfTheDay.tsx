@@ -32,6 +32,7 @@ const PromptOfTheDay = ({
       // If we have a prompt from props (database), use it
       console.log('Setting display prompt from props:', prompt);
       setDisplayPrompt(prompt);
+      setLoading(false);
     } else if (!isLoading) {
       // If no prompt is provided and we're not loading, try to fetch today's challenge
       console.log('Fetching today\'s challenge...');
