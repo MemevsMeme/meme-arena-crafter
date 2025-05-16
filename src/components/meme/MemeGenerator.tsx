@@ -137,6 +137,7 @@ const MemeGenerator = ({
     }
   };
   
+  // Load existing meme data
   const loadExistingMeme = async (memeId: string) => {
     try {
       const meme = await getMemeById(memeId);
@@ -275,21 +276,16 @@ const MemeGenerator = ({
       const formData = new FormData();
       formData.append('file', file);
       
-      // Create the meme object - simplified to avoid confusion
-      // We only pass prompt_id if promptData exists and has an id
+      // Create the meme object
       const memeData = {
         prompt: promptData?.text || customPrompt || '',
+        prompt_id: promptData?.id || null,
         caption: caption,
         creatorId: user?.id || '',
         tags: activeTags,
         battleId: battleId || null,
         isBattleSubmission: battleId ? true : false
       };
-      
-      // Only add prompt_id if it actually exists in promptData
-      if (promptData?.id) {
-        Object.assign(memeData, { prompt_id: promptData.id });
-      }
       
       console.log('Calling uploadMeme with meme data:', memeData);
       
@@ -306,6 +302,9 @@ const MemeGenerator = ({
       toast("Meme Saved!", {
         description: "Your meme has been successfully saved and published."
       });
+      
+      // Clear localStorage
+      localStorage.removeItem('meme_image');
       
       // Redirect to user profile page
       if (user) {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,7 +18,7 @@ import { Sparkles } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { getActiveBattles } from '@/lib/database/battles';
-import { Battle } from '@/lib/types';
+import { Battle, Prompt } from '@/lib/types';
 
 const Leaderboard = () => {
   const [battles, setBattles] = useState<Battle[]>([]);
@@ -38,6 +39,13 @@ const Leaderboard = () => {
 
     fetchBattles();
   }, []);
+
+  // Helper function to extract prompt text safely
+  const getPromptText = (prompt: string | Prompt | undefined): string => {
+    if (!prompt) return '';
+    if (typeof prompt === 'string') return prompt;
+    return prompt.text || '';
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -75,7 +83,7 @@ const Leaderboard = () => {
                         <TableCell>
                           {battle.prompt && (
                             <p className="text-sm text-muted-foreground">
-                              {typeof battle.prompt === 'string' ? battle.prompt : battle.prompt.text}
+                              {getPromptText(battle.prompt)}
                             </p>
                           )}
                         </TableCell>

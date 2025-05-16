@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Battle, Meme } from '@/lib/types';
+import { Battle, Meme, Prompt } from '@/lib/types';
 import MemeCard from '@/components/meme/MemeCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -95,10 +95,12 @@ const BattleView: React.FC<BattleViewProps> = ({
   const isCompleted = battle?.status === 'completed';
   const winnerMeme = battle?.winnerId ? (battle.winnerId === battle.memeOneId ? memeOne : memeTwo) : null;
   
-  // Format the prompt text properly, whether it's a string or a Prompt object
-  const promptText = typeof battle.prompt === 'string' 
-    ? battle.prompt 
-    : battle.prompt?.text || '';
+  // Helper function to extract prompt text safely
+  const getPromptText = (prompt: string | Prompt | undefined): string => {
+    if (!prompt) return '';
+    if (typeof prompt === 'string') return prompt;
+    return prompt.text || '';
+  };
   
   return (
     <div>
@@ -115,8 +117,8 @@ const BattleView: React.FC<BattleViewProps> = ({
       
       <div className="mb-6">
         <h1 className="text-3xl font-bold font-heading">Meme Battle</h1>
-        {promptText && (
-          <p className="text-xl mt-2 text-muted-foreground">"{promptText}"</p>
+        {battle.prompt && (
+          <p className="text-xl mt-2 text-muted-foreground">"{getPromptText(battle.prompt)}"</p>
         )}
       </div>
       

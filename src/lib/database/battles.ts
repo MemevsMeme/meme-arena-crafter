@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Battle, Meme } from '../types';
 import { getMemesByPromptId } from './memes';
@@ -203,7 +202,7 @@ export async function incrementBattleVote(memeId: string, battleId: string): Pro
 export async function createBattlesForPrompt(promptId: string): Promise<Battle[]> {
   try {
     // Get all memes with this prompt ID
-    const memes = await getMemesByPromptId(promptId);
+    const memes = await getMemesByPromptId(parseInt(promptId) || 0); // Convert string to number, defaulting to 0 if conversion fails
     
     if (memes.length < 2) {
       console.log('Not enough memes for a battle');
