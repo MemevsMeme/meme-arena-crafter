@@ -9,6 +9,7 @@ interface SaveActionsProps {
   isUploadingToIPFS: boolean;
   setIsEditMode: (isEditMode: boolean) => void;
   handleSaveMeme: () => void;
+  isDisabled?: boolean;
 }
 
 const SaveActions: React.FC<SaveActionsProps> = ({
@@ -16,7 +17,8 @@ const SaveActions: React.FC<SaveActionsProps> = ({
   isCreatingMeme,
   isUploadingToIPFS,
   setIsEditMode,
-  handleSaveMeme
+  handleSaveMeme,
+  isDisabled = false
 }) => {
   const onSaveMeme = () => {
     console.log('Save button clicked, starting meme creation process');
@@ -37,7 +39,7 @@ const SaveActions: React.FC<SaveActionsProps> = ({
       
       <Button
         onClick={onSaveMeme}
-        disabled={isCreatingMeme || isUploadingToIPFS}
+        disabled={isCreatingMeme || isUploadingToIPFS || isDisabled}
         className="flex-1"
         title="Create meme with or without text"
       >
