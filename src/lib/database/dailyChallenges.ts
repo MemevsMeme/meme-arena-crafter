@@ -11,6 +11,7 @@ export function getCurrentDayOfYear(): number {
   const diff = now.getTime() - start.getTime();
   const oneDay = 1000 * 60 * 60 * 24;
   const day = Math.floor(diff / oneDay);
+  console.log(`Current day of year: ${day}`);
   return day;
 }
 
@@ -20,6 +21,8 @@ export function getCurrentDayOfYear(): number {
  */
 export async function getDailyChallenge(dayOfYear: number): Promise<Prompt | null> {
   try {
+    console.log(`Fetching daily challenge for day: ${dayOfYear}`);
+    
     const { data, error } = await supabase
       .from('daily_challenges')
       .select('*')
@@ -35,6 +38,8 @@ export async function getDailyChallenge(dayOfYear: number): Promise<Prompt | nul
       console.log('No daily prompt found for day:', dayOfYear);
       return null;
     }
+
+    console.log('Found daily challenge:', data);
 
     // Map database fields to frontend model fields
     const prompt: Prompt = {

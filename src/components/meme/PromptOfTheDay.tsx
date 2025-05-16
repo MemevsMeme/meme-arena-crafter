@@ -28,12 +28,15 @@ const PromptOfTheDay = ({
   useEffect(() => {
     if (prompt) {
       // If we have a prompt from props (database), use it
+      console.log('Setting display prompt from props:', prompt);
       setDisplayPrompt(prompt);
     } else if (!isLoading) {
       // If no prompt is provided and we're not loading, try to fetch today's challenge
+      console.log('Fetching today\'s challenge...');
       setLoading(true);
       getTodaysChallenge()
         .then(todayPrompt => {
+          console.log('Fetched today\'s challenge:', todayPrompt);
           setDisplayPrompt(todayPrompt);
         })
         .catch(err => {
@@ -74,17 +77,19 @@ const PromptOfTheDay = ({
 
   const handleAcceptChallenge = () => {
     try {
-      console.log('Accepting challenge with prompt:', displayPrompt.text);
+      console.log('Accepting challenge with prompt:', displayPrompt?.text);
       
       // Store prompt in localStorage with a clear naming convention
-      const simplifiedPrompt = {
-        text: displayPrompt.text,
-        id: displayPrompt.id,
-        tags: displayPrompt.tags || []
-      };
-      
-      localStorage.setItem('active_challenge_prompt', JSON.stringify(simplifiedPrompt));
-      console.log('Challenge prompt stored in localStorage with key: active_challenge_prompt');
+      if (displayPrompt) {
+        const simplifiedPrompt = {
+          text: displayPrompt.text,
+          id: displayPrompt.id,
+          tags: displayPrompt.tags || []
+        };
+        
+        localStorage.setItem('active_challenge_prompt', JSON.stringify(simplifiedPrompt));
+        console.log('Challenge prompt stored in localStorage with key: active_challenge_prompt');
+      }
       
       // Navigate to create page for authenticated users
       navigate('/create');

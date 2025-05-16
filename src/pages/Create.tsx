@@ -12,6 +12,8 @@ import Footer from '@/components/layout/Footer';
 import MemeGenerator from '@/components/meme/MemeGenerator';
 import { useAuth } from '@/contexts/AuthContext';
 import { Prompt } from '@/lib/types';
+import AiImageGenerator from '@/components/meme/AiImageGenerator';
+import { generateMemeImage } from '@/lib/ai';
 
 interface Template {
   id: string;
@@ -49,6 +51,8 @@ const Create = () => {
   const [promptId, setPromptId] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<Template>(defaultTemplates[0]);
   const [editMode, setEditMode] = useState(false);
+  const [isGeneratingAIImage, setIsGeneratingAIImage] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if the user is authenticated
@@ -56,6 +60,22 @@ const Create = () => {
       // Redirect to the login page
       toast.error('You must be logged in to create memes.');
       navigate('/login', { replace: true });
+    }
+    
+    // Check for daily challenge in localStorage
+    const storedChallengePrompt = localStorage.getItem('active_challenge_prompt');
+    if (storedChallengePrompt) {
+      try {
+        const parsedPrompt = JSON.parse(storedChallengePrompt);
+        if (parsedPrompt && parsedPrompt.text) {
+          setPrompt(parsedPrompt.text);
+          if (parsedPrompt.id) {
+            setPromptId(parsedPrompt.id);
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing stored challenge:', e);
+      }
     }
   }, [user, navigate]);
 
@@ -67,6 +87,43 @@ const Create = () => {
     setPrompt(e.target.value);
   };
 
+  const handleGenerateImage = async () => {
+    if (!prompt) {
+      toast.error("Please enter a prompt first");
+      return;
+    }
+    
+    setIsGeneratingAIImage(true);
+    
+    try {
+      const imageData = await generateMemeImage(prompt, "meme");
+      if (imageData) {
+        setGeneratedImage(imageData);
+        toast.success("AI image generated successfully!");
+      } else {
+        toast.error("Failed to generate image");
+      }
+    } catch (error: any) {
+      console.error("Error generating AI image:", error);
+      toast.error(`Failed to generate image: ${error.message || "Unknown error"}`);
+    } finally {
+      setIsGeneratingAIImage(false);
+    }
+  };
+
+  const handleSaveAsTemplate = (imageUrl: string) => {
+    // Add the generated image to available templates
+    const newTemplate: Template = {
+      id: `ai-${Date.now()}`,
+      name: "AI Generated",
+      url: imageUrl,
+      textPositions: [{ x: 0.5, y: 0.8 }],
+    };
+    
+    // Select the new template
+    setSelectedTemplate(newTemplate);
+  };
+  
   const handleSaveMeme = async (meme: { id: string; caption: string; imageUrl: string }) => {
     // Placeholder for saving the meme
     console.log('Meme saved:', meme);
@@ -127,6 +184,18 @@ const Create = () => {
             </div>
 
             <Separator className="my-4" />
+
+            {/* AI Image Generator */}
+            <div className="mb-6 bg-muted/30 p-4 rounded-lg">
+              <h3 className="text-lg font-medium mb-2">Generate AI Image</h3>
+              <AiImageGenerator
+                promptText={prompt}
+                isGeneratingAIImage={isGeneratingAIImage}
+                generatedImage={generatedImage}
+                handleGenerateImage={handleGenerateImage}
+                onSaveAsTemplate={(imageUrl) => handleSaveAsTemplate(imageUrl)}
+              />
+            </div>
 
             {/* Meme Generator */}
             <MemeGenerator 
