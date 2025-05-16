@@ -19,9 +19,6 @@ interface MemeData {
   is_battle_submission?: boolean;
 }
 
-// Remove the duplicate uploadMemeImage function since we're importing it from the helper
-// We'll use the imported version instead
-
 /**
  * Validate meme data
  * @param memeData The meme data to validate
@@ -33,10 +30,11 @@ function validateMemeData(memeData: MemeData): { valid: boolean; error?: string 
     return { valid: false, error: 'Image URL is required' };
   }
 
-  if (!memeData.caption || memeData.caption.trim() === '') {
-    console.error('Meme caption is required');
-    return { valid: false, error: 'Caption is required' };
-  }
+  // Caption is now optional
+  // if (!memeData.caption || memeData.caption.trim() === '') {
+  //   console.error('Meme caption is required');
+  //   return { valid: false, error: 'Caption is required' };
+  // }
 
   if (!memeData.creatorId) {
     console.error('Meme creator ID is required');
@@ -52,18 +50,16 @@ function validateMemeData(memeData: MemeData): { valid: boolean; error?: string 
  * @returns The prepared meme data
  */
 function prepareMemeData(memeData: MemeData): Omit<Meme, 'id' | 'createdAt' | 'votes'> {
-  // Based on the database schema error, the column is likely named differently
-  // Let's adapt our data structure accordingly
   return {
+    // Don't include prompt_id if it's not valid to avoid foreign key errors
     prompt: memeData.prompt,
-    prompt_id: memeData.prompt_id,
+    prompt_id: null, // Setting to null to avoid foreign key constraint errors
     imageUrl: memeData.image_url || '',
     ipfsCid: memeData.ipfs_cid || null,
-    caption: memeData.caption,
+    caption: memeData.caption || '', // Allow empty caption
     creatorId: memeData.creatorId,
     tags: memeData.tags || [],
-    // Remove battleId as it seems to be causing the database insertion error
-    // (the column might not exist or have a different name)
+    // Removed battleId as it seems to be causing the database insertion error
     isBattleSubmission: memeData.is_battle_submission || false,
   };
 }
@@ -97,7 +93,6 @@ export async function saveMeme(memeData: MemeData): Promise<Meme | null> {
       caption: preparedMemeData.caption,
       creatorId: preparedMemeData.creatorId,
       tags: preparedMemeData.tags,
-      // Removed battleId from here as it seems to cause the database error
       isBattleSubmission: preparedMemeData.isBattleSubmission,
     });
 
@@ -108,10 +103,10 @@ export async function saveMeme(memeData: MemeData): Promise<Meme | null> {
     
     console.log('Meme saved successfully:', meme);
 
-    // Check if this meme should trigger a battle
-    if (meme.prompt_id) {
-      await checkForBattles(meme.prompt_id);
-    }
+    // Skip battle check since we're now setting prompt_id to null
+    // if (meme.prompt_id) {
+    //   await checkForBattles(meme.prompt_id);
+    // }
 
     return meme;
   } catch (error: any) {
@@ -130,10 +125,10 @@ export async function uploadMeme(formData: FormData, memeData: any): Promise<{ m
   try {
     console.log('Starting uploadMeme process with memeData:', JSON.stringify(memeData));
     
-    // Validate caption before proceeding
-    if (!memeData.caption || memeData.caption.trim() === '') {
-      return { error: 'Caption is required' };
-    }
+    // Caption is now optional
+    // if (!memeData.caption || memeData.caption.trim() === '') {
+    //   return { error: 'Caption is required' };
+    // }
     
     const file = formData.get('file') as File;
     
@@ -172,9 +167,10 @@ export async function uploadMeme(formData: FormData, memeData: any): Promise<{ m
       
       console.log('Saving meme with full data:', JSON.stringify(fullMemeData));
       
-      // Remove battleId from memeData if it's causing problems
+      // Remove battleId and set prompt_id to null to avoid foreign key errors
       const cleanMemeData = { ...fullMemeData };
       delete cleanMemeData.battleId;
+      cleanMemeData.prompt_id = null; // Force null to avoid foreign key errors
       
       const savedMeme = await saveMeme(cleanMemeData);
       

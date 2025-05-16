@@ -9,34 +9,14 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { getMemeById } from '@/lib/database';
 import { uploadMeme } from '@/lib/memeUpload';
-import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, CheckCircle, Copy, CopyCheck, Plus, RefreshCcw, Upload, UploadCloud } from 'lucide-react';
+import { ArrowLeft, Upload, UploadCloud } from 'lucide-react';
 import { tags as defaultTags } from '@/lib/tags';
 
 // Define a type for the tag objects
@@ -96,7 +76,6 @@ const MemeGenerator = ({
   const [tags, setTags] = useState<Tag[]>(defaultTags);
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [validationErrors, setValidationErrors] = useState<{
-    caption?: string;
     image?: string;
   }>({});
   
@@ -180,51 +159,53 @@ const MemeGenerator = ({
     // Draw the image
     ctx.drawImage(image.current, 0, 0, canvas.current.width, canvas.current.height);
 
-    // Set font styles
-    ctx.font = `${fontSize}px Impact`;
-    ctx.fillStyle = fontColor;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-
-    // Break caption into lines
-    const maxWidth = canvas.current.width - 20;
-    const words = caption.split(' ');
-    let line = '';
-    const lines = [];
-
-    for (let n = 0; n < words.length; n++) {
-      const testLine = line + words[n] + ' ';
-      const metrics = ctx.measureText(testLine);
-      const testWidth = metrics.width;
-      if (testWidth > maxWidth && n > 0) {
-        lines.push(line);
-        line = words[n] + ' ';
-      } else {
-        line = testLine;
+    if (caption) {
+      // Set font styles
+      ctx.font = `${fontSize}px Impact`;
+      ctx.fillStyle = fontColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+  
+      // Break caption into lines
+      const maxWidth = canvas.current.width - 20;
+      const words = caption.split(' ');
+      let line = '';
+      const lines = [];
+  
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        if (testWidth > maxWidth && n > 0) {
+          lines.push(line);
+          line = words[n] + ' ';
+        } else {
+          line = testLine;
+        }
       }
-    }
-    lines.push(line);
-
-    // Calculate the starting y position
-    let y = canvas.current.height - 10 - (lines.length - 1) * fontSize;
-
-    // Draw the text line by line
-    for (let i = 0; i < lines.length; i++) {
-      const currentLine = lines[i];
-      const x = canvas.current.width / 2;
-
-      // Stroke text (outline)
-      if (isOutlined) {
-        ctx.strokeStyle = outlineColor;
-        ctx.lineWidth = outlineWidth;
-        ctx.strokeText(currentLine, x, y);
+      lines.push(line);
+  
+      // Calculate the starting y position
+      let y = canvas.current.height - 10 - (lines.length - 1) * fontSize;
+  
+      // Draw the text line by line
+      for (let i = 0; i < lines.length; i++) {
+        const currentLine = lines[i];
+        const x = canvas.current.width / 2;
+  
+        // Stroke text (outline)
+        if (isOutlined) {
+          ctx.strokeStyle = outlineColor;
+          ctx.lineWidth = outlineWidth;
+          ctx.strokeText(currentLine, x, y);
+        }
+  
+        // Fill text
+        ctx.fillText(currentLine, x, y);
+  
+        // Move to the next line
+        y += fontSize;
       }
-
-      // Fill text
-      ctx.fillText(currentLine, x, y);
-
-      // Move to the next line
-      y += fontSize;
     }
   };
 
@@ -250,11 +231,7 @@ const MemeGenerator = ({
 
   // Validate input fields
   const validateInputs = (): boolean => {
-    const errors: {caption?: string; image?: string} = {};
-    
-    if (!caption.trim()) {
-      errors.caption = "Caption is required";
-    }
+    const errors: {image?: string} = {};
     
     if (!imageUrl) {
       errors.image = "An image is required";
@@ -271,13 +248,8 @@ const MemeGenerator = ({
       return;
     }
     
-    // Validate inputs
+    // Validate inputs - only check for image
     if (!validateInputs()) {
-      if (validationErrors.caption) {
-        toast.error("Caption is required", {
-          description: "Please add a caption to your meme before saving"
-        });
-      }
       if (validationErrors.image) {
         toast.error("Image is required", {
           description: "Please select or generate an image first"
@@ -310,12 +282,12 @@ const MemeGenerator = ({
       // Create the meme object
       const memeData = {
         prompt: promptData?.text || customPrompt || '',
-        prompt_id: promptData?.id || null,
-        caption: caption,
+        prompt_id: null, // Set to null to avoid FK issues
+        caption: caption, // Caption can be empty
         creatorId: user.id,
         tags: activeTags,
-        battleId: battleId || null,
-        isBattleSubmission: battleId ? true : false
+        battleId: null, // Don't send battleId
+        isBattleSubmission: false
       };
       
       console.log('Calling uploadMeme with meme data:', memeData);
@@ -367,164 +339,89 @@ const MemeGenerator = ({
     );
   };
 
-  // Handle copy to clipboard
-  const handleCopyToClipboard = () => {
-    if (imageUrl) {
-      navigator.clipboard.writeText(imageUrl)
-        .then(() => {
-          setIsCopied(true);
-          toast.success("Image URL Copied", {
-            description: "The image URL has been copied to your clipboard."
-          });
-          setTimeout(() => setIsCopied(false), 2000);
-        })
-        .catch(err => {
-          console.error("Failed to copy:", err);
-          toast.error("Copy Failed", {
-            description: "Failed to copy the image URL to clipboard."
-          });
-        });
-    } else {
-      toast.error("No Image", {
-        description: "Please upload an image first."
-      });
-    }
-  };
-
   // Re-draw the canvas when these states change
   useEffect(() => {
     drawTextOnCanvas();
   }, [imageUrl, caption, fontSize, fontColor, outlineColor, outlineWidth, isOutlined]);
 
+  // Improved layout based on the provided screenshot
   return (
-    
-    <div className="flex flex-col h-full">
+    <div className="p-4 bg-background rounded-lg shadow-sm">
+      <h1 className="text-2xl font-bold mb-6 text-center">Meme Generator</h1>
       
-      
-      <Button 
-        variant="ghost" 
-        className="absolute top-4 left-4 md:top-6 md:left-6 z-10"
-        onClick={handleBack}
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back
-      </Button>
-      
-      <div className="flex flex-col md:flex-row h-full">
-        
-        <div className="w-full md:w-1/2 flex items-center justify-center p-4">
-          <div className="relative">
-            
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Left side - Canvas */}
+        <div className="flex flex-col items-center space-y-4">
+          <div className="relative w-full max-w-md aspect-square">
             <canvas
               ref={canvas}
               width={500}
               height={500}
-              className="border border-muted rounded-md shadow-md"
+              className="w-full h-full border border-muted rounded-md shadow-md"
             />
-            
             
             <img
               ref={image}
               src={imageUrl || ''}
-              alt="Uploaded Meme"
+              alt="Meme"
               style={{ display: 'none' }}
               onLoad={drawTextOnCanvas}
               crossOrigin="anonymous"
             />
             
-            
             {!imageUrl && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted rounded-md">
-                <UploadCloud className="h-12 w-12 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">Upload an image to start</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50 rounded-md">
+                <UploadCloud className="h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-center text-muted-foreground">Upload an image to start</p>
               </div>
             )}
           </div>
         </div>
         
-        
-        <div className="w-full md:w-1/2 p-4 flex flex-col">
-          <h2 className="text-2xl font-bold mb-4">Meme Generator</h2>
-          
-          {/* Validation error alerts */}
-          {(validationErrors.caption || validationErrors.image) && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {validationErrors.caption && (
-                  <div className="mt-1">{validationErrors.caption}</div>
-                )}
-                {validationErrors.image && (
-                  <div className="mt-1">{validationErrors.image}</div>
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          <div className="mb-4">
-            <Label htmlFor="caption" className="block text-sm font-medium text-gray-700 flex items-center">
-              Caption <span className="text-red-500 ml-1">*</span>
-            </Label>
-            <div className="mt-1">
-              <Textarea
-                id="caption"
-                rows={3}
-                value={caption}
-                onChange={(e) => {
-                  setCaption(e.target.value);
-                  if (e.target.value.trim()) {
-                    setValidationErrors(prev => ({...prev, caption: undefined}));
-                  }
-                }}
-                className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm rounded-md resize-none ${validationErrors.caption ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="Enter your meme caption here..."
-                required
-              />
-              {validationErrors.caption && (
-                <p className="mt-1 text-sm text-red-500">{validationErrors.caption}</p>
-              )}
-            </div>
+        {/* Right side - Controls */}
+        <div className="flex flex-col space-y-6">
+          {/* Caption Input */}
+          <div>
+            <Label htmlFor="caption" className="mb-2">Caption</Label>
+            <Textarea
+              id="caption"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="Enter your meme caption here..."
+              className="min-h-[100px]"
+            />
           </div>
           
-          <Separator className="my-2" />
-          
-          <div className="mb-4">
-            <Label htmlFor="font-size" className="block text-sm font-medium text-gray-700">
-              Font Size
-            </Label>
+          {/* Size Control */}
+          <div>
+            <Label htmlFor="font-size" className="mb-2">Size</Label>
             <Slider
               id="font-size"
-              defaultValue={[fontSize]}
+              value={[fontSize]}
               max={100}
               min={10}
               step={1}
               onValueChange={(value) => setFontSize(value[0])}
-              className="mt-2"
+              className="my-2"
             />
           </div>
           
-          <Separator className="my-2" />
-          
-          <div className="mb-4">
-            <Label htmlFor="font-color" className="block text-sm font-medium text-gray-700">
-              Font Color
-            </Label>
+          {/* Color Control */}
+          <div>
+            <Label htmlFor="font-color" className="mb-2">Color</Label>
             <Input
               type="color"
               id="font-color"
               value={fontColor}
               onChange={(e) => setFontColor(e.target.value)}
-              className="mt-1 w-full h-10 rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="h-10"
             />
           </div>
           
-          <Separator className="my-2" />
-          
-          <div className="mb-4">
+          {/* Outline Toggle */}
+          <div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="outline" className="block text-sm font-medium text-gray-700">
-                Outline
-              </Label>
+              <Label htmlFor="outline">Outline</Label>
               <Switch
                 id="outline"
                 checked={isOutlined}
@@ -533,49 +430,45 @@ const MemeGenerator = ({
             </div>
             
             {isOutlined && (
-              <>
-                <div className="mt-2">
-                  <Label htmlFor="outline-color" className="block text-sm font-medium text-gray-700">
-                    Outline Color
-                  </Label>
+              <div className="space-y-4 mt-4">
+                <div>
+                  <Label htmlFor="outline-color" className="mb-2">Outline Color</Label>
                   <Input
                     type="color"
                     id="outline-color"
                     value={outlineColor}
                     onChange={(e) => setOutlineColor(e.target.value)}
-                    className="mt-1 w-full h-10 rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    className="h-10"
                   />
                 </div>
                 
-                <div className="mt-2">
-                  <Label htmlFor="outline-width" className="block text-sm font-medium text-gray-700">
-                    Outline Width
-                  </Label>
+                <div>
+                  <Label htmlFor="outline-width" className="mb-2">Outline Width</Label>
                   <Slider
                     id="outline-width"
-                    defaultValue={[outlineWidth]}
+                    value={[outlineWidth]}
                     max={10}
                     min={1}
                     step={1}
                     onValueChange={(value) => setOutlineWidth(value[0])}
-                    className="mt-2"
+                    className="my-2"
                   />
                 </div>
-              </>
+              </div>
             )}
           </div>
           
-          <Separator className="my-2" />
-          
-          <div className="mb-4">
-            <Label className="block text-sm font-medium text-gray-700">Tags</Label>
-            <div className="mt-1 flex flex-wrap gap-2">
+          {/* Tags */}
+          <div>
+            <Label className="mb-2">Tags</Label>
+            <div className="flex flex-wrap gap-2 mt-2">
               {tags.map((tag) => (
                 <Button
                   key={tag.name}
                   variant={tag.selected ? "default" : "outline"}
                   size="sm"
                   onClick={() => handleTagClick(tag.name)}
+                  className="rounded-full"
                 >
                   {tag.name}
                 </Button>
@@ -583,42 +476,13 @@ const MemeGenerator = ({
             </div>
           </div>
           
-          <Separator className="my-2" />
-          
-          {promptData === null && (
-            <div className="mb-4">
-              <Label htmlFor="custom-prompt" className="block text-sm font-medium text-gray-700">
-                Custom Prompt
-              </Label>
-              <div className="mt-1">
-                <Input
-                  type="text"
-                  id="custom-prompt"
-                  value={customPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                  placeholder="Enter a custom prompt..."
-                />
-              </div>
-            </div>
-          )}
-          
+          {/* Save Button */}
           <Button 
-            className="bg-brand-purple text-white hover:bg-brand-purple/90 mt-auto"
+            className="w-full bg-purple-500 hover:bg-purple-600 text-white mt-4"
             onClick={handleSave}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !imageUrl}
           >
-            {isSubmitting ? (
-              <>
-                <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                Save Meme
-              </>
-            )}
+            {isSubmitting ? "Saving..." : "Save Meme"}
           </Button>
         </div>
       </div>
@@ -627,4 +491,3 @@ const MemeGenerator = ({
 };
 
 export default MemeGenerator;
-

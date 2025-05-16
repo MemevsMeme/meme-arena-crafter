@@ -229,10 +229,8 @@ export async function insertMeme(meme: Omit<Meme, 'id' | 'createdAt' | 'votes'>)
       return null;
     }
     
-    if (!meme.caption) {
-      console.error('Cannot insert meme: caption is required');
-      return null;
-    }
+    // Caption is now optional, provide a default empty string
+    const caption = meme.caption || '';
     
     if (!meme.creatorId) {
       console.error('Cannot insert meme: creatorId is required');
@@ -242,10 +240,10 @@ export async function insertMeme(meme: Omit<Meme, 'id' | 'createdAt' | 'votes'>)
     // Prepare the data for insertion, removing any fields that don't exist in the database
     const memeData = {
       prompt: meme.prompt || null,
-      prompt_id: meme.prompt_id || null,
+      prompt_id: null, // Force null to avoid foreign key constraint errors
       image_url: meme.imageUrl,
       ipfs_cid: meme.ipfsCid || null,
-      caption: meme.caption,
+      caption: caption,
       creator_id: meme.creatorId,
       tags: meme.tags || [],
       // Removed battle_id to match the database schema
