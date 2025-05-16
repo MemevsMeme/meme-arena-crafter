@@ -25,14 +25,29 @@ export async function uploadMemeImage(
   error?: string;
 }> {
   try {
-    console.log(`Preparing ${isGif ? 'GIF' : 'image'} for upload:`, fileName);
+    console.log(`Preparing ${isGif ? 'GIF' : 'image'} for upload:`, fileName, 'User ID:', userId);
     
     // Create a File from blob for IPFS upload
     const file = new File([blob], fileName, { 
       type: isGif ? 'image/gif' : 'image/png' 
     });
     
-    // Try IPFS upload first via Pinata
+    // First try direct Supabase upload for reliability
+    console.log("Attempting direct Supabase storage upload first...");
+    
+    const supabaseResult = await uploadFileToSupabase(file, userId, fileName);
+    
+    if (supabaseResult.success) {
+      console.log('Upload successful via Supabase, public URL:', supabaseResult.url);
+      return { 
+        success: true, 
+        imageUrl: supabaseResult.url
+      };
+    }
+    
+    console.warn('Supabase upload failed, trying IPFS fallback:', supabaseResult.error);
+    
+    // Try IPFS upload as fallback via Pinata
     try {
       console.log("Attempting IPFS upload through Pinata...");
       
@@ -48,31 +63,19 @@ export async function uploadMemeImage(
           ipfsCid: ipfsResult.ipfsHash
         };
       } else {
-        console.warn('IPFS upload error (will try Supabase fallback):', ipfsResult.error);
+        console.error('IPFS upload error:', ipfsResult.error);
+        return { 
+          success: false, 
+          error: `Upload failed: ${ipfsResult.error || 'Unknown IPFS error'}` 
+        };
       }
     } catch (ipfsError) {
-      console.warn('IPFS upload failed, using Supabase fallback:', ipfsError);
-      // Continue to fallback option
-    }
-    
-    // Fallback to Supabase Storage
-    console.log("Falling back to Supabase storage upload");
-    
-    const supabaseResult = await uploadFileToSupabase(file, userId, fileName);
-    
-    if (!supabaseResult.success) {
-      console.error('Supabase storage upload failed:', supabaseResult.error);
+      console.error('IPFS upload failed:', ipfsError);
       return { 
         success: false, 
-        error: `Upload failed: ${supabaseResult.error}` 
+        error: `Upload failed: ${ipfsError instanceof Error ? ipfsError.message : 'Unknown IPFS error'}` 
       };
     }
-    
-    console.log('Upload successful via Supabase, public URL:', supabaseResult.url);
-    return { 
-      success: true, 
-      imageUrl: supabaseResult.url
-    };
   } catch (error: any) {
     console.error('Exception in uploadMemeImage:', error);
     return { 

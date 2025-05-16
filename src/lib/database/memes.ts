@@ -1,3 +1,4 @@
+// Only updating the relevant functions, keeping everything else the same
 
 import { supabase } from './client';
 import { Meme } from '../types';
@@ -187,6 +188,17 @@ export async function getMemesByBattleId(battleId: string, count: number = 10, o
 
 // Map database fields to frontend model fields
 export function mapMeme(data: any): Meme {
+  // Check if we have required fields
+  if (!data || !data.id) {
+    console.error('Invalid meme data:', data);
+    throw new Error('Invalid meme data');
+  }
+  
+  // Make sure image_url is present and valid
+  if (!data.image_url) {
+    console.warn('Meme missing image_url:', data.id);
+  }
+  
   return {
     id: data.id,
     prompt: data.prompt || '',
@@ -196,7 +208,7 @@ export function mapMeme(data: any): Meme {
     caption: data.caption || '',
     creatorId: data.creator_id || '',
     votes: data.votes || 0,
-    createdAt: new Date(data.created_at),
+    createdAt: data.created_at ? new Date(data.created_at) : new Date(),
     tags: data.tags || [],
     battleId: data.battle_id || null,  
     isBattleSubmission: data.is_battle_submission || false,
@@ -209,19 +221,42 @@ export function mapMeme(data: any): Meme {
  */
 export async function insertMeme(meme: Omit<Meme, 'id' | 'createdAt' | 'votes'>): Promise<Meme | null> {
   try {
+    console.log('Inserting meme into database:', meme);
+    
+    // Make sure we have all required fields
+    if (!meme.imageUrl) {
+      console.error('Cannot insert meme: imageUrl is required');
+      return null;
+    }
+    
+    if (!meme.caption) {
+      console.error('Cannot insert meme: caption is required');
+      return null;
+    }
+    
+    if (!meme.creatorId) {
+      console.error('Cannot insert meme: creatorId is required');
+      return null;
+    }
+    
+    // Prepare the data for insertion
+    const memeData = {
+      prompt: meme.prompt || null,
+      prompt_id: meme.prompt_id || null,
+      image_url: meme.imageUrl,
+      ipfs_cid: meme.ipfsCid || null,
+      caption: meme.caption,
+      creator_id: meme.creatorId,
+      tags: meme.tags || [],
+      battle_id: meme.battleId || null,
+      is_battle_submission: meme.isBattleSubmission || false,
+    };
+    
+    console.log('Final meme data being inserted:', memeData);
+    
     const { data, error } = await supabase
       .from('memes')
-      .insert({
-        prompt: meme.prompt,
-        prompt_id: meme.prompt_id,
-        image_url: meme.imageUrl,
-        ipfs_cid: meme.ipfsCid,
-        caption: meme.caption,
-        creator_id: meme.creatorId,
-        tags: meme.tags,
-        battle_id: meme.battleId,
-        is_battle_submission: meme.isBattleSubmission,
-      })
+      .insert(memeData)
       .select('*')
       .single();
 
@@ -234,6 +269,8 @@ export async function insertMeme(meme: Omit<Meme, 'id' | 'createdAt' | 'votes'>)
       console.log('Failed to insert meme');
       return null;
     }
+    
+    console.log('Meme inserted successfully:', data);
 
     return mapMeme(data);
   } catch (error) {

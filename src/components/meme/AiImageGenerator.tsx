@@ -42,7 +42,7 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
 
   const handleSaveAsTemplate = () => {
     if (generatedImage && onSaveAsTemplate) {
-      onSaveAsTemplate(generatedImage, promptText);
+      onSaveAsTemplate(generatedImage, promptText || customPrompt);
       toast("Image saved as template", {
         description: "You can now use this as a template"
       });
@@ -109,6 +109,7 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
               onError={(e) => {
                 console.error("Image failed to load:", generatedImage);
                 e.currentTarget.src = '/placeholder.svg';
+                setErrorCount(prev => prev + 1);
               }}
             />
           </div>

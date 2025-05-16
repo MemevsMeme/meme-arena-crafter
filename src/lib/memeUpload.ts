@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Meme } from './types';
 import { insertMeme } from './database';
 import { checkForBattles } from './services/battleService';
+import { toast } from 'sonner';
 
 interface MemeData {
   prompt: string;
@@ -25,9 +26,13 @@ interface MemeData {
  */
 export async function uploadMemeImage(file: File, userId: string): Promise<string | null> {
   try {
+    console.log('Starting meme image upload...');
+    
     // Generate a unique file name
     const imageName = `meme-${userId}-${uuidv4()}`;
     const imagePath = `${userId}/${imageName}`;
+    
+    console.log('Uploading to path:', imagePath);
 
     // Upload the image to Supabase storage
     const { data, error } = await supabase.storage
@@ -38,12 +43,15 @@ export async function uploadMemeImage(file: File, userId: string): Promise<strin
       });
 
     if (error) {
-      console.error('Error uploading image:', error);
+      console.error('Error uploading image to Supabase storage:', error);
       return null;
     }
+    
+    console.log('Image upload successful:', data.path);
 
     // Get the public URL of the uploaded image
     const imageUrl = `https://ezunpjcxnrfnpcsibtyb.supabase.co/storage/v1/object/public/memes/${imagePath}`;
+    console.log('Image URL:', imageUrl);
     return imageUrl;
   } catch (error) {
     console.error('Unexpected error uploading image:', error);
@@ -101,6 +109,8 @@ function prepareMemeData(memeData: MemeData): Omit<Meme, 'id' | 'createdAt' | 'v
  */
 export async function saveMeme(memeData: MemeData): Promise<Meme | null> {
   try {
+    console.log('Saving meme to database with data:', JSON.stringify(memeData));
+    
     // Validate the meme data
     if (!validateMemeData(memeData)) {
       console.error('Invalid meme data');
@@ -109,6 +119,7 @@ export async function saveMeme(memeData: MemeData): Promise<Meme | null> {
 
     // Prepare the meme data for insertion into the database
     const preparedMemeData = prepareMemeData(memeData);
+    console.log('Prepared meme data:', JSON.stringify(preparedMemeData));
 
     // Insert the meme into the database
     const meme = await insertMeme({
@@ -124,9 +135,11 @@ export async function saveMeme(memeData: MemeData): Promise<Meme | null> {
     });
 
     if (!meme) {
-      console.error('Failed to insert meme');
+      console.error('Failed to insert meme into database');
       return null;
     }
+    
+    console.log('Meme saved successfully:', meme);
 
     // Check if this meme should trigger a battle
     if (meme.prompt_id) {
@@ -148,18 +161,26 @@ export async function saveMeme(memeData: MemeData): Promise<Meme | null> {
  */
 export async function uploadMeme(formData: FormData, memeData: any): Promise<{ meme?: Meme, error?: string }> {
   try {
+    console.log('Starting uploadMeme process with memeData:', JSON.stringify(memeData));
+    
     const file = formData.get('file') as File;
     
     if (!file) {
+      console.error('No file provided in formData');
       return { error: 'No file provided' };
     }
+    
+    console.log('File details:', file.name, file.type, file.size);
     
     // Upload the image
     const imageUrl = await uploadMemeImage(file, memeData.creatorId);
     
     if (!imageUrl) {
+      console.error('Failed to upload image');
       return { error: 'Failed to upload image' };
     }
+    
+    console.log('Image uploaded successfully:', imageUrl);
     
     // Save the meme with the image URL
     const fullMemeData = {
@@ -168,11 +189,17 @@ export async function uploadMeme(formData: FormData, memeData: any): Promise<{ m
       ipfs_cid: null // IPFS upload would happen here in a production app
     };
     
+    console.log('Saving meme with full data:', JSON.stringify(fullMemeData));
+    
     const savedMeme = await saveMeme(fullMemeData);
     
     if (!savedMeme) {
+      console.error('Failed to save meme data');
       return { error: 'Failed to save meme data' };
     }
+    
+    console.log('Meme saved successfully:', savedMeme);
+    toast.success('Meme created successfully!');
     
     return { meme: savedMeme };
   } catch (error: any) {

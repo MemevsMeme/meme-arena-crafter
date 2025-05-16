@@ -21,6 +21,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ImageUploader from '@/components/meme/ImageUploader';
 import { PictureInPicture, Bot, FileImage, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ensureStorageBuckets } from '@/integrations/supabase/client';
 
 const Create = () => {
   const navigate = useNavigate();
@@ -44,7 +45,15 @@ const Create = () => {
       // Redirect to the login page
       toast.error('You must be logged in to create memes.');
       navigate('/login', { replace: true });
+      return;
     }
+    
+    // Ensure storage buckets exist
+    ensureStorageBuckets().then(success => {
+      if (!success) {
+        toast.error('Failed to set up storage. Some features may not work correctly.');
+      }
+    });
     
     // Check for daily challenge in localStorage
     const storedChallengePrompt = localStorage.getItem('active_challenge_prompt');
@@ -68,7 +77,7 @@ const Create = () => {
   };
 
   const handleGenerateImage = async () => {
-    if (!prompt) {
+    if (!prompt && !activeTab) {
       toast.error("Please enter a prompt first");
       return;
     }
@@ -77,7 +86,7 @@ const Create = () => {
     setIsGeneratingAIImage(true);
     
     try {
-      const imageData = await generateMemeImage(prompt, "meme");
+      const imageData = await generateMemeImage(prompt || activeTab, "meme");
       if (imageData) {
         setGeneratedImage(imageData);
         
@@ -104,7 +113,7 @@ const Create = () => {
     }
   };
 
-  const handleSaveAsTemplate = (imageUrl: string) => {
+  const handleSaveAsTemplate = (imageUrl: string, promptText: string) => {
     // Create a new template from the generated image
     const newTemplate = {
       id: `ai-${Date.now()}`,
@@ -127,6 +136,11 @@ const Create = () => {
     
     // Store the image URL in localStorage for the MemeGenerator component
     localStorage.setItem('meme_image', imageUrl);
+    
+    // If there's no prompt, use the custom prompt
+    if (!prompt && promptText) {
+      setPrompt(promptText);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
