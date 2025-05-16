@@ -63,15 +63,15 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
       }
     }
     
-    // Create the meme record in the database
-    // Match only the fields that exist in the database schema
+    // Create the meme record in the database with all the appropriate fields
     console.log('Creating meme record with data:', {
       prompt: meme.prompt,
       caption: meme.caption,
       creator_id: meme.creatorId,
       tags: meme.tags,
       image_url: imageUrl,
-      ipfs_cid: ipfsCid
+      ipfs_cid: ipfsCid,
+      prompt_id: meme.prompt_id
     });
     
     const { data: memeData, error: memeError } = await supabase
@@ -83,7 +83,9 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
         ipfs_cid: ipfsCid,
         caption: meme.caption || '',
         creator_id: meme.creatorId || '',
-        tags: meme.tags || []
+        tags: meme.tags || [],
+        battle_id: meme.battleId || null,
+        is_battle_submission: meme.isBattleSubmission || false
       })
       .select('*')
       .single();

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,6 +72,7 @@ const MemeGenerator = ({
   selectedTemplate,
   generatedImage
 }: MemeGeneratorProps) => {
+  
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -276,13 +276,15 @@ const MemeGenerator = ({
       const formData = new FormData();
       formData.append('file', file);
       
-      // Create the meme object
+      // Create the meme object with both prompt_id and battleId
       const memeData = {
         prompt: currentPromptData.text || customPrompt || '',
         prompt_id: currentPromptData.id || null,
         caption: caption,
         creatorId: user?.id || '',
-        tags: activeTags
+        tags: activeTags,
+        battleId: battleId || null,
+        isBattleSubmission: battleId ? true : false
       };
       
       console.log('Calling uploadMeme with meme data:', memeData);
@@ -358,8 +360,10 @@ const MemeGenerator = ({
   }, [imageUrl, caption, fontSize, fontColor, outlineColor, outlineWidth, isOutlined]);
 
   return (
+    
     <div className="flex flex-col h-full">
-      {/* Back Button */}
+      
+      
       <Button 
         variant="ghost" 
         className="absolute top-4 left-4 md:top-6 md:left-6 z-10"
@@ -370,10 +374,10 @@ const MemeGenerator = ({
       </Button>
       
       <div className="flex flex-col md:flex-row h-full">
-        {/* Canvas and Image Section */}
+        
         <div className="w-full md:w-1/2 flex items-center justify-center p-4">
           <div className="relative">
-            {/* Canvas */}
+            
             <canvas
               ref={canvas}
               width={500}
@@ -381,7 +385,7 @@ const MemeGenerator = ({
               className="border border-muted rounded-md shadow-md"
             />
             
-            {/* Hidden Image */}
+            
             <img
               ref={image}
               src={imageUrl || ''}
@@ -391,7 +395,7 @@ const MemeGenerator = ({
               crossOrigin="anonymous"
             />
             
-            {/* Image Placeholder */}
+            
             {!imageUrl && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted rounded-md">
                 <UploadCloud className="h-12 w-12 text-muted-foreground mb-2" />
@@ -401,11 +405,11 @@ const MemeGenerator = ({
           </div>
         </div>
         
-        {/* Controls Section */}
+        
         <div className="w-full md:w-1/2 p-4 flex flex-col">
           <h2 className="text-2xl font-bold mb-4">Meme Generator</h2>
           
-          {/* Caption Input */}
+          
           <div className="mb-4">
             <Label htmlFor="caption" className="block text-sm font-medium text-gray-700">
               Caption
@@ -424,7 +428,7 @@ const MemeGenerator = ({
           
           <Separator className="my-2" />
           
-          {/* Font Size Slider */}
+          
           <div className="mb-4">
             <Label htmlFor="font-size" className="block text-sm font-medium text-gray-700">
               Font Size
@@ -442,7 +446,7 @@ const MemeGenerator = ({
           
           <Separator className="my-2" />
           
-          {/* Font Color Picker */}
+          
           <div className="mb-4">
             <Label htmlFor="font-color" className="block text-sm font-medium text-gray-700">
               Font Color
@@ -458,7 +462,7 @@ const MemeGenerator = ({
           
           <Separator className="my-2" />
           
-          {/* Outline Settings */}
+          
           <div className="mb-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="outline" className="block text-sm font-medium text-gray-700">
@@ -506,7 +510,7 @@ const MemeGenerator = ({
           
           <Separator className="my-2" />
           
-          {/* Tags */}
+          
           <div className="mb-4">
             <Label className="block text-sm font-medium text-gray-700">Tags</Label>
             <div className="mt-1 flex flex-wrap gap-2">
@@ -525,7 +529,7 @@ const MemeGenerator = ({
           
           <Separator className="my-2" />
           
-          {/* Custom Prompt */}
+          
           {promptData === null && (
             <div className="mb-4">
               <Label htmlFor="custom-prompt" className="block text-sm font-medium text-gray-700">
@@ -544,7 +548,7 @@ const MemeGenerator = ({
             </div>
           )}
           
-          {/* Save Button */}
+          
           <Button 
             className="bg-brand-purple text-white hover:bg-brand-purple/90 mt-auto"
             onClick={handleSave}
