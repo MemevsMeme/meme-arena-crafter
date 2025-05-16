@@ -4,5 +4,6 @@ export * from './client';
 export * from './memes';
 export * from './battles';
 export * from './dailyChallenges';
-// Export votes but explicitly re-export incrementBattleVote to avoid name conflicts
-export * from './votes';
+// Export votes without the incrementBattleVote function to avoid conflicts
+// We'll use the one from battles.ts
+export { castVote, hasUserVotedInBattle, getBattleVotes } from './votes';

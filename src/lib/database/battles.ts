@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Battle, Meme } from '../types';
 import { getMemesByPromptId } from './memes';
@@ -175,11 +174,13 @@ export async function deleteBattle(battleId: string): Promise<boolean> {
 
 export async function incrementBattleVote(memeId: string, battleId: string): Promise<boolean> {
   try {
-    // Fix: Use proper type for rpc function name
-    const { data, error } = await supabase.rpc('increment_battle_vote', {
+    // Cast the entire call to any type to avoid TypeScript errors with RPC function names
+    const result = await (supabase.rpc('increment_battle_vote', {
       meme_id: memeId,
       battle_id: battleId
-    });
+    }) as any);
+    
+    const { data, error } = result;
     
     if (error) {
       console.error('Error incrementing battle vote:', error);
@@ -260,10 +261,6 @@ export async function createBattlesForPrompt(promptId: string): Promise<Battle[]
   }
 }
 
-/**
- * Get battles by prompt ID
- * @param promptId 
- */
 export async function getBattlesByPromptId(promptId: string): Promise<Battle[]> {
   try {
     const { data, error } = await supabase
@@ -380,15 +377,15 @@ export async function completeBattlesAndDetermineWinners(): Promise<boolean> {
           continue;
         }
         
-        // Update winner's stats - Fix: Use any type for the function name
-        await supabase.rpc('increment_user_wins', { 
+        // Cast to any type to avoid TypeScript errors with RPC function names
+        await (supabase.rpc('increment_user_wins', { 
           user_id: winnerMeme.creator_id 
-        } as any);
+        }) as any);
         
-        // Update loser's stats - Fix: Use any type for the function name
-        await supabase.rpc('increment_user_losses', { 
+        // Cast to any type to avoid TypeScript errors with RPC function names
+        await (supabase.rpc('increment_user_losses', { 
           user_id: loserMeme.creator_id 
-        } as any);
+        }) as any);
       }
     }
     

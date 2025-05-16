@@ -37,7 +37,7 @@ export async function castVote(userId: string, battleId: string, memeId: string)
     }
 
     // Increment battle vote count
-    await incrementBattleVote(memeId, battleId);
+    await incrementBattleVoteInternal(memeId, battleId);
     
     return true;
   } catch (error) {
@@ -111,16 +111,19 @@ export async function getBattleVotes(battleId: string): Promise<Vote[]> {
 
 /**
  * Increment the vote count for a meme in a battle
+ * Internal use in votes.ts only - renamed to avoid export conflicts
  * @param memeId 
  * @param battleId 
  */
-export async function incrementBattleVote(memeId: string, battleId: string): Promise<boolean> {
+async function incrementBattleVoteInternal(memeId: string, battleId: string): Promise<boolean> {
   try {
-    // Fix: Use any type for the function name
-    const { data, error } = await supabase.rpc('increment_battle_vote', {
+    // Cast to any type to avoid TypeScript errors with RPC function names
+    const result = await (supabase.rpc('increment_battle_vote', {
       meme_id: memeId,
       battle_id: battleId
-    } as any);
+    }) as any);
+    
+    const { error } = result;
     
     if (error) {
       console.error('Error incrementing battle vote:', error);
@@ -133,3 +136,6 @@ export async function incrementBattleVote(memeId: string, battleId: string): Pro
     return false;
   }
 }
+
+// Export as a named function to prevent conflicts
+export { incrementBattleVoteInternal as incrementBattleVote };
