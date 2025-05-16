@@ -62,7 +62,6 @@ const Create = () => {
       // Redirect to the login page
       toast.error('You must be logged in to create memes.');
       navigate('/login', { replace: true });
-      return;
     }
     
     // Check for daily challenge in localStorage
@@ -127,6 +126,13 @@ const Create = () => {
     setSelectedTemplate(newTemplate);
   };
   
+  const handleSaveMeme = async (meme: { id: string; caption: string; imageUrl: string }) => {
+    // Placeholder for saving the meme
+    console.log('Meme saved:', meme);
+    toast.success('Meme saved successfully!');
+    navigate('/');
+  };
+
   // Create a proper Prompt object
   const promptData: Prompt = {
     id: promptId,
@@ -142,14 +148,15 @@ const Create = () => {
     <div className="flex flex-col min-h-screen">
       <Navbar />
 
-      <main className="flex-grow w-full px-4 py-8 bg-gradient-to-b from-background to-muted/30">
-        <Card className="w-full max-w-4xl mx-auto shadow-lg mb-16">
+      <div className="flex-grow w-full px-4 py-6 bg-gradient-to-b from-background to-muted/30">
+        <Card className="w-full max-w-4xl mx-auto">
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl font-heading">Create a Meme</CardTitle>
             <CardDescription>Unleash your creativity and make the world laugh!</CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-6 p-6">
+          <CardContent className="space-y-6">
+            {/* More organized layout for mobile and desktop */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Template Selection */}
               <div className="space-y-2">
@@ -193,20 +200,18 @@ const Create = () => {
                 onSaveAsTemplate={(imageUrl) => handleSaveAsTemplate(imageUrl)}
               />
             </div>
+
+            {/* Improved Meme Generator layout */}
+            <div className={`mt-6 ${isMobile ? 'p-0' : 'p-4'}`}>
+              <MemeGenerator 
+                promptData={promptData} 
+                battleId={null} 
+                memeId={null} 
+              />
+            </div>
           </CardContent>
-        </Card>
-        
-        {/* Separate card for MemeGenerator to prevent layout issues */}
-        <Card className="w-full max-w-4xl mx-auto shadow-lg">
-          <CardContent className="p-0">
-            <MemeGenerator 
-              promptData={promptData} 
-              battleId={null} 
-              memeId={null} 
-            />
-          </CardContent>
-          
-          <CardFooter className="flex flex-col space-y-4 p-4">
+
+          <CardFooter className="flex flex-col space-y-4">
             <Separator />
             <div className="text-center text-sm">
               <Button variant="link" onClick={() => setEditMode(!editMode)}>
@@ -215,7 +220,7 @@ const Create = () => {
             </div>
           </CardFooter>
         </Card>
-      </main>
+      </div>
 
       <Footer />
     </div>

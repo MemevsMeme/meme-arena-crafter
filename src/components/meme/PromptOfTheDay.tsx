@@ -28,28 +28,26 @@ const PromptOfTheDay = ({
 
   // Handle prompt loading and ensure we always have a valid prompt to display
   useEffect(() => {
-    const loadPrompt = async () => {
-      if (prompt) {
-        // If we have a prompt from props (database), use it
-        console.log('Setting display prompt from props:', prompt);
-        setDisplayPrompt(prompt);
-      } else if (!isLoading) {
-        // If no prompt is provided and we're not loading, try to fetch today's challenge
-        console.log('Fetching today\'s challenge...');
-        setLoading(true);
-        try {
-          const todayPrompt = await getTodaysChallenge();
+    if (prompt) {
+      // If we have a prompt from props (database), use it
+      console.log('Setting display prompt from props:', prompt);
+      setDisplayPrompt(prompt);
+    } else if (!isLoading) {
+      // If no prompt is provided and we're not loading, try to fetch today's challenge
+      console.log('Fetching today\'s challenge...');
+      setLoading(true);
+      getTodaysChallenge()
+        .then(todayPrompt => {
           console.log('Fetched today\'s challenge:', todayPrompt);
           setDisplayPrompt(todayPrompt);
-        } catch (err) {
+        })
+        .catch(err => {
           console.error('Error loading daily challenge:', err);
-        } finally {
+        })
+        .finally(() => {
           setLoading(false);
-        }
-      }
-    };
-
-    loadPrompt();
+        });
+    }
   }, [prompt, isLoading]);
 
   if (isLoading || loading) {
@@ -114,10 +112,10 @@ const PromptOfTheDay = ({
   };
 
   // Apply animation classes based on mobile or desktop view
-  const animationClass = isMobile ? "animate-pulse-slow" : "animate-float";
+  const animationClass = isMobile ? "animate-pulse-slight" : "animate-float";
 
   return (
-    <div className={`prompt-card ${animationClass} border border-white/10 bg-black/40 backdrop-blur-sm p-4 rounded-lg shadow-lg`}>
+    <div className={`prompt-card ${animationClass}`}>
       <h3 className="text-lg font-medium mb-1">Today's Meme Challenge</h3>
       <p className="text-2xl font-bold mb-4">{displayPrompt.text}</p>
       <div className="flex justify-between items-center">
