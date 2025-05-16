@@ -7,6 +7,7 @@ import { Prompt } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { getTodaysChallenge } from '@/lib/dailyChallenges';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PromptOfTheDayProps {
   prompt?: Prompt | null; // Accept Prompt object or null
@@ -19,6 +20,7 @@ const PromptOfTheDay = ({
 }: PromptOfTheDayProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   
   // Store the actual prompt to display
   const [displayPrompt, setDisplayPrompt] = useState<Prompt | null>(null);
@@ -109,8 +111,11 @@ const PromptOfTheDay = ({
     navigate('/login');
   };
 
+  // Apply animation classes based on mobile or desktop view
+  const animationClass = isMobile ? "animate-pulse-slight" : "animate-float";
+
   return (
-    <div className="prompt-card animate-float">
+    <div className={`prompt-card ${animationClass}`}>
       <h3 className="text-lg font-medium mb-1">Today's Meme Challenge</h3>
       <p className="text-2xl font-bold mb-4">{displayPrompt.text}</p>
       <div className="flex justify-between items-center">
