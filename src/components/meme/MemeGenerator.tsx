@@ -270,16 +270,25 @@ const MemeGenerator = ({
       
       // Get the meme metadata
       const activeTags = tags.filter(tag => tag.selected).map(tag => tag.name);
-      const currentPromptData = promptData || { text: customPrompt, id: null };
+      
+      // Get prompt information
+      const promptId = promptData?.id || null;
+      const promptText = promptData?.text || customPrompt || '';
+      
+      console.log('Using prompt:', { 
+        promptId, 
+        promptText, 
+        customPrompt
+      });
       
       // Create a FormData object
       const formData = new FormData();
       formData.append('file', file);
       
-      // Create the meme object with both prompt_id and battleId
+      // Create the meme object
       const memeData = {
-        prompt: currentPromptData.text || customPrompt || '',
-        prompt_id: currentPromptData.id || null,
+        prompt: promptText,
+        prompt_id: promptId,
         caption: caption,
         creatorId: user?.id || '',
         tags: activeTags,

@@ -63,19 +63,7 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
       }
     }
     
-    // Prepare data for inserting into the database
-    // Only include fields that definitely exist in the database schema
-    console.log('Creating meme record with data:', {
-      prompt: meme.prompt,
-      caption: meme.caption,
-      creator_id: meme.creatorId,
-      tags: meme.tags,
-      image_url: imageUrl,
-      ipfs_cid: ipfsCid,
-      prompt_id: meme.prompt_id
-    });
-    
-    // Create insert object with only valid columns
+    // Prepare basic insert data with only the essential fields
     const insertData = {
       prompt: meme.prompt || '',
       caption: meme.caption || '',
@@ -85,35 +73,19 @@ export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promi
       ipfs_cid: ipfsCid
     };
     
-    // Only add prompt_id if it exists and is not null
-    if (meme.prompt_id) {
+    // Only include prompt_id if it's a valid UUID, not an empty string or null
+    // This is critical to avoid foreign key constraint violations
+    if (meme.prompt_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(meme.prompt_id)) {
+      console.log('Adding prompt_id to insertion data:', meme.prompt_id);
       Object.assign(insertData, { prompt_id: meme.prompt_id });
+    } else {
+      console.log('Not including prompt_id as it is invalid:', meme.prompt_id);
     }
     
-    // Only add battle related fields if they exist in the schema and have values
-    // We'll check the database first to avoid errors
-    try {
-      const { data: tableInfo, error: tableError } = await supabase
-        .from('memes')
-        .select('id')
-        .limit(1);
-      
-      if (!tableError) {
-        // If we can query the table, it's likely these columns exist
-        // We still check to avoid adding properties with undefined values
-        if (meme.battleId) {
-          Object.assign(insertData, { battle_id: meme.battleId });
-        }
-        
-        if (meme.isBattleSubmission !== undefined) {
-          Object.assign(insertData, { is_battle_submission: meme.isBattleSubmission });
-        }
-      }
-    } catch (error) {
-      console.warn('Error checking memes table schema:', error);
-      // Continue without battle fields if there was an error
-    }
+    // Log what we're sending to the database
+    console.log('Final insertion data for meme:', insertData);
     
+    // Insert the meme record
     const { data: memeData, error: memeError } = await supabase
       .from('memes')
       .insert(insertData)
