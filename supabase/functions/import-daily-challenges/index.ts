@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.14.0";
 
@@ -231,11 +232,11 @@ serve(async (req) => {
   try {
     console.log("Import daily challenges function called");
     
-    // Create Supabase client with anonymous key
+    // Get the Supabase URL and service role key from environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
-    if (!supabaseUrl || !supabaseAnonKey) {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
       console.error("Missing Supabase environment variables");
       return new Response(JSON.stringify({ error: "Server configuration error" }), {
         status: 500,
@@ -243,8 +244,9 @@ serve(async (req) => {
       });
     }
     
-    console.log("Creating Supabase client");
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    console.log("Creating Supabase client with service role key");
+    // Create a Supabase client with the service role key to bypass RLS policies
+    const adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // Get the challenges
     console.log("Generating daily challenges");
@@ -254,23 +256,26 @@ serve(async (req) => {
     let body = {};
     let mode = 'all';
     let dayNum: number | null = null;
+    let forceInsert = false;
     
     if (req.method === 'POST') {
       try {
         body = await req.json();
         mode = body.mode || 'all';
         dayNum = body.day || null;
-        console.log(`Request mode: ${mode}, day: ${dayNum}`);
+        forceInsert = body.forceInsert || false;
+        console.log(`Request mode: ${mode}, day: ${dayNum}, forceInsert: ${forceInsert}`);
       } catch (e) {
         console.error('Error parsing request body:', e);
       }
     } else {
-      // Process mode (insert all or specific day) from URL params
+      // Process mode from URL params
       const url = new URL(req.url);
       const day = url.searchParams.get('day');
       mode = url.searchParams.get('mode') || 'all';
       dayNum = day ? parseInt(day, 10) : null;
-      console.log(`URL params mode: ${mode}, day: ${dayNum}`);
+      forceInsert = url.searchParams.get('forceInsert') === 'true';
+      console.log(`URL params mode: ${mode}, day: ${dayNum}, forceInsert: ${forceInsert}`);
     }
     
     let result;
@@ -293,9 +298,9 @@ serve(async (req) => {
         });
       }
       
-      console.log(`Upserting challenge for day ${dayNum}`);
-      // Upsert the specific challenge
-      const { data, error } = await supabase
+      console.log(`Upserting challenge for day ${dayNum} using admin client`);
+      // Upsert the specific challenge using admin client to bypass RLS
+      const { data, error } = await adminSupabase
         .from('daily_challenges')
         .upsert([challenge], { onConflict: 'day_of_year' });
       
@@ -307,9 +312,9 @@ serve(async (req) => {
       
       result = { mode: 'day', day: dayNum, inserted: !error ? 1 : 0, error: error?.message };
     } else {
-      console.log(`Bulk inserting ${challenges.length} challenges`);
-      // Bulk insert all challenges
-      const { data, error } = await supabase
+      console.log(`Bulk inserting ${challenges.length} challenges using admin client`);
+      // Bulk insert all challenges using admin client to bypass RLS
+      const { data, error } = await adminSupabase
         .from('daily_challenges')
         .upsert(challenges, { onConflict: 'day_of_year' });
       

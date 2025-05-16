@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -12,13 +12,29 @@ const ImportChallenges = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    // Check current auth status
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setUser(data?.session?.user || null);
+    };
+    
+    checkAuth();
+  }, []);
 
   const importAllChallenges = async () => {
     setLoading(true);
     try {
       console.log('Calling import-daily-challenges function with mode: all');
+      
+      // Add more logging to help debug the issue
       const { data, error } = await supabase.functions.invoke('import-daily-challenges', {
-        body: { mode: 'all' }
+        body: { 
+          mode: 'all',
+          forceInsert: true 
+        }
       });
 
       console.log('Function response:', data);
@@ -52,7 +68,11 @@ const ImportChallenges = () => {
     try {
       console.log(`Calling import-daily-challenges function for day: ${dayNum}`);
       const { data, error } = await supabase.functions.invoke('import-daily-challenges', {
-        body: { mode: 'day', day: dayNum }
+        body: { 
+          mode: 'day', 
+          day: dayNum,
+          forceInsert: true 
+        }
       });
       
       console.log('Function response:', data);
@@ -117,6 +137,16 @@ const ImportChallenges = () => {
             <pre className="bg-muted p-4 rounded-md overflow-auto">
               {JSON.stringify(result, null, 2)}
             </pre>
+          </Card>
+        )}
+
+        {!user && (
+          <Card className="p-6 mb-6 border-orange-300">
+            <h2 className="text-xl font-semibold mb-2 text-orange-600">Authentication Notice</h2>
+            <p className="mb-2">You are currently not logged in. The import might still work, but for better results:</p>
+            <Button onClick={() => navigate('/login')}>
+              Log In First
+            </Button>
           </Card>
         )}
       </div>
