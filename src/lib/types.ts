@@ -31,7 +31,7 @@ export interface Meme {
 export interface Prompt {
   id: string;
   text: string;
-  theme: string;
+  theme: string | null;
   tags: string[];
   active: boolean;
   startDate: Date;
@@ -49,6 +49,8 @@ export interface Battle {
   prompt?: Prompt;
   memeOneId: string;
   memeTwoId: string;
+  meme_one_id?: string; // Database field
+  meme_two_id?: string; // Database field
   memeOne?: Meme;
   memeTwo?: Meme;
   winnerId?: string;
@@ -57,7 +59,9 @@ export interface Battle {
   endTime: Date;
   status: 'active' | 'completed' | 'cancelled';
   is_community?: boolean;
-  creator_id?: string;
+  creator_id?: string; // Database field
+  votes_a?: number; // Database field
+  votes_b?: number; // Database field
   submissions?: Meme[];
 }
 
@@ -75,7 +79,7 @@ export interface Caption {
   confidence: number;
 }
 
-// Temporary Database Types for improved TypeScript support
+// For improved TypeScript support
 export type Database = {
   public: {
     Tables: {

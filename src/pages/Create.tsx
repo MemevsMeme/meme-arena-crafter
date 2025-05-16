@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import MemeGenerator from '@/components/meme/MemeGenerator';
 import { useAuth } from '@/contexts/AuthContext';
+import { Prompt } from '@/lib/types';
 
 interface Template {
   id: string;
@@ -73,6 +74,17 @@ const Create = () => {
     navigate('/');
   };
 
+  // Create a proper Prompt object
+  const promptData: Prompt = {
+    id: promptId,
+    text: prompt,
+    theme: null,
+    tags: [],
+    active: true,
+    startDate: new Date(),
+    endDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -117,7 +129,11 @@ const Create = () => {
             <Separator className="my-4" />
 
             {/* Meme Generator */}
-            <MemeGenerator promptData={{ id: promptId, text: prompt, tags: [] }} battleId={null} memeId={null} />
+            <MemeGenerator 
+              promptData={promptData} 
+              battleId={null} 
+              memeId={null} 
+            />
           </CardContent>
 
           <CardFooter className="flex flex-col space-y-4">

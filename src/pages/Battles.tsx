@@ -1,18 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Battle } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { getActiveBattles } from '@/lib/database';
 import { getPrompts } from '@/lib/databaseAdapter';
 
-type BattleFilterType = 'active' | 'completed' | 'community';
+type BattleFilterType = 'active' | 'completed' | 'community' | 'all';
 
 const Battles = () => {
   const [battles, setBattles] = useState<Battle[]>([]);
@@ -22,7 +21,8 @@ const Battles = () => {
   useEffect(() => {
     const fetchBattles = async () => {
       // Fetch battles based on the selected filter
-      const battles = await getActiveBattles(10, 0, filter === 'community' ? 'all' : filter);
+      const status = filter === 'community' ? 'all' : filter === 'all' ? 'all' : filter;
+      const battles = await getActiveBattles(10, 0, status);
       setBattles(battles);
     };
 
@@ -45,6 +45,7 @@ const Battles = () => {
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="community">Community</SelectItem>
+              <SelectItem value="all">All</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -56,7 +57,7 @@ const Battles = () => {
                 <CardHeader>
                   <CardTitle>Battle #{battle.id.substring(0, 8)}</CardTitle>
                   <CardDescription>
-                    {battle.prompt}
+                    {battle.prompt && battle.prompt}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

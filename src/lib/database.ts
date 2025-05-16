@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './types/supabase';
 import { Prompt, Meme, Battle } from './types';
@@ -47,7 +48,11 @@ export async function getDailyChallenge(dayOfYear: number): Promise<Prompt | nul
     const prompt: Prompt = {
       id: data.id,
       text: data.prompt_text,
+      theme: data.theme || null,
       tags: data.tags || [],
+      active: true,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
     };
 
     return prompt;
@@ -245,7 +250,7 @@ function mapMeme(data: any): Meme {
   return {
     id: data.id,
     prompt: data.prompt || '',
-    promptId: data.prompt_id || null,
+    prompt_id: data.prompt_id || null,
     imageUrl: data.image_url || '',
     ipfsCid: data.ipfs_cid || null,
     caption: data.caption || '',
@@ -253,7 +258,7 @@ function mapMeme(data: any): Meme {
     votes: data.votes || 0,
     createdAt: new Date(data.created_at),
     tags: data.tags || [],
-    battleId: data.battle_id || null,  // Map battle_id to battleId
+    battleId: data.battle_id || null,  
     isBattleSubmission: data.is_battle_submission || false,
   };
 }
@@ -268,7 +273,7 @@ export async function insertMeme(meme: Omit<Meme, 'id' | 'createdAt' | 'votes'>)
       .from('memes')
       .insert({
         prompt: meme.prompt,
-        prompt_id: meme.promptId,
+        prompt_id: meme.prompt_id,
         image_url: meme.imageUrl,
         ipfs_cid: meme.ipfsCid,
         caption: meme.caption,
@@ -308,7 +313,7 @@ export async function updateMeme(memeId: string, meme: Partial<Meme>): Promise<M
       .from('memes')
       .update({
         prompt: meme.prompt,
-        prompt_id: meme.promptId,
+        prompt_id: meme.prompt_id,
         image_url: meme.imageUrl,
         ipfs_cid: meme.ipfsCid,
         caption: meme.caption,
@@ -472,16 +477,16 @@ export async function getBattleById(battleId: string): Promise<Battle | null> {
  * Insert a new battle
  * @param battle 
  */
-export async function insertBattle(battle: Omit<Battle, 'id' | 'createdAt' | 'status' | 'votesA' | 'votesB' | 'memeAId' | 'memeBId'>): Promise<Battle | null> {
+export async function insertBattle(battle: Omit<Battle, 'id' | 'createdAt' | 'status' | 'votesA' | 'votesB' | 'memeOneId' | 'memeTwoId'>): Promise<Battle | null> {
   try {
     const { data, error } = await supabase
       .from('battles')
       .insert({
         prompt: battle.prompt,
         prompt_id: battle.promptId,
-        creator_id: battle.creatorId,
-        start_date: battle.startDate,
-        end_date: battle.endDate,
+        creator_id: battle.creator_id,
+        start_time: battle.startTime?.toISOString(),
+        end_time: battle.endTime?.toISOString(),
       })
       .select('*')
       .single();
@@ -515,14 +520,14 @@ export async function updateBattle(battleId: string, battle: Partial<Battle>): P
       .update({
         prompt: battle.prompt,
         prompt_id: battle.promptId,
-        creator_id: battle.creatorId,
-        start_date: battle.startDate,
-        end_date: battle.endDate,
+        creator_id: battle.creator_id,
+        start_time: battle.startTime?.toISOString(),
+        end_time: battle.endTime?.toISOString(),
         status: battle.status,
-        votes_a: battle.votesA,
-        votes_b: battle.votesB,
-        meme_a_id: battle.memeAId,
-        meme_b_id: battle.memeBId,
+        votes_a: battle.votes_a,
+        votes_b: battle.votes_b,
+        meme_one_id: battle.meme_one_id,
+        meme_two_id: battle.meme_two_id,
       })
       .eq('id', battleId)
       .select('*')
@@ -574,14 +579,19 @@ function mapBattle(data: any): Battle {
     id: data.id,
     prompt: data.prompt || '',
     promptId: data.prompt_id || null,
-    creatorId: data.creator_id || '',
-    startDate: new Date(data.start_date),
-    endDate: new Date(data.end_date),
+    creator_id: data.creator_id || '',
+    startTime: new Date(data.start_time),
+    endTime: new Date(data.end_time),
     status: data.status || 'active',
-    votesA: data.votes_a || 0,
-    votesB: data.votes_b || 0,
-    memeAId: data.meme_a_id || null,
-    memeBId: data.meme_b_id || null,
+    votes_a: data.votes_a || 0,
+    votes_b: data.votes_b || 0,
+    meme_one_id: data.meme_one_id || null,
+    meme_two_id: data.meme_two_id || null,
     createdAt: new Date(data.created_at),
+    voteCount: data.vote_count || 0,
+    memeOneId: data.meme_one_id,
+    memeTwoId: data.meme_two_id,
+    winnerId: data.winner_id,
+    is_community: data.is_community,
   };
 }

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -10,10 +9,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Battle as BattleType, Meme, Prompt } from '@/lib/types';
 import { getBattleById, getMemeById } from '@/lib/database';
 import { getPromptById, castVote } from '@/lib/databaseAdapter';
-import { ArrowLeft, Award, Clock, ThumbsUp, Users } from 'lucide-react';
+import { ArrowLeft, Award, Clock, ThumbsUp } from 'lucide-react';
 import UserAvatar from '@/components/ui/UserAvatar';
 import MemeCard from '@/components/meme/MemeCard';
 import { formatDistanceToNow } from 'date-fns';
+
+interface MemeCardCustomProps {
+  meme: Meme;
+  showActions?: boolean;
+  onVote?: () => Promise<void>;
+  votingDisabled?: boolean;
+  showVoteCount?: boolean;
+  voteCount?: number;
+}
 
 const Battle = () => {
   const { battleId } = useParams<{ battleId: string }>();
@@ -154,9 +162,9 @@ const Battle = () => {
     );
   }
   
-  const isActive = battle.status === 'active';
-  const isCompleted = battle.status === 'completed';
-  const winnerMeme = battle.winnerId ? (battle.winnerId === memeOne.id ? memeOne : memeTwo) : null;
+  const isActive = battle?.status === 'active';
+  const isCompleted = battle?.status === 'completed';
+  const winnerMeme = battle?.winnerId ? (battle.winnerId === memeOne?.id ? memeOne : memeTwo) : null;
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -204,7 +212,7 @@ const Battle = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{battle.voteCount}</p>
+              <p className="text-2xl font-bold">{battle?.voteCount || 0}</p>
               <p className="text-sm text-muted-foreground">Total votes cast</p>
             </CardContent>
           </Card>
@@ -230,27 +238,31 @@ const Battle = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div>
-            <MemeCard 
-              meme={memeOne} 
-              showVoteButton={isActive && !hasVoted && !!user}
-              onVote={() => handleVote(memeOne.id)}
-              votingDisabled={voting}
-              showVoteCount
-              voteCount={battle.voteCount > 0 ? Math.floor(battle.voteCount / 2) : 0}
-            />
-          </div>
+          {memeOne && (
+            <div>
+              <MemeCard 
+                meme={memeOne} 
+                showActions={isActive && !hasVoted && !!user}
+                onVote={isActive && !hasVoted && !!user ? () => handleVote(memeOne.id) : undefined}
+                votingDisabled={voting}
+                showVoteCount={true}
+                voteCount={battle?.voteCount ? Math.floor(battle.voteCount / 2) : 0}
+              />
+            </div>
+          )}
           
-          <div>
-            <MemeCard 
-              meme={memeTwo} 
-              showVoteButton={isActive && !hasVoted && !!user}
-              onVote={() => handleVote(memeTwo.id)}
-              votingDisabled={voting}
-              showVoteCount
-              voteCount={battle.voteCount > 0 ? Math.ceil(battle.voteCount / 2) : 0}
-            />
-          </div>
+          {memeTwo && (
+            <div>
+              <MemeCard 
+                meme={memeTwo} 
+                showActions={isActive && !hasVoted && !!user}
+                onVote={isActive && !hasVoted && !!user ? () => handleVote(memeTwo.id) : undefined}
+                votingDisabled={voting}
+                showVoteCount={true}
+                voteCount={battle?.voteCount ? Math.ceil(battle.voteCount / 2) : 0}
+              />
+            </div>
+          )}
         </div>
         
         {!user && isActive && (
