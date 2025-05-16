@@ -95,6 +95,11 @@ const BattleView: React.FC<BattleViewProps> = ({
   const isCompleted = battle?.status === 'completed';
   const winnerMeme = battle?.winnerId ? (battle.winnerId === battle.memeOneId ? memeOne : memeTwo) : null;
   
+  // Format the prompt text properly, whether it's a string or a Prompt object
+  const promptText = typeof battle.prompt === 'string' 
+    ? battle.prompt 
+    : battle.prompt?.text || '';
+  
   return (
     <div>
       {onBackClick && (
@@ -110,8 +115,8 @@ const BattleView: React.FC<BattleViewProps> = ({
       
       <div className="mb-6">
         <h1 className="text-3xl font-bold font-heading">Meme Battle</h1>
-        {battle.prompt && (
-          <p className="text-xl mt-2 text-muted-foreground">"{battle.prompt}"</p>
+        {promptText && (
+          <p className="text-xl mt-2 text-muted-foreground">"{promptText}"</p>
         )}
       </div>
       

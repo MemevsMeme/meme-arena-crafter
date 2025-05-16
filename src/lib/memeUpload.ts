@@ -1,3 +1,4 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { Meme } from './types';
@@ -136,5 +137,46 @@ export async function saveMeme(memeData: MemeData): Promise<Meme | null> {
   } catch (error) {
     console.error('Unexpected error saving meme:', error);
     return null;
+  }
+}
+
+/**
+ * Upload and save a meme
+ * @param formData The form data containing the file to upload
+ * @param memeData The meme data to save
+ * @returns The saved meme, or an error message if the upload fails
+ */
+export async function uploadMeme(formData: FormData, memeData: any): Promise<{ meme?: Meme, error?: string }> {
+  try {
+    const file = formData.get('file') as File;
+    
+    if (!file) {
+      return { error: 'No file provided' };
+    }
+    
+    // Upload the image
+    const imageUrl = await uploadMemeImage(file, memeData.creatorId);
+    
+    if (!imageUrl) {
+      return { error: 'Failed to upload image' };
+    }
+    
+    // Save the meme with the image URL
+    const fullMemeData = {
+      ...memeData,
+      image_url: imageUrl,
+      ipfs_cid: null // IPFS upload would happen here in a production app
+    };
+    
+    const savedMeme = await saveMeme(fullMemeData);
+    
+    if (!savedMeme) {
+      return { error: 'Failed to save meme data' };
+    }
+    
+    return { meme: savedMeme };
+  } catch (error: any) {
+    console.error('Error in uploadMeme:', error);
+    return { error: error.message || 'An unexpected error occurred' };
   }
 }

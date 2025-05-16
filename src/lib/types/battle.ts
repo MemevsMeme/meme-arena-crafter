@@ -5,7 +5,7 @@ import { Prompt } from './prompt';
 export interface Battle {
   id: string;
   promptId: string;
-  prompt?: Prompt;
+  prompt?: string | Prompt;
   memeOneId: string;
   memeTwoId: string;
   meme_one_id?: string; // Database field

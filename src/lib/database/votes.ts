@@ -108,3 +108,27 @@ export async function getBattleVotes(battleId: string): Promise<Vote[]> {
     return [];
   }
 }
+
+/**
+ * Increment the vote count for a meme in a battle
+ * @param memeId 
+ * @param battleId 
+ */
+export async function incrementBattleVote(memeId: string, battleId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.rpc('increment_battle_vote', {
+      meme_id: memeId,
+      battle_id: battleId
+    });
+    
+    if (error) {
+      console.error('Error incrementing battle vote:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Unexpected error incrementing battle vote:', error);
+    return false;
+  }
+}

@@ -1,4 +1,5 @@
-import { supabase } from './client';
+
+import { supabase } from '@/integrations/supabase/client';
 import { Battle, Meme } from '../types';
 import { getMemesByPromptId } from './memes';
 
@@ -398,7 +399,7 @@ function mapBattle(data: any): Battle {
   return {
     id: data.id,
     promptId: data.prompt_id || null,
-    prompt: data.prompt || '',
+    prompt: data.prompt_id ? data.prompt : data.prompt || '',
     creator_id: data.creator_id || '',
     startTime: new Date(data.start_time),
     endTime: new Date(data.end_time),

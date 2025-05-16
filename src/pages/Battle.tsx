@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
-import { Battle as BattleType } from '@/lib/types';
+import { Battle as BattleType, Prompt } from '@/lib/types';
 import { getBattleById } from '@/lib/database';
 import { getPromptById } from '@/lib/databaseAdapter';
 import { castVote } from '@/lib/database/votes';
@@ -41,10 +41,13 @@ const Battle = () => {
           try {
             const promptData = await getPromptById(battleData.promptId);
             if (promptData) {
-              setBattle(prev => prev ? {
-                ...prev,
-                prompt: promptData.text
-              } : null);
+              setBattle((prev) => {
+                if (!prev) return null;
+                return {
+                  ...prev,
+                  prompt: promptData
+                };
+              });
             }
           } catch (error) {
             console.error('Error fetching prompt:', error);

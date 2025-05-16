@@ -86,6 +86,16 @@ const Battles = () => {
     }
     return formatDistanceToNow(endTime, { addSuffix: true });
   };
+  
+  // Helper function to get prompt text
+  const getPromptText = (battle: Battle): string => {
+    if (typeof battle.prompt === 'string') {
+      return battle.prompt;
+    } else if (battle.prompt?.text) {
+      return battle.prompt.text;
+    }
+    return "Random Meme Battle";
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -169,7 +179,7 @@ const Battles = () => {
                           </div>
                         </div>
                         <CardDescription>
-                          {battle.prompt || "Random Meme Battle"}
+                          {getPromptText(battle)}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -246,7 +256,7 @@ const Battles = () => {
                           <div>
                             <h3 className="font-medium">Battle #{battle.id.substring(0, 8)}</h3>
                             <p className="text-sm text-muted-foreground line-clamp-1">
-                              {battle.prompt || "Random Meme Battle"}
+                              {getPromptText(battle)}
                             </p>
                           </div>
                         </div>
