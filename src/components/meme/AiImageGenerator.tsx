@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Wand, Save } from 'lucide-react';
+import { Wand, Save, AlertCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface AiImageGeneratorProps {
   promptText: string;
@@ -22,6 +23,7 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
   onSaveAsTemplate
 }) => {
   const [customPrompt, setCustomPrompt] = useState("");
+  const [errorCount, setErrorCount] = useState(0);
   
   const handleImageGeneration = () => {
     if (!promptText && !customPrompt) {
@@ -47,6 +49,9 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
     }
   };
 
+  // Check if generated image is a placeholder (SVG data URL)
+  const isPlaceholderImage = generatedImage?.startsWith('data:image/svg+xml');
+
   return (
     <div>
       <div className="mb-4">
@@ -55,7 +60,7 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
           <Input 
             value={customPrompt}
             onChange={(e) => setCustomPrompt(e.target.value)}
-            placeholder={`Customize prompt (base: "${promptText}")`}
+            placeholder={`Customize prompt (base: "${promptText || 'Enter a prompt'}")`}
             className="mb-2"
           />
           <Button 
@@ -87,6 +92,15 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
       
       {generatedImage && (
         <div className="flex flex-col">
+          {isPlaceholderImage && (
+            <Alert className="mb-4" variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                The AI image generator is currently unavailable. Please try again later or use a template/upload your own image.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <div className="aspect-square max-h-64 mx-auto mb-4 rounded-lg overflow-hidden">
             <img
               src={generatedImage}
@@ -99,7 +113,7 @@ const AiImageGenerator: React.FC<AiImageGeneratorProps> = ({
             />
           </div>
           
-          {generatedImage.startsWith('data:') && onSaveAsTemplate && (
+          {generatedImage.startsWith('data:') && onSaveAsTemplate && !isPlaceholderImage && (
             <Button 
               onClick={handleSaveAsTemplate} 
               variant="outline" 

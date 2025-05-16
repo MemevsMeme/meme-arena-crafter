@@ -19,7 +19,8 @@ import TemplateSelector from '@/components/meme/TemplateSelector';
 import { MEME_TEMPLATES } from '@/lib/constants';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ImageUploader from '@/components/meme/ImageUploader';
-import { PictureInPicture, Bot, FileImage } from 'lucide-react';
+import { PictureInPicture, Bot, FileImage, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Create = () => {
   const navigate = useNavigate();
@@ -34,6 +35,8 @@ const Create = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("ai");
   const [isGif, setIsGif] = useState(false);
+  const [aiGenerationError, setAiGenerationError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     // Check if the user is authenticated
@@ -70,19 +73,32 @@ const Create = () => {
       return;
     }
     
+    setAiGenerationError(null);
     setIsGeneratingAIImage(true);
     
     try {
       const imageData = await generateMemeImage(prompt, "meme");
       if (imageData) {
         setGeneratedImage(imageData);
-        toast.success("AI image generated successfully!");
+        
+        // Check if this is a placeholder SVG image (error case)
+        if (imageData.startsWith('data:image/svg+xml')) {
+          setAiGenerationError("Image generation failed. Try a different prompt or use a template.");
+          toast.error("AI image generation failed", {
+            description: "Try a different prompt or use a template instead."
+          });
+        } else {
+          toast.success("AI image generated successfully!");
+        }
       } else {
+        setAiGenerationError("Failed to generate image. Please try again or use a template.");
         toast.error("Failed to generate image");
       }
     } catch (error: any) {
       console.error("Error generating AI image:", error);
+      setAiGenerationError(error.message || "Unknown error occurred");
       toast.error(`Failed to generate image: ${error.message || "Unknown error"}`);
+      setRetryCount(prev => prev + 1);
     } finally {
       setIsGeneratingAIImage(false);
     }
@@ -105,6 +121,9 @@ const Create = () => {
     
     // Select the new template
     setSelectedTemplate(newTemplate);
+    
+    // Switch to template tab
+    setActiveTab("template");
     
     // Store the image URL in localStorage for the MemeGenerator component
     localStorage.setItem('meme_image', imageUrl);
@@ -198,6 +217,14 @@ const Create = () => {
                 <TabsContent value="ai" className="pt-2 mt-0">
                   <div className="bg-muted/30 p-4 rounded-lg">
                     <h3 className="text-lg font-medium mb-2">Generate AI Image</h3>
+                    {retryCount > 2 && (
+                      <Alert className="mb-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          AI image generation seems to be having issues. Consider using a template or uploading your own image.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     <AiImageGenerator
                       promptText={prompt}
                       isGeneratingAIImage={isGeneratingAIImage}

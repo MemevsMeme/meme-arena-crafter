@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Caption } from './types';
 
@@ -15,7 +16,12 @@ export const generateCaption = async (prompt: string, style: string): Promise<st
 
     if (error) {
       console.error('Error generating captions:', error);
-      throw error;
+      // Return fallback captions if there's an error
+      return [
+        `When ${prompt ? prompt.toLowerCase() : 'trying'} but it actually works`,
+        `Nobody:\nAbsolutely nobody:\nMe: ${prompt || 'doing meme stuff'}`,
+        `${prompt || 'This meme'}? Story of my life.`
+      ];
     }
 
     if (data && data.captions && Array.isArray(data.captions)) {
@@ -59,16 +65,36 @@ export const generateMemeImage = async (prompt: string, style: string = 'meme'):
     }
 
     if (data && data.imageData) {
-      console.log('Image data received successfully. Data starts with:', data.imageData.substring(0, 50) + '...');
+      console.log('Image data received successfully. Data starts with:', 
+        data.imageData.substring(0, 50) + '...');
       return data.imageData; // This will be a base64 data URL
     } else {
       console.error('No image data received from API');
-      throw new Error('No image data received');
+      // Generate a placeholder image
+      return generatePlaceholderImage(prompt);
     }
   } catch (error) {
     console.error('Error in generateMemeImage:', error);
-    throw error; // Let the component handle the error
+    // Return a placeholder image on error
+    return generatePlaceholderImage(prompt);
   }
+};
+
+// Function to generate a placeholder image with text
+const generatePlaceholderImage = (text: string): string => {
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500">
+    <rect width="500" height="500" fill="#f0f0f0"/>
+    <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="20px" text-anchor="middle" dominant-baseline="middle" fill="#666">
+      Placeholder for: ${text || 'Meme'}
+    </text>
+    <text x="50%" y="60%" font-family="Arial, sans-serif" font-size="16px" text-anchor="middle" dominant-baseline="middle" fill="#666">
+      (Image generation unavailable)
+    </text>
+  </svg>
+  `;
+  
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
 };
 
 // Function to analyze meme images using Gemini 2.0 Pro Vision
