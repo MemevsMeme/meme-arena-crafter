@@ -5,16 +5,17 @@ import { Meme } from './types';
 import { insertMeme } from './database';
 import { checkForBattles } from './services/battleService';
 import { toast } from 'sonner';
+import { uploadMemeImage } from '@/components/meme/MemeUploadHelper';
 
 interface MemeData {
   prompt: string;
   prompt_id: string | null;
-  image_url: string;
-  ipfs_cid: string | null;
+  image_url?: string;
+  ipfs_cid?: string | null;
   caption: string;
-  creator_id: string;
+  creatorId: string;
   tags: string[];
-  battle_id?: string | null;
+  battleId?: string | null;
   is_battle_submission?: boolean;
 }
 
@@ -64,23 +65,23 @@ export async function uploadMemeImage(file: File, userId: string): Promise<strin
  * @param memeData The meme data to validate
  * @returns True if the data is valid, false otherwise
  */
-function validateMemeData(memeData: MemeData): boolean {
-  if (!memeData.image_url) {
-    console.error('Meme image URL is required');
-    return false;
+function validateMemeData(memeData: MemeData): { valid: boolean; error?: string } {
+  if (!memeData.image_url && !memeData.ipfs_cid) {
+    console.error('Meme image URL or IPFS CID is required');
+    return { valid: false, error: 'Image URL is required' };
   }
 
-  if (!memeData.caption) {
+  if (!memeData.caption || memeData.caption.trim() === '') {
     console.error('Meme caption is required');
-    return false;
+    return { valid: false, error: 'Caption is required' };
   }
 
-  if (!memeData.creator_id) {
+  if (!memeData.creatorId) {
     console.error('Meme creator ID is required');
-    return false;
+    return { valid: false, error: 'Creator ID is required' };
   }
 
-  return true;
+  return { valid: true };
 }
 
 /**
@@ -92,12 +93,12 @@ function prepareMemeData(memeData: MemeData): Omit<Meme, 'id' | 'createdAt' | 'v
   return {
     prompt: memeData.prompt,
     prompt_id: memeData.prompt_id,
-    imageUrl: memeData.image_url,
-    ipfsCid: memeData.ipfs_cid,
+    imageUrl: memeData.image_url || '',
+    ipfsCid: memeData.ipfs_cid || null,
     caption: memeData.caption,
-    creatorId: memeData.creator_id,
-    tags: memeData.tags,
-    battleId: memeData.battle_id || null,
+    creatorId: memeData.creatorId,
+    tags: memeData.tags || [],
+    battleId: memeData.battleId || null,
     isBattleSubmission: memeData.is_battle_submission || false,
   };
 }
@@ -112,9 +113,10 @@ export async function saveMeme(memeData: MemeData): Promise<Meme | null> {
     console.log('Saving meme to database with data:', JSON.stringify(memeData));
     
     // Validate the meme data
-    if (!validateMemeData(memeData)) {
-      console.error('Invalid meme data');
-      return null;
+    const validation = validateMemeData(memeData);
+    if (!validation.valid) {
+      console.error('Invalid meme data:', validation.error);
+      throw new Error(validation.error || 'Invalid meme data');
     }
 
     // Prepare the meme data for insertion into the database
@@ -136,7 +138,7 @@ export async function saveMeme(memeData: MemeData): Promise<Meme | null> {
 
     if (!meme) {
       console.error('Failed to insert meme into database');
-      return null;
+      throw new Error('Failed to save meme to database');
     }
     
     console.log('Meme saved successfully:', meme);
@@ -147,9 +149,9 @@ export async function saveMeme(memeData: MemeData): Promise<Meme | null> {
     }
 
     return meme;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Unexpected error saving meme:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -163,6 +165,11 @@ export async function uploadMeme(formData: FormData, memeData: any): Promise<{ m
   try {
     console.log('Starting uploadMeme process with memeData:', JSON.stringify(memeData));
     
+    // Validate caption before proceeding
+    if (!memeData.caption || memeData.caption.trim() === '') {
+      return { error: 'Caption is required' };
+    }
+    
     const file = formData.get('file') as File;
     
     if (!file) {
@@ -172,36 +179,43 @@ export async function uploadMeme(formData: FormData, memeData: any): Promise<{ m
     
     console.log('File details:', file.name, file.type, file.size);
     
-    // Upload the image
-    const imageUrl = await uploadMemeImage(file, memeData.creatorId);
+    // Check if the file is a GIF
+    const isGif = file.type === 'image/gif';
     
-    if (!imageUrl) {
+    // Use enhanced upload helper for more reliable storage
+    const uploadResult = await uploadMemeImage(file, memeData.creatorId);
+    
+    if (!uploadResult) {
       console.error('Failed to upload image');
       return { error: 'Failed to upload image' };
     }
     
-    console.log('Image uploaded successfully:', imageUrl);
+    console.log('Image uploaded successfully:', uploadResult);
     
     // Save the meme with the image URL
     const fullMemeData = {
       ...memeData,
-      image_url: imageUrl,
-      ipfs_cid: null // IPFS upload would happen here in a production app
+      image_url: uploadResult,
     };
     
     console.log('Saving meme with full data:', JSON.stringify(fullMemeData));
     
-    const savedMeme = await saveMeme(fullMemeData);
-    
-    if (!savedMeme) {
-      console.error('Failed to save meme data');
-      return { error: 'Failed to save meme data' };
+    try {
+      const savedMeme = await saveMeme(fullMemeData);
+      
+      if (!savedMeme) {
+        console.error('Failed to save meme data');
+        return { error: 'Failed to save meme data' };
+      }
+      
+      console.log('Meme saved successfully:', savedMeme);
+      toast.success('Meme created successfully!');
+      
+      return { meme: savedMeme };
+    } catch (error: any) {
+      console.error('Error saving meme:', error);
+      return { error: error.message || 'Failed to save meme data' };
     }
-    
-    console.log('Meme saved successfully:', savedMeme);
-    toast.success('Meme created successfully!');
-    
-    return { meme: savedMeme };
   } catch (error: any) {
     console.error('Error in uploadMeme:', error);
     return { error: error.message || 'An unexpected error occurred' };

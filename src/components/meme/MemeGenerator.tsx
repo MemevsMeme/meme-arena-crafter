@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +36,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Prompt } from '@/lib/types';
 import { getMemeById } from '@/lib/database';
 import { uploadMeme } from '@/lib/memeUpload';
-import { ArrowLeft, ArrowRight, CheckCircle2, CheckCircle, Copy, CopyCheck, Plus, RefreshCcw, Upload, UploadCloud } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, CheckCircle, Copy, CopyCheck, Plus, RefreshCcw, Upload, UploadCloud } from 'lucide-react';
 import { tags as defaultTags } from '@/lib/tags';
 
 // Define a type for the tag objects
@@ -93,6 +95,10 @@ const MemeGenerator = ({
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [tags, setTags] = useState<Tag[]>(defaultTags);
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [validationErrors, setValidationErrors] = useState<{
+    caption?: string;
+    image?: string;
+  }>({});
   
   // Load generated image if provided
   useEffect(() => {
@@ -242,15 +248,40 @@ const MemeGenerator = ({
     return new Blob(byteArrays, { type: contentType });
   };
 
+  // Validate input fields
+  const validateInputs = (): boolean => {
+    const errors: {caption?: string; image?: string} = {};
+    
+    if (!caption.trim()) {
+      errors.caption = "Caption is required";
+    }
+    
+    if (!imageUrl) {
+      errors.image = "An image is required";
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // Save handler
   const handleSave = async () => {
-    if (!canvas.current || !imageUrl || isSubmitting || !user) {
-      if (!user) {
-        toast("You must be logged in to save a meme");
-        return;
+    if (!user) {
+      toast("You must be logged in to save a meme");
+      return;
+    }
+    
+    // Validate inputs
+    if (!validateInputs()) {
+      if (validationErrors.caption) {
+        toast.error("Caption is required", {
+          description: "Please add a caption to your meme before saving"
+        });
       }
-      if (!imageUrl) {
-        toast("Please add an image first");
+      if (validationErrors.image) {
+        toast.error("Image is required", {
+          description: "Please select or generate an image first"
+        });
       }
       return;
     }
@@ -261,7 +292,7 @@ const MemeGenerator = ({
       console.log('Starting meme save process...');
       
       // Generate the final image as a data URL
-      const dataUrl = canvas.current.toDataURL('image/png');
+      const dataUrl = canvas.current!.toDataURL('image/png');
       console.log('Canvas image generated successfully');
       
       // Create file from dataURL
@@ -281,7 +312,7 @@ const MemeGenerator = ({
         prompt: promptData?.text || customPrompt || '',
         prompt_id: promptData?.id || null,
         caption: caption,
-        creatorId: user?.id || '',
+        creatorId: user.id,
         tags: activeTags,
         battleId: battleId || null,
         isBattleSubmission: battleId ? true : false
@@ -294,12 +325,15 @@ const MemeGenerator = ({
       
       if (result.error) {
         console.error('Error from uploadMeme:', result.error);
+        toast.error("Failed to save meme", {
+          description: result.error
+        });
         throw new Error(typeof result.error === 'string' ? result.error : 'Failed to save meme');
       }
       
       console.log("Meme saved successfully", result);
       
-      toast("Meme Saved!", {
+      toast.success("Meme Saved!", {
         description: "Your meme has been successfully saved and published."
       });
       
@@ -316,7 +350,7 @@ const MemeGenerator = ({
       }
     } catch (error: any) {
       console.error("Error saving meme:", error);
-      toast("Error saving meme", {
+      toast.error("Error saving meme", {
         description: error.message || "Unknown error"
       });
     } finally {
@@ -339,19 +373,19 @@ const MemeGenerator = ({
       navigator.clipboard.writeText(imageUrl)
         .then(() => {
           setIsCopied(true);
-          toast("Image URL Copied", {
+          toast.success("Image URL Copied", {
             description: "The image URL has been copied to your clipboard."
           });
           setTimeout(() => setIsCopied(false), 2000);
         })
         .catch(err => {
           console.error("Failed to copy:", err);
-          toast("Copy Failed", {
+          toast.error("Copy Failed", {
             description: "Failed to copy the image URL to clipboard."
           });
         });
     } else {
-      toast("No Image", {
+      toast.error("No Image", {
         description: "Please upload an image first."
       });
     }
@@ -412,25 +446,47 @@ const MemeGenerator = ({
         <div className="w-full md:w-1/2 p-4 flex flex-col">
           <h2 className="text-2xl font-bold mb-4">Meme Generator</h2>
           
+          {/* Validation error alerts */}
+          {(validationErrors.caption || validationErrors.image) && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {validationErrors.caption && (
+                  <div className="mt-1">{validationErrors.caption}</div>
+                )}
+                {validationErrors.image && (
+                  <div className="mt-1">{validationErrors.image}</div>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
           
           <div className="mb-4">
-            <Label htmlFor="caption" className="block text-sm font-medium text-gray-700">
-              Caption
+            <Label htmlFor="caption" className="block text-sm font-medium text-gray-700 flex items-center">
+              Caption <span className="text-red-500 ml-1">*</span>
             </Label>
             <div className="mt-1">
               <Textarea
                 id="caption"
                 rows={3}
                 value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md resize-none"
+                onChange={(e) => {
+                  setCaption(e.target.value);
+                  if (e.target.value.trim()) {
+                    setValidationErrors(prev => ({...prev, caption: undefined}));
+                  }
+                }}
+                className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm rounded-md resize-none ${validationErrors.caption ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="Enter your meme caption here..."
+                required
               />
+              {validationErrors.caption && (
+                <p className="mt-1 text-sm text-red-500">{validationErrors.caption}</p>
+              )}
             </div>
           </div>
           
           <Separator className="my-2" />
-          
           
           <div className="mb-4">
             <Label htmlFor="font-size" className="block text-sm font-medium text-gray-700">
@@ -449,7 +505,6 @@ const MemeGenerator = ({
           
           <Separator className="my-2" />
           
-          
           <div className="mb-4">
             <Label htmlFor="font-color" className="block text-sm font-medium text-gray-700">
               Font Color
@@ -464,7 +519,6 @@ const MemeGenerator = ({
           </div>
           
           <Separator className="my-2" />
-          
           
           <div className="mb-4">
             <div className="flex items-center justify-between">
@@ -513,7 +567,6 @@ const MemeGenerator = ({
           
           <Separator className="my-2" />
           
-          
           <div className="mb-4">
             <Label className="block text-sm font-medium text-gray-700">Tags</Label>
             <div className="mt-1 flex flex-wrap gap-2">
@@ -531,7 +584,6 @@ const MemeGenerator = ({
           </div>
           
           <Separator className="my-2" />
-          
           
           {promptData === null && (
             <div className="mb-4">
@@ -551,11 +603,10 @@ const MemeGenerator = ({
             </div>
           )}
           
-          
           <Button 
             className="bg-brand-purple text-white hover:bg-brand-purple/90 mt-auto"
             onClick={handleSave}
-            disabled={isSubmitting || !imageUrl}
+            disabled={isSubmitting}
           >
             {isSubmitting ? (
               <>
@@ -576,3 +627,4 @@ const MemeGenerator = ({
 };
 
 export default MemeGenerator;
+
