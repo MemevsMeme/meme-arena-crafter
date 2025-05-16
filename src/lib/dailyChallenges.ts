@@ -1,6 +1,6 @@
 
 // Import the correct functions from the database module
-import { getDailyChallenge, getCurrentDayOfYear } from './database';
+import { getDailyChallenge, getCurrentDayOfYear } from './database/dailyChallenges';
 import { Prompt } from './types';
 
 /**

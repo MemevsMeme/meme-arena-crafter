@@ -404,7 +404,8 @@ export const MOCK_BATTLES: Battle[] = [
     startTime: new Date(Date.now() - 86400000),
     endTime: new Date(Date.now() + 86400000),
     is_community: false,
-    creator_id: "user1"
+    creator_id: "user1",
+    createdAt: new Date(Date.now() - 86400000)
   },
   {
     id: "battle2",
@@ -416,7 +417,8 @@ export const MOCK_BATTLES: Battle[] = [
     startTime: new Date(Date.now() - 86400000 * 2),
     endTime: new Date(Date.now() + 86400000 * 2),
     is_community: true,
-    creator_id: "user2"
+    creator_id: "user2",
+    createdAt: new Date(Date.now() - 86400000 * 2)
   },
   {
     id: "battle3",
@@ -429,7 +431,8 @@ export const MOCK_BATTLES: Battle[] = [
     endTime: new Date(Date.now() - 86400000),
     winnerId: "meme5",
     is_community: false,
-    creator_id: "user3"
+    creator_id: "user3",
+    createdAt: new Date(Date.now() - 86400000 * 3)
   },
   {
     id: "battle4",
@@ -441,7 +444,8 @@ export const MOCK_BATTLES: Battle[] = [
     startTime: new Date(Date.now() - 86400000 * 4),
     endTime: new Date(Date.now() - 86400000 * 2),
     is_community: true,
-    creator_id: "user4"
+    creator_id: "user4",
+    createdAt: new Date(Date.now() - 86400000 * 4)
   },
   {
     id: "battle5",
@@ -453,6 +457,7 @@ export const MOCK_BATTLES: Battle[] = [
     startTime: new Date(Date.now() - 86400000 * 5),
     endTime: new Date(Date.now() + 86400000 * 3),
     is_community: false,
-    creator_id: "user5"
+    creator_id: "user5",
+    createdAt: new Date(Date.now() - 86400000 * 5)
   }
 ];
