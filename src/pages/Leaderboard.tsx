@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -315,7 +314,10 @@ const Leaderboard = () => {
                             <div className="flex-1">
                               <div className="font-medium">Battle #{battle.id.substring(0, 8)}</div>
                               <div className="text-sm text-muted-foreground truncate">
-                                {battle.prompt || "Random Battle"}
+                                {/* Fix: Convert prompt to string if it's an object */}
+                                {typeof battle.prompt === 'string' 
+                                  ? battle.prompt 
+                                  : battle.prompt?.text || "Random Battle"}
                               </div>
                             </div>
                             

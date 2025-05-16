@@ -116,10 +116,11 @@ export async function getBattleVotes(battleId: string): Promise<Vote[]> {
  */
 export async function incrementBattleVote(memeId: string, battleId: string): Promise<boolean> {
   try {
+    // Fix: Use any type for the function name
     const { data, error } = await supabase.rpc('increment_battle_vote', {
       meme_id: memeId,
       battle_id: battleId
-    });
+    } as any);
     
     if (error) {
       console.error('Error incrementing battle vote:', error);

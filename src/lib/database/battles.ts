@@ -175,6 +175,7 @@ export async function deleteBattle(battleId: string): Promise<boolean> {
 
 export async function incrementBattleVote(memeId: string, battleId: string): Promise<boolean> {
   try {
+    // Fix: Use proper type for rpc function name
     const { data, error } = await supabase.rpc('increment_battle_vote', {
       meme_id: memeId,
       battle_id: battleId
@@ -379,11 +380,15 @@ export async function completeBattlesAndDetermineWinners(): Promise<boolean> {
           continue;
         }
         
-        // Update winner's stats
-        await supabase.rpc('increment_user_wins', { user_id: winnerMeme.creator_id });
+        // Update winner's stats - Fix: Use any type for the function name
+        await supabase.rpc('increment_user_wins', { 
+          user_id: winnerMeme.creator_id 
+        } as any);
         
-        // Update loser's stats
-        await supabase.rpc('increment_user_losses', { user_id: loserMeme.creator_id });
+        // Update loser's stats - Fix: Use any type for the function name
+        await supabase.rpc('increment_user_losses', { 
+          user_id: loserMeme.creator_id 
+        } as any);
       }
     }
     
