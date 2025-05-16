@@ -1,125 +1,140 @@
-
+import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { Meme } from './types';
-import { uploadFileToIPFS, uploadFileToSupabase } from './ipfs';
+import { insertMeme } from './database';
+import { checkForBattles } from './services/battleService';
+
+interface MemeData {
+  prompt: string;
+  prompt_id: string | null;
+  image_url: string;
+  ipfs_cid: string | null;
+  caption: string;
+  creator_id: string;
+  tags: string[];
+  battle_id?: string | null;
+  is_battle_submission?: boolean;
+}
 
 /**
- * Upload a meme to storage and create a database record
+ * Upload a meme image to Supabase storage
+ * @param file The image file to upload
+ * @param userId The ID of the user uploading the image
+ * @returns The public URL of the uploaded image, or null if the upload fails
  */
-export async function uploadMeme(formData: FormData, meme: Partial<Meme>): Promise<{
-  publicUrl?: string;
-  ipfsCid?: string;
-  error?: any;
-}> {
+export async function uploadMemeImage(file: File, userId: string): Promise<string | null> {
   try {
-    // Extract the file from form data
-    const file = formData.get('file') as File;
-    if (!file) {
-      console.error('No file provided in formData');
-      return { error: 'No file provided' };
+    // Generate a unique file name
+    const imageName = `meme-${userId}-${uuidv4()}`;
+    const imagePath = `${userId}/${imageName}`;
+
+    // Upload the image to Supabase storage
+    const { data, error } = await supabase.storage
+      .from('memes')
+      .upload(imagePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Error uploading image:', error);
+      return null;
     }
 
-    // First, try to upload to IPFS
-    console.log('Uploading meme to IPFS...', file.name, file.type, file.size);
-    const ipfsResult = await uploadFileToIPFS(file, `Meme: ${meme.caption || 'Untitled'}`);
-    
-    let ipfsCid = null;
-    let imageUrl = null;
-    
-    if (ipfsResult.success && ipfsResult.ipfsHash) {
-      console.log('Successfully uploaded to IPFS with CID:', ipfsResult.ipfsHash);
-      ipfsCid = ipfsResult.ipfsHash;
-      imageUrl = ipfsResult.gatewayUrl || `https://gateway.pinata.cloud/ipfs/${ipfsResult.ipfsHash}`;
-    } else {
-      console.warn('IPFS upload failed, falling back to Supabase storage:', ipfsResult.error);
-    }
-    
-    // Always upload to Supabase storage as well (as backup)
-    console.log('Also uploading to Supabase storage for redundancy...');
-    
-    // Generate a unique filename
-    const timestamp = Date.now();
-    const fileName = `${meme.creatorId || 'anonymous'}_${timestamp}.png`;
-    
-    const supabaseResult = await uploadFileToSupabase(
-      file,
-      meme.creatorId || 'anonymous',
-      fileName
-    );
-    
-    if (supabaseResult.success && supabaseResult.url) {
-      console.log('Successfully uploaded to Supabase storage:', supabaseResult.url);
-      
-      // If IPFS failed, use Supabase URL
-      if (!imageUrl) {
-        imageUrl = supabaseResult.url;
-      }
-    } else {
-      console.warn('Supabase storage upload failed:', supabaseResult.error);
-      
-      // If both uploads failed, return error
-      if (!imageUrl) {
-        return { error: 'Failed to upload image to both IPFS and Supabase storage' };
-      }
-    }
-    
-    // Prepare basic insert data with only the essential fields
-    // IMPORTANT: Do not include prompt_id by default - we'll check if it exists first
-    const insertData = {
-      prompt: meme.prompt || '',
-      caption: meme.caption || '',
-      creator_id: meme.creatorId || '',
-      tags: meme.tags || [],
-      image_url: imageUrl,
-      ipfs_cid: ipfsCid
-    };
-    
-    // Only try to use prompt_id if it's a valid UUID
-    if (meme.prompt_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(meme.prompt_id)) {
-      // Before adding prompt_id, verify it exists in the prompts table
-      const { data: promptExists, error: promptCheckError } = await supabase
-        .from('prompts')
-        .select('id')
-        .eq('id', meme.prompt_id)
-        .single();
-      
-      if (promptExists) {
-        console.log('Verified prompt_id exists in prompts table:', meme.prompt_id);
-        Object.assign(insertData, { prompt_id: meme.prompt_id });
-      } else {
-        console.log('prompt_id not found in prompts table, using only the prompt text:', meme.prompt);
-        // Do not add prompt_id to avoid foreign key constraint error
-      }
-      
-      if (promptCheckError) {
-        console.log('Error checking prompt_id, will not include it:', promptCheckError);
-      }
-    } else {
-      console.log('No valid prompt_id provided:', meme.prompt_id);
-    }
-    
-    // Log what we're sending to the database
-    console.log('Final insertion data for meme:', insertData);
-    
-    // Insert the meme record
-    const { data: memeData, error: memeError } = await supabase
-      .from('memes')
-      .insert(insertData)
-      .select('*')
-      .single();
-      
-    if (memeError) {
-      console.error('Error creating meme record:', memeError);
-      return { error: memeError };
-    }
-    
-    console.log('Successfully saved meme with ID:', memeData.id);
-    return { 
-      publicUrl: imageUrl, 
-      ipfsCid 
-    };
+    // Get the public URL of the uploaded image
+    const imageUrl = `https://ezunpjcxnrfnpcsibtyb.supabase.co/storage/v1/object/public/memes/${imagePath}`;
+    return imageUrl;
   } catch (error) {
-    console.error('Unexpected error in uploadMeme:', error);
-    return { error };
+    console.error('Unexpected error uploading image:', error);
+    return null;
+  }
+}
+
+/**
+ * Validate meme data
+ * @param memeData The meme data to validate
+ * @returns True if the data is valid, false otherwise
+ */
+function validateMemeData(memeData: MemeData): boolean {
+  if (!memeData.image_url) {
+    console.error('Meme image URL is required');
+    return false;
+  }
+
+  if (!memeData.caption) {
+    console.error('Meme caption is required');
+    return false;
+  }
+
+  if (!memeData.creator_id) {
+    console.error('Meme creator ID is required');
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Prepare meme data for insertion into the database
+ * @param memeData The meme data to prepare
+ * @returns The prepared meme data
+ */
+function prepareMemeData(memeData: MemeData): Omit<Meme, 'id' | 'createdAt' | 'votes'> {
+  return {
+    prompt: memeData.prompt,
+    prompt_id: memeData.prompt_id,
+    imageUrl: memeData.image_url,
+    ipfsCid: memeData.ipfs_cid,
+    caption: memeData.caption,
+    creatorId: memeData.creator_id,
+    tags: memeData.tags,
+    battleId: memeData.battle_id || null,
+    isBattleSubmission: memeData.is_battle_submission || false,
+  };
+}
+
+/**
+ * Save a meme to the database
+ * @param memeData 
+ * @returns 
+ */
+export async function saveMeme(memeData: MemeData): Promise<Meme | null> {
+  try {
+    // Validate the meme data
+    if (!validateMemeData(memeData)) {
+      console.error('Invalid meme data');
+      return null;
+    }
+
+    // Prepare the meme data for insertion into the database
+    const preparedMemeData = prepareMemeData(memeData);
+
+    // Insert the meme into the database
+    const meme = await insertMeme({
+      prompt: preparedMemeData.prompt,
+      prompt_id: preparedMemeData.prompt_id,
+      imageUrl: preparedMemeData.imageUrl,
+      ipfsCid: preparedMemeData.ipfsCid,
+      caption: preparedMemeData.caption,
+      creatorId: preparedMemeData.creatorId,
+      tags: preparedMemeData.tags,
+      battleId: preparedMemeData.battleId,
+      isBattleSubmission: preparedMemeData.isBattleSubmission,
+    });
+
+    if (!meme) {
+      console.error('Failed to insert meme');
+      return null;
+    }
+
+    // Check if this meme should trigger a battle
+    if (meme.prompt_id) {
+      await checkForBattles(meme.prompt_id);
+    }
+
+    return meme;
+  } catch (error) {
+    console.error('Unexpected error saving meme:', error);
+    return null;
   }
 }
