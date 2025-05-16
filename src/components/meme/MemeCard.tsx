@@ -15,6 +15,9 @@ interface MemeCardProps {
   isWinner?: boolean;
   onVote?: () => void;
   onShare?: () => void;
+  votingDisabled?: boolean; // Add this property
+  showVoteCount?: boolean; // Add this property
+  voteCount?: number; // Add this property
 }
 
 const MemeCard = ({

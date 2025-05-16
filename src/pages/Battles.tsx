@@ -57,7 +57,7 @@ const Battles = () => {
                 <CardHeader>
                   <CardTitle>Battle #{battle.id.substring(0, 8)}</CardTitle>
                   <CardDescription>
-                    {battle.prompt && battle.prompt}
+                    {battle.prompt && battle.prompt.toString()}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './types/supabase';
 import { Prompt, Meme, Battle } from './types';
@@ -587,11 +586,11 @@ function mapBattle(data: any): Battle {
     votes_b: data.votes_b || 0,
     meme_one_id: data.meme_one_id || null,
     meme_two_id: data.meme_two_id || null,
-    createdAt: new Date(data.created_at),
     voteCount: data.vote_count || 0,
     memeOneId: data.meme_one_id,
     memeTwoId: data.meme_two_id,
     winnerId: data.winner_id,
     is_community: data.is_community,
+    createdAt: new Date(data.created_at),
   };
 }
