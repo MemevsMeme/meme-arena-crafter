@@ -1,0 +1,5 @@
+
+project_id = "ezunpjcxnrfnpcsibtyb"
+
+[functions.import-daily-challenges]
+verify_jwt = false
