@@ -1,0 +1,10 @@
+For demonstration purposes, we'll use some simple references to common sound effects.
+In a production environment, you would have actual .mp3 files here.
+
+Sample sound effects:
+- applause.mp3
+- laugh.mp3
+- drumroll.mp3
+- victory.mp3
+- trombone.mp3
+- suspense.mp3
